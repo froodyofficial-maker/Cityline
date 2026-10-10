@@ -114,12 +114,21 @@ button:hover{filter:brightness(1.2)}.mb{background:linear-gradient(90deg,var(--p
 .cd{display:inline-flex;flex-direction:column;align-items:center;gap:2px;width:46px;height:66px;background:#fff;color:#111;margin:3px;padding:4px;font-size:11px;box-shadow:0 0 0 2px #000}.cd.rd{color:#d0202a}.cd.bk{background:repeating-linear-gradient(45deg,#7a3cff 0 6px,#ff4fa3 6px 12px)}
 .hand{min-height:76px}.nums{max-width:470px;margin:6px auto}.nums button{padding:5px 6px;margin:2px;font-size:8px}
 button.rc-r{background:#c0202a;color:#fff}button.rc-b{background:#222;color:#fff}button.rc-g{background:#1a8a3a;color:#fff}#rw{image-rendering:auto;margin:6px}
-</style></head><body><div id="home"><canvas id="hc"></canvas><div class="scan"></div><div id="hm"><h1 id="ttl"><span>GTA</span><span>VI</span></h1><div id="tag">WELCOME TO EMBER CITY</div><button class="mb" id="go">&gt; START GAME</button><button class="mb" id="ctl">&gt; CONTROLS</button><div id="cp">WASD - MOVE / SHIFT - SPRINT<br>CLICK or SPACE - SHOOT<br>MOUSE - LOOK (CLICK TO LOCK)<br>SCROLL - ZOOM / FIRST PERSON<br>F - CAR  E - INTERACT<br>M - MAP  T - SKIP TIME</div><div id="hint">PRESS ENTER</div></div></div>
+#setup{position:fixed;inset:0;z-index:21;display:none;align-items:center;justify-content:center;background:#0a0414ee}
+#sp{width:min(940px,96vw);max-height:92vh;overflow:auto;text-align:center;animation:pop .35s steps(5)}
+#sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;margin:14px 0;text-align:left}
+.sr{background:#1c0a30cc;padding:10px 12px;font-size:9px;line-height:1.6;animation:rin .4s steps(5) both}
+.sr label{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;color:#ffe27a}.sr label b{color:#fff}
+.sr input[type=range]{width:100%;accent-color:#ff4fa3}.opts button{margin:3px;padding:6px 8px;font-size:8px;opacity:.6}.opts button.sel{opacity:1;box-shadow:0 0 0 3px #fff,0 0 14px #ff9a3c}
+.tog{width:56px;height:24px;background:#222;box-shadow:0 0 0 2px #fff;position:relative;cursor:pointer;display:inline-block}.tog::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#888}.tog.on{background:#3ec24a}.tog.on::after{left:32px;background:#fff}
+.sw{display:inline-block;width:28px;height:28px;margin:3px 5px;box-shadow:0 0 0 2px #000;cursor:pointer}.sw.sel{box-shadow:0 0 0 3px #fff,0 0 0 6px #ff4fa3}
+#pre{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}#setup.out{animation:wp .9s steps(12) forwards}
+</style></head><body><div id="home"><canvas id="hc"></canvas><div class="scan"></div><div id="hm"><h1 id="ttl"><span>GTA</span><span>VI</span></h1><div id="tag">WELCOME TO EMBER CITY</div><button class="mb" id="go">&gt; NEW GAME</button><button class="mb" id="ctl">&gt; CONTROLS</button><div id="cp">WASD - MOVE / SHIFT - SPRINT<br>CLICK or SPACE - SHOOT<br>MOUSE - LOOK (CLICK TO LOCK)<br>SCROLL - ZOOM / FIRST PERSON<br>F - CAR  E - INTERACT<br>M - MAP  T - SKIP TIME</div><div id="hint">PRESS ENTER</div></div></div>
 <div id="w"><canvas id="c"></canvas></div>
 <div id="sir"></div><div class="bar" id="b1"></div><div class="bar" id="b2"></div>
-<div class="h" id="st"><div class="chip"><i id="ci"></i><span id="dy">DAY 1</span><span id="clk"></span></div><div id="stars"></div><div class="row"><i data-s="coin"></i>$<span id="cash">500</span></div><div class="row"><i data-s="skull"></i><span id="k">0</span> <i data-s="badge"></i><span id="cpk">0</span>/10</div><div class="chip" id="wc"></div></div>
+<div class="h" id="st"><div class="chip"><i id="ci"></i><span id="dy">DAY 1</span><span id="clk"></span></div><div id="stars"></div><div class="row"><i data-s="coin"></i>$<span id="cash">500</span></div><div class="row"><i data-s="skull"></i><span id="k">0</span> <i data-s="badge"></i><span id="cpk">0</span>/<span id="cpl">10</span></div><div class="chip" id="wc"></div></div>
 <div class="h" id="help"><b>GTA VI</b><br>CASINO: SLOTS · ROULETTE · BLACKJACK<br>WASD MOVE · SHIFT SPRINT<br>CLICK/SPACE SHOOT · RMB SCOPE<br>1-4 WEAPONS · I INVENTORY<br>E USE/STEAL · R ROB REGISTER<br>F CAR · M MAP · SCROLL = 1ST PERSON<br>LADDERS = ROOFTOP SNIPER NESTS<br>HELI: F FLY · LMB/B BOMB<br>EAT OR STARVE: ORDER FROM YOUR PC<br><span class=dot style=background:#ffd23f></span>BANK <span class=dot style=background:#c050ff></span>CASINO <span class=dot style=background:#2bf0ff></span>HOME <span class=dot style=background:#ffb02b></span>STORES</div>
-<div class="h" id="pr"></div><div class="h" id="vit"><div class="vr"><i data-s="heart"></i><div class="bar2"><div id="hpb"></div></div></div><div class="vr"><i data-s="burger"></i><div class="bar2"><div id="hgb"></div></div></div></div><div class="h" id="hot"></div><div class="h" id="feed"></div><div class="h" id="hurt"></div><div class="h" id="xh"></div><div id="scope"></div><div class="h" id="lk">CLICK TO LOCK MOUSE<br><small>ESC RELEASES IT</small></div><div class="h" id="hel"></div><div id="fx"></div><div id="md"><div class="pn" id="mdp"></div></div><div id="eod"><div class="pn" id="eodp"></div></div><canvas id="mm" width="160" height="160"></canvas><div class="h" id="tt"></div><div class="h" id="sub"></div>
+<div class="h" id="pr"></div><div class="h" id="vit"><div class="vr"><i data-s="heart"></i><div class="bar2"><div id="hpb"></div></div></div><div class="vr"><i data-s="burger"></i><div class="bar2"><div id="hgb"></div></div></div></div><div class="h" id="hot"></div><div class="h" id="feed"></div><div class="h" id="hurt"></div><div class="h" id="xh"></div><div id="scope"></div><div class="h" id="lk">CLICK TO LOCK MOUSE<br><small>ESC RELEASES IT</small></div><div class="h" id="hel"></div><div id="fx"></div><div id="setup"><div class="pn" id="sp"><h2>GAME SETUP</h2><div class="stat">PICK A PRESET, THEN TWEAK ANYTHING</div><div id="pre"></div><div id="sg"></div><div id="sbtn"><button id="sb">&lt; BACK</button><button id="sgo">BEGIN GAME &gt;</button></div></div></div><div id="md"><div class="pn" id="mdp"></div></div><div id="eod"><div class="pn" id="eodp"></div></div><canvas id="mm" width="160" height="160"></canvas><div class="h" id="tt"></div><div class="h" id="sub"></div>
 <div id="cas"><div class="pn"><h2>GOLDEN EMBER CASINO</h2>Balance: $<b id="cb"></b><div id="rl"></div>
 <div>Bet: <button class="bt" data-b="100">$100</button><button class="bt" data-b="500">$500</button><button class="bt" data-b="2000">$2000</button></div>
 <button id="sp">SPIN SLOTS</button><hr>Roulette: <button class="ro" data-c="r">RED x2</button><button class="ro" data-c="b">BLACK x2</button><button class="ro" data-c="g">GREEN x30</button>
@@ -272,7 +281,8 @@ function enterApt(){if(heat>=1)return msg('Cops are on you — lose them first!'
 function leaveApt(){IN=0;P.x=apt.x;P.z=apt.z+1.5;P.h=0;camYaw=0;cam.position.set(P.x,5,P.z-8)}
 function sleep(){tod=.27;P.hp=100;heat=0;msg('Slept until morning. Fully healed.');snd(400,.4,'sine')}
 /* ---- home screen ---- */
-function startGame(){if(started)return;started=1;homeOn=0;document.body.classList.add('run');$('home').classList.add('out');setTimeout(()=>$('home').remove(),1000);last=performance.now();snd(180,.35,'square',.07);snd(500,.2,'sawtooth',.04);intro();reLock()}
+function startGame(){openSetup()}
+function beginGame(){if(started)return;started=1;homeOn=0;document.body.classList.add('run');$('home').classList.add('out');$('setup').classList.add('out');setTimeout(()=>{$('home').remove();$('setup').remove()},1000);last=performance.now();applyCfg();snd(180,.35,'square',.07);snd(500,.2,'sawtooth',.04);if(CFG.skip)cam.position.set(P.x-sin(camYaw)*7.7,5.1,P.z-cos(camYaw)*7.7);else intro();reLock()}
 $('go').onclick=startGame;$('ctl').onclick=()=>{const c=$('cp');c.style.display=c.style.display=='block'?'none':'block'};
 function homeAnim(){const hc=$('hc'),g=hc.getContext('2d'),H=180;let W;const sz=()=>{W=Math.round(H*innerWidth/innerHeight);hc.width=W;hc.height=H};sz();addEventListener('resize',sz);
  const mk=(a0,a1,w0,w1,col,lit)=>{const a=[];let x=0;while(x<760){const w=w0+R()*(w1-w0)|0;a.push({x,w,h:a0+R()*(a1-a0)|0,n:ri(NC),s:R()<.4,ws:Array.from({length:80},()=>R()<lit)});x+=w+(R()*3|0)}return{a,TW:x,col}};
@@ -301,7 +311,7 @@ for(let i=0;i<320;i++){const m=new T.Mesh(geo(1,1,1),BL[0]);m.visible=false;sc.a
 for(let i=0;i<60;i++){const m=new T.Mesh(new T.CircleGeometry(1,10),BL[2]);m.rotation.x=-PI/2;m.position.y=.09;m.visible=false;sc.add(m);DC.push(m)}
 function part(x,y,z,vx,vy,vz,s,mt,l){const p=PP[pI++%320];p.m.material=mt;p.m.position.set(x,y,z);p.m.scale.set(s,s,s);p.m.visible=true;p.v.set(vx,vy,vz);p.l=l;p.s=s}
 function splat(x,z,s){const d=DC[dI++%60];d.position.x=x+rr(-.4,.4);d.position.z=z+rr(-.4,.4);d.scale.setScalar(s);d.visible=true}
-function gore(e,dx,dz,big){const n=big?32:18;snd(110,.18,'sawtooth',.08);
+function gore(e,dx,dz,big){const n=Math.round((big?32:18)*CFG.gore);snd(110,.18,'sawtooth',.08);
  for(let i=0;i<n;i++)part(e.x,rr(.4,1.3),e.z,dx*rr(2,9)+rr(-3,3),rr(2,8),dz*rr(2,9)+rr(-3,3),rr(.08,.2),ri(BL),rr(6,14));
  splat(e.x,e.z,rr(.8,1.6));if(big)for(let i=0;i<3;i++)splat(e.x+rr(-2,2),e.z+rr(-2,2),rr(.4,1.1));
  if(big||R()<.35){e.g.hd[0].visible=e.g.hd[1].visible=false;part(e.x,1.3,e.z,dx*5,6,dz*5,.34,mat(0xe0ac69),70);
@@ -354,7 +364,7 @@ showR([4,4,4]);function openCas0(){document.exitPointerLock&&document.exitPointe
 function closeCas0(){mode='play';$('cas').style.display='none'}$('lv').onclick=()=>closeCas();
 /* ---- input ---- */
 const K={};let drag=0;
-addEventListener('keydown',e=>{if(!started){if(e.code=='Enter')startGame();return}if(mode!='play'){xKeyModal(e);return}if(e.code=='KeyM')$('mm').classList.toggle('big');if(e.code=='KeyT'){const p=tod;tod=(tod+.25)%1;if(tod<p)eodReq='midnight'}if(cut){if(e.code=='Enter')cut.t=cut.dur;return}K[e.code]=1;xKey(e);if(e.code=='KeyE')act('e');if(e.code=='KeyF')act('f');if(e.code=='Space'||e.code.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keydown',e=>{if(!started){if(e.code=='Enter')setupOpen?beginGame():startGame();return}if(mode!='play'){xKeyModal(e);return}if(e.code=='KeyM')$('mm').classList.toggle('big');if(e.code=='KeyT'){const p=tod;tod=(tod+.25)%1;if(tod<p)eodReq='midnight'}if(cut){if(e.code=='Enter')cut.t=cut.dur;return}K[e.code]=1;xKey(e);if(e.code=='KeyE')act('e');if(e.code=='KeyF')act('f');if(e.code=='Space'||e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>K[e.code]=0);
 const cvs=$('c');cvs.addEventListener('pointerdown',e=>{if(e.button==0){if(mode=='play'&&!cut&&!locked()&&!lockFail){reLock();return}K.M=1}else{if(e.button==2)K.R=1;drag=1}});addEventListener('pointerup',e=>{if(e.button==2)K.R=0;K.M=0;drag=0});
 addEventListener('pointermove',e=>{if(drag||document.pointerLockElement||(lockFail&&mode=='play'&&!cut)){camYaw-=e.movementX*.0035;camPitch=Math.max(-.2,Math.min(1.2,camPitch+e.movementY*.003));mvT=performance.now()}});
@@ -377,7 +387,7 @@ function mmDraw(){const big=$('mm').classList.contains('big'),c=IN?IN.ret:P;mg.f
 const ease=(a,b,k)=>a+(b-a)*k;
 function update(dt){
  if(toastT>0&&(toastT-=dt)<=0)$('tt').textContent='';
- {const pt=tod;tod=(tod+dt/240)%1;if(tod<pt)eodReq='midnight'}skyU();xUpdate(dt);
+ {const pt=tod;tod=(tod+dt/CFG.dayLen)%1;if(tod<pt)eodReq='midnight'}skyU();xUpdate(dt);
  if(cut){cut.t+=dt;cut.fn(Math.min(1,cut.t/cut.dur),cut.t);const l=cut.lines.filter(a=>a[0]<=cut.t).pop(),s=$('sub');s.textContent=l?l[1]:'';s.className=/^(WASTED|EXECUTED)$/.test(l?l[1]:'')?'w':'';
   if(cut.t>=cut.dur){const d=cut.done;cut=null;$('w').parentNode.classList.remove('on');$('sub').textContent='';d&&d()}}
  const live=!cut&&!P.dead;shT-=dt;bank.cd-=dt;
@@ -448,13 +458,13 @@ const addInv=(id,n)=>inv[id]=(inv[id]||0)+n;
 function msg(t,c){const f=$('feed'),d=document.createElement('div');d.className='nt';d.textContent=t;if(c)d.style.borderLeftColor=c;f.prepend(d);setTimeout(()=>d.classList.add('out'),3200);setTimeout(()=>d.remove(),3700);while(f.children.length>5)f.lastChild.remove()}
 function hit(by){dmgBy=by;dmgT=performance.now();hurt=1}
 function setW(id){if(!own[id])return;cw=id;const w=WP[id];P.g.gm.scale.z=w.len;P.g.gm.material=mat(w.col);snd(500,.05);lastHot=''}
-function copsOffChk(){if(!copsOff&&dS.cops>=10){copsOff=1;for(const c of cops)sc.remove(c.g);cops.length=0;heat=0;msg('POLICE FORCE WIPED OUT - NO MORE COPS TODAY','#2bf0ff');snd(80,1,'sawtooth',.1)}}
+function copsOffChk(){if(!copsOff&&CFG.copLimit<=50&&dS.cops>=CFG.copLimit){copsOff=1;for(const c of cops)sc.remove(c.g);cops.length=0;heat=0;msg('POLICE FORCE WIPED OUT - NO MORE COPS TODAY','#2bf0ff');snd(80,1,'sawtooth',.1)}}
 function kill(e,dx,dz,big,byP){if(e.dead)return;e.dead=1;e.dt=0;e.g.rotation.x=-PI/2;e.g.position.y=.18;gore(e,dx,dz,big);scare(e.x,e.z,18);
  if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
 function mkCop(d){const e={g:person('#e0ac69','#1d3b8a','#14234a','#111',1),hp:3,dead:0,cop:1,cd:rr(.5,1.5),dt:0,ph:0};const a=rr(0,6.28);d=d||42;e.x=P.x+sin(a)*d;e.z=P.z+cos(a)*d;push(e,2);cops.push(e)}
 function shoot(){const w=WP[cw];if(shT>0)return;
  if(ammo[cw]<=0){shT=.3;snd(90,.05,'square',.03);if(!P.noAm){P.noAm=1;msg('OUT OF AMMO - switch weapon or buy more','#ff6a6a');setTimeout(()=>P.noAm=0,2500)}return}
- ammo[cw]--;shT=w.cd;dS.shots++;lastHot='';snd(w.pel>1?140:cw=='sniper'?90:320,.12,'sawtooth',.07);if(w.pel>1||cw=='sniper')shake=Math.max(shake,.4);
+ if(!CFG.infAmmo)ammo[cw]--;shT=w.cd;dS.shots++;lastHot='';snd(w.pel>1?140:cw=='sniper'?90:320,.12,'sawtooth',.07);if(w.pel>1||cw=='sniper')shake=Math.max(shake,.4);
  const all=peds.concat(cops,clerks).filter(e=>!e.dead&&(!e.st||e.st===IN));let ax=sin(P.h),az=cos(P.h);
  if(!(zoom<.1||scoped)){let bd=Math.min(w.rng,30),bt=null;for(const e of all){const dx=e.x-P.x,dz=e.z-P.z,l=Math.hypot(dx,dz);if((dx*ax+dz*az)/l>.8&&l<bd){bd=l;bt=e}}if(bt){ax=(bt.x-P.x)/bd;az=(bt.z-P.z)/bd;P.h=Math.atan2(ax,az)}}
  for(let i=0;i<w.pel;i++){const a=Math.atan2(ax,az)+(R()-.5)*2*w.spr,qx=sin(a),qz=cos(a);let h=null,hd=w.rng;
@@ -551,8 +561,8 @@ function ptxt(){if(P.car)return'F - exit car';if(P.heli)return P.y-groundH(P.x,P
  if(ladders.find(l=>dist(P,l)<2.8))return'E - Climb to rooftop (sniper nest)';if(dist(P,bank)<3.5)return bank.cd>0?'Bank locked down ('+Math.ceil(bank.cd)+'s)':'E - ROB THE BANK';if(dist(P,casino)<3.5)return'E - Enter casino';if(dist(P,apt)<3.5)return'E - Enter your apartment';
  const o=shops.find(o=>dist(P,o)<3.5);return o?'E - Enter '+o.name:nearCar()?'F - enter car':''}
 /* ---- per-frame systems ---- */
-function xUpdate(dt){const live=!cut&&!P.dead;bpUpdate(dt);heliU(dt);bombU(dt);
- if(live){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
+function xUpdate(dt){const live=!cut&&!P.dead;bpUpdate(dt);heliU(dt);bombU(dt);cfgU(dt);
+ if(live&&CFG.hunger){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
  for(let i=pend.length-1;i>=0;i--){pend[i].t-=dt;if(pend[i].t<=0)deliver(pend.splice(i,1)[0])}
  if(eodReq&&live)endDay(eodReq);
  const dc=cash-lastCash;lastCash=cash;if(dc>0)dS.earn+=dc;else dS.spend-=dc;dS.maxStars=Math.max(dS.maxStars,Math.min(5,Math.floor(heat)));if(copsOff)heat=0;
@@ -566,20 +576,20 @@ function hudU(dt,stars){hudX();dispCash+=(cash-dispCash)*Math.min(1,dt*8);$('cas
 /* ---- end of day ---- */
 function endDay(why){eodReq=0;if(mode!='play')return;mode='eod';document.exitPointerLock&&document.exitPointerLock();for(const k in K)K[k]=0;
  const s=dS,net=s.earn-s.spend,sco=Math.max(0,net/80+s.kills*3+s.cops*8+s.heists*80+s.stores*25+s.items*2),g=sco>300?'S':sco>180?'A':sco>90?'B':sco>30?'C':'D';
- const rw=[['CASH EARNED',s.earn,'$',''],['CASH SPENT',s.spend,'-$',''],['CASINO NET',s.cas,'$',''],['CIVILIANS KILLED',s.kills,'',''],['COPS KILLED',s.cops,'','/10'],['BANK HEISTS',s.heists,'',''],['STORES ROBBED',s.stores,'',''],['ITEMS STOLEN',s.items,'',''],['SHOTS FIRED',s.shots,'',''],['MEALS EATEN',s.eaten,'',''],['BOMBS DROPPED',s.bombs,'',''],['PEAK WANTED',s.maxStars,'','/5'],['NET PROFIT',net,'$','']];
+ const rw=[['CASH EARNED',s.earn,'$',''],['CASH SPENT',s.spend,'-$',''],['CASINO NET',s.cas,'$',''],['CIVILIANS KILLED',s.kills,'',''],['COPS KILLED',s.cops,'','/'+(CFG.copLimit>50?'INF':CFG.copLimit)],['BANK HEISTS',s.heists,'',''],['STORES ROBBED',s.stores,'',''],['ITEMS STOLEN',s.items,'',''],['SHOTS FIRED',s.shots,'',''],['MEALS EATEN',s.eaten,'',''],['BOMBS DROPPED',s.bombs,'',''],['PEAK WANTED',s.maxStars,'','/5'],['NET PROFIT',net,'$','']];
  let h='<h2>'+(why=='sleep'?'YOU SLEPT. ':'MIDNIGHT. ')+'DAY '+day+' COMPLETE</h2>';
  rw.forEach((r,i)=>{const d=.4+i*.28;h+='<div class="er'+(i==rw.length-1?' big':'')+'" style="animation-delay:'+d+'s"><span>'+r[0]+'</span><b data-v="'+r[1]+'" data-p="'+r[2]+'" data-s="'+r[3]+'" data-d="'+d+'">0</b></div>'});
- const t0=.4+rw.length*.28;h+='<div class="er" style="animation-delay:'+t0+'s"><span>RENT DUE</span><b>-$100</b></div><div class="er" style="animation-delay:'+(t0+.3)+'s"><span>TOMORROW</span><b>COPS RESTOCKED</b></div><div class="stamp" style="animation-delay:'+(t0+.8)+'s">'+g+'</div><button id="eodgo" style="animation-delay:'+(t0+1.2)+'s">CONTINUE &gt;</button>';
+ const t0=.4+rw.length*.28;h+='<div class="er" style="animation-delay:'+t0+'s"><span>RENT DUE</span><b>-$'+(CFG.rent?100:0)+'</b></div><div class="er" style="animation-delay:'+(t0+.3)+'s"><span>TOMORROW</span><b>COPS RESTOCKED</b></div><div class="stamp" style="animation-delay:'+(t0+.8)+'s">'+g+'</div><button id="eodgo" style="animation-delay:'+(t0+1.2)+'s">CONTINUE &gt;</button>';
  $('eodp').innerHTML=h;$('eod').style.display='flex';snd(200,.4,'sine',.06);
  $('eodp').querySelectorAll('b[data-v]').forEach(b=>{const v=+b.dataset.v,p=b.dataset.p,sf=b.dataset.s;setTimeout(()=>{const t=performance.now();(function f(){const q=Math.min(1,(performance.now()-t)/600);b.textContent=(v<0?'-':'')+p+Math.abs(Math.round(v*q))+sf;if(q<1)requestAnimationFrame(f);else snd(500,.05,'square',.03)})()},b.dataset.d*1000+250)});
  $('eodgo').onclick=()=>contDay(why)}
-function contDay(why){$('eod').style.display='none';day++;cash=Math.max(0,cash-100);lastCash=cash;dS=newDS();copsOff=0;fridge=0;for(const st of STORES){st.cash=st.kind=='casino'?Math.round(rr(5000,9000)):Math.round(rr(250,700));st.alarm=0;st.counted=0}
+function contDay(why){$('eod').style.display='none';day++;cash=Math.max(0,cash-(CFG.rent?100:0));lastCash=cash;dS=newDS();copsOff=0;fridge=0;for(const st of STORES){st.cash=st.kind=='casino'?Math.round(rr(5000,9000)):Math.round(rr(250,700));st.alarm=0;st.counted=0}
  for(const o of items){o.taken=0;o.m.visible=true}for(const c of clerks){if(c.dead){c.dead=0;c.hp=2;c.g.rotation.x=0;c.g.position.y=0;c.g.hd.forEach(h=>h.visible=true)}c.g.a.forEach(a=>a.rotation.x=0)}bank.cd=0;
  if(why=='sleep'){tod=.27;P.hp=100;heat=0;hunger=Math.max(hunger-10,40)}msg('DAY '+day+' BEGINS - POLICE BACK AT FULL STRENGTH','#2bf0ff');mode='play';reLock()}
 /* ---- death, execution ---- */
-function wasted(){dropRoof();if(dmgBy=='cop'&&performance.now()-dmgT<5000)return execute();P.dead=1;const px=(P.car||P).x,pz=(P.car||P).z;if(!P.car)P.g.rotation.x=-PI/2,P.g.position.y=.18;if(P.car)P.car=null;
+function wasted(){dropRoof();if(CFG.exec&&dmgBy=='cop'&&performance.now()-dmgT<5000)return execute();P.dead=1;const px=(P.car||P).x,pz=(P.car||P).z;if(!P.car)P.g.rotation.x=-PI/2,P.g.position.y=.18;if(P.car)P.car=null;
  cutscene(5,p=>{const a=p*2;cam.position.set(px+sin(a)*7,3+p*6,pz+cos(a)*7);cam.lookAt(px,0,pz)},[[.4,'WASTED']],respawn)}
-function respawn(){P.dead=0;P.hp=100;hunger=Math.max(hunger,40);P.x=4;P.z=14;IN=0;P.roof=null;P.heli=null;P.y=0;P.car=null;P.g.rotation.set(0,0,0);P.g.position.y=0;P.g.visible=true;P.g.a.forEach(a=>a.rotation.x=0);heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;
+function respawn(){if(CFG.perma){gameOver();return}P.dead=0;P.hp=100;hunger=Math.max(hunger,40);P.x=4;P.z=14;IN=0;P.roof=null;P.heli=null;P.y=0;P.car=null;P.g.rotation.set(0,0,0);P.g.position.y=0;P.g.visible=true;P.g.a.forEach(a=>a.rotation.x=0);heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;
  if(execd){cash=Math.floor(cash*.5);inv={};own={pistol:1};ammo={pistol:30,shotgun:0,smg:0,sniper:0};setW('pistol');msg('EXECUTED - lost half your cash, loot and guns','#ff3b3b')}else{cash=Math.floor(cash*.9);msg('Hospital bill: -10% cash')}
  execd=0;dmgBy='';$('sir').style.opacity=0;$('fx').style.opacity=0;lastHot=''}
 function execute(){dropRoof();P.dead=1;execd=1;const px=P.x,pz=P.z;if(P.car){P.car.v=0;P.car=null}P.g.visible=true;P.g.position.set(px,0,pz);P.g.rotation.set(0,0,0);P.g.a[0].rotation.x=P.g.a[1].rotation.x=-2.9;P.g.l[0].rotation.x=P.g.l[1].rotation.x=0;
@@ -598,6 +608,41 @@ function nuke(px,pz,fx){const mis=new T.Group();bx(.8,5,.8,0x888888,0,0,0,mis);b
    const q=t-6.6,s=Math.min(1+q*9,26);fx.style.background='#fff';fx.style.opacity=Math.max(0,1-q*.5);fb.scale.setScalar(s);fb.position.set(px,s*.5,pz);fb.material.opacity=Math.max(0,.95-q*.18);ring.scale.setScalar(1+q*30);ring.material.opacity=Math.max(0,.8-q*.12);
    const sh=Math.min(q*7,38),w=Math.min(1+q*.6,4);stalk.scale.set(w,sh,w);stalk.position.set(px,sh/2,pz);cap.scale.set(Math.min(3+q*2.2,16),Math.min(2+q*1.4,9),Math.min(3+q*2.2,16));cap.position.set(px,sh+2,pz);cam.position.x+=rr(-1,1)*Math.max(0,1-q*.15)}},
  [[0,'THE CITY HAS VOTED.'],[2.5,'TACTICAL STRIKE AUTHORIZED.'],[4.4,'IMPACT IN 3...'],[5.2,'2...'],[5.9,'1...'],[8,'.'],[11.5,'EXECUTED']],()=>{for(const o of[mis,fb,stalk,cap,ring])sc.remove(o);fx.style.opacity=0;respawn()})}
+/* ---- setup page / game modes ---- */
+const CFG={copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:0,shirt:'#e8452c'};
+try{Object.assign(CFG,JSON.parse(localStorage.getItem('gta6cfg')||'{}'))}catch(e){}
+const SPEC=[['range','copLimit','COPS TO KILL BEFORE POLICE LEAVE (PER DAY)',1,51,1,v=>v>50?'NEVER':v],['tog','skip','SKIP INTRO CUTSCENE'],['tog','hunger','HUNGER SURVIVAL'],['tog','rent','DAILY RENT ($100)'],
+ ['range','dayLen','DAY LENGTH',60,600,30,v=>v+' SEC'],['opt','start','START TIME',[['MORNING',.27],['NOON',.5],['SUNSET',.73],['NIGHT',.95]]],['range','cash','START CASH',0,50000,500,v=>'$'+v],
+ ['range','peds','PEDESTRIANS',0,100,5,v=>v],['range','traffic','TRAFFIC',0,30,1,v=>v],['opt','heatMult','POLICE AGGRESSION',[['CHILL',.5],['NORMAL',1],['HEAVY',2]]],['opt','gore','GORE LEVEL',[['MILD',.4],['NORMAL',1],['EXTREME',2.2]]],
+ ['tog','exec','EXECUTION SCENES'],['tog','allW','ALL WEAPONS UNLOCKED'],['tog','infAmmo','INFINITE AMMO'],['tog','god','GOD MODE'],['tog','perma','HARDCORE (ONE LIFE)'],
+ ['opt','goal','WIN GOAL (CASH)',[['NONE',0],['$25K',25000],['$100K',100000],['$1M',1000000]]],['sw','shirt','OUTFIT COLOR',['#e8452c','#2b8fff','#3ec24a','#ffd23f','#a14bff','#ff4fa3','#222222','#ffffff']]];
+const PRE={STORY:{copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:100000},
+ SANDBOX:{copLimit:3,skip:1,hunger:0,rent:0,dayLen:360,start:.5,cash:50000,peds:50,traffic:14,heatMult:.5,gore:1,exec:1,allW:1,infAmmo:1,god:1,perma:0,goal:0},
+ HARDCORE:{copLimit:51,skip:0,hunger:1,rent:1,dayLen:200,start:.27,cash:0,peds:40,traffic:12,heatMult:2,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:1,goal:100000},
+ CHAOS:{copLimit:25,skip:1,hunger:0,rent:0,dayLen:240,start:.95,cash:10000,peds:100,traffic:30,heatMult:2,gore:2.2,exec:1,allW:1,infAmmo:1,god:0,perma:0,goal:0}};
+let setupOpen=0,won=0,lastHeat=0;
+function renderSetup(){$('pre').innerHTML=Object.keys(PRE).map(k=>'<button data-p="'+k+'">'+k+'</button>').join('');
+ $('sg').innerHTML=SPEC.map((sp,i)=>{const t=sp[0],k=sp[1];let c='';
+  if(t=='range')c='<input type="range" data-k="'+k+'" min="'+sp[3]+'" max="'+sp[4]+'" step="'+sp[5]+'" value="'+CFG[k]+'">';else if(t=='tog')c='<span class="tog'+(CFG[k]?' on':'')+'" data-k="'+k+'" data-t="1"></span>';
+  else if(t=='opt')c='<div class="opts">'+sp[3].map(o=>'<button class="'+(CFG[k]==o[1]?'sel':'')+'" data-k="'+k+'" data-v="'+o[1]+'">'+o[0]+'</button>').join('')+'</div>';
+  else c=sp[3].map(o=>'<span class="sw'+(CFG[k]==o?' sel':'')+'" style="background:'+o+'" data-k="'+k+'" data-v="'+o+'"></span>').join('');
+  return'<div class="sr" style="animation-delay:'+(i*.04)+'s"><label><span>'+sp[2]+'</span><b id="v_'+k+'">'+(t=='range'?sp[6](CFG[k]):'')+'</b></label>'+c+'</div>'}).join('')}
+function openSetup(){setupOpen=1;$('setup').style.display='flex';renderSetup();snd(400,.1,'square',.04)}
+$('sb').onclick=()=>{setupOpen=0;$('setup').style.display='none'};$('sgo').onclick=()=>beginGame();
+$('sp').addEventListener('input',e=>{const k=e.target.dataset.k;if(k&&e.target.type=='range'){CFG[k]=+e.target.value;$('v_'+k).textContent=SPEC.find(x=>x[1]==k)[6](CFG[k])}});
+$('sp').addEventListener('click',e=>{const t=e.target;if(t.dataset.p){Object.assign(CFG,PRE[t.dataset.p]);renderSetup();snd(600,.1,'square',.04);return}const k=t.dataset.k;if(!k)return;
+ if(t.dataset.t){CFG[k]=CFG[k]?0:1;t.classList.toggle('on')}else if(t.dataset.v!==undefined){CFG[k]=isNaN(t.dataset.v)?t.dataset.v:+t.dataset.v;t.parentNode.querySelectorAll('[data-k]').forEach(x=>x.classList.toggle('sel',x===t));if(!t.classList.contains('sw')&&t.parentNode.classList.contains('sr'))t.classList.add('sel')}});
+function setShirt(c){const o=mat('#e8452c'),n=mat(c);P.g.traverse(m=>{if(m.isMesh&&m.material===o)m.material=n})}
+function applyCfg(){try{localStorage.setItem('gta6cfg',JSON.stringify(CFG))}catch(e){}
+ while(peds.length<CFG.peds)mkPed();while(peds.length>CFG.peds){const e=peds.pop();sc.remove(e.g)}
+ const ai=cars.filter(c=>c.ai);while(ai.length<CFG.traffic){const c=car(ri([0xd03030,0x2a6fd0,0xe0b020,0x30a060,0xeeeeee,0x333333]));c.ai=1;c.ax=R()<.5?1:0;const d=R()<.5?1:-1,r=ri(RD);c.d=d;c.r=r;c.ln=d*3;const a=rr(-100,100);setCar(c,c.ax?r+c.ln:a,c.ax?a:r+c.ln,c.ax?(d>0?0:PI):(d>0?PI/2:-PI/2));cars.push(c);ai.push(c)}
+ while(ai.length>CFG.traffic){const c=ai.pop();sc.remove(c.g);cars.splice(cars.indexOf(c),1)}
+ cash=dispCash=lastCash=CFG.cash;tod=CFG.start;if(CFG.allW)for(const k of WK2){own[k]=1;ammo[k]=Math.max(ammo[k],200)}lastHot='';setShirt(CFG.shirt)}
+function cfgU(dt){const dh=heat-lastHeat;if(dh>0&&CFG.heatMult!=1)heat=lastHeat+dh*CFG.heatMult;lastHeat=heat;if(CFG.god){P.hp=100;hunger=100}if(CFG.goal&&cash>=CFG.goal&&!won&&!cut&&!P.dead){won=1;winScreen()}}
+function winScreen(){mode='eod';document.exitPointerLock&&document.exitPointerLock();$('eodp').innerHTML='<h2>YOU MADE IT</h2><div class="er"><span>GOAL REACHED</span><b>$'+CFG.goal+'</b></div><div class="er"><span>DAY</span><b>'+day+'</b></div><div class="er"><span>CIVILIANS KILLED</span><b>'+kills+'</b></div><div class="stamp" style="animation-delay:.6s">W</div><button id="eodgo">KEEP PLAYING &gt;</button> <button id="eodnew">NEW GAME</button>';
+ $('eod').style.display='flex';$('eodgo').onclick=()=>{$('eod').style.display='none';mode='play';reLock()};$('eodnew').onclick=()=>location.reload();snd(700,.4,'sine')}
+function gameOver(){mode='eod';document.exitPointerLock&&document.exitPointerLock();$('eodp').innerHTML='<h2>GAME OVER</h2><div class="er"><span>DAYS SURVIVED</span><b>'+(day-1)+'</b></div><div class="er"><span>CASH</span><b>$'+cash+'</b></div><div class="er"><span>CIVILIANS KILLED</span><b>'+kills+'</b></div><div class="er"><span>COPS KILLED TODAY</span><b>'+dS.cops+'</b></div><button id="eodgo">BACK TO MENU</button>';
+ $('eod').style.display='flex';$('eodgo').onclick=()=>location.reload();snd(120,1,'sawtooth',.1)}
 /* ---- casino interior & games ---- */
 let casOpen=0;const CAS={name:'CASINO',kind:'casino',ox:400,oz:400,cash:Math.round(rr(5000,9000)),alarm:0,counted:0,games:[],menu:[],buy:{x:-9999,z:-9999}};STORES.push(CAS);
 (function(){const ox=CAS.ox,oz=CAS.oz;CAS.ret={x:casino.x,z:casino.z+1.5};
@@ -702,7 +747,7 @@ function explode(x,y,z){const mk=(g,c,o)=>{const m=new T.Mesh(g,new T.MeshBasicM
 function bombU(dt){for(let i=BOMBS.length-1;i>=0;i--){const b=BOMBS[i],p=b.m.position;b.vy-=26*dt;p.x+=b.vx*dt;p.z+=b.vz*dt;p.y+=b.vy*dt;b.m.rotation.x=Math.atan2(-b.vy,14)*.6;const g=groundH(p.x,p.z);if(p.y<=g){explode(p.x,g,p.z);sc.remove(b.m);BOMBS.splice(i,1)}}
  for(let i=EXP.length-1;i>=0;i--){const e=EXP[i],q=e.t+=dt;e.fb.scale.setScalar(1+q*16);e.fb.material.opacity=Math.max(0,.95-q*1.1);e.fb.position.y=e.y+e.fb.scale.x*.4;e.ring.scale.setScalar(1+q*26);e.ring.material.opacity=Math.max(0,.7-q*.9);
   e.sm.position.y=e.y+2+q*5;e.sm.scale.set(2+q*3,2+q*4,2+q*3);e.sm.material.opacity=Math.max(0,.8-q*.22);if(q>3.6){for(const o of[e.fb,e.ring,e.sm])sc.remove(o);EXP.splice(i,1)}}}
-let lastWc='';function hudX(){const t=P.heli?'heli':cw+'|'+ammo[cw];if(t!==lastWc){lastWc=t;$('wc').innerHTML=P.heli?si('heli',24)+' BOMBS INF':si(cw,24)+' '+WP[cw].n+' '+ammo[cw]}
+let lastWc='';function hudX(){$('cpl').textContent=CFG.copLimit>50?'INF':CFG.copLimit;const t=P.heli?'heli':cw+'|'+ammo[cw];if(t!==lastWc){lastWc=t;$('wc').innerHTML=P.heli?si('heli',24)+' BOMBS INF':si(cw,24)+' '+WP[cw].n+' '+ammo[cw]}
  const h=$('hel');h.style.display=P.heli?'block':'none';if(P.heli)h.innerHTML='ALT '+Math.round(P.y)+'M<br>SPD '+Math.round(Math.abs(P.heli.v)*3.6)+'<br>LMB / B = BOMB'}
 /* ---- rooftops / gibs / doorstep ---- */
 let lockFail=0;const locked=()=>!!document.pointerLockElement;
@@ -717,7 +762,7 @@ function climb(l,up){const hh=l.roofY;P.g.visible=true;P.h=PI/2;
 const BP=[];
 function bodyParts(x,z,n,pow,y0){const cl=[0xe0ac69,0xe8452c,0xe8452c,0x2b2f3a,0x2b2f3a,0xe0ac69],sz=[[.34,.34,.34],[.5,.55,.3],[.17,.5,.2],[.17,.5,.2],[.2,.45,.2],[.17,.5,.2]];
  for(let i=0;i<n;i++){const j=i%6,q=sz[j],m=new T.Mesh(geo(q[0],q[1],q[2]),mat(cl[j]));m.position.set(x,y0||1,z);m.castShadow=true;sc.add(m);BP.push({m,v:new T.Vector3(rr(-1,1)*pow,rr(5,12)*pow/8,rr(-1,1)*pow),w:new T.Vector3(rr(-9,9),rr(-9,9),rr(-9,9)),tr:0,s:q[1]})}}
-function bloodBurst(x,z,n){for(let i=0;i<n;i++)part(x,rr(.5,2),z,rr(-8,8),rr(6,18),rr(-8,8),rr(.1,.3),ri(BL),rr(8,16))}
+function bloodBurst(x,z,n){for(let i=0;i<n*CFG.gore;i++)part(x,rr(.5,2),z,rr(-8,8),rr(6,18),rr(-8,8),rr(.1,.3),ri(BL),rr(8,16))}
 function bpUpdate(dt){for(const p of BP){if(p.rest)continue;const m=p.m;p.v.y-=22*dt;m.position.addScaledVector(p.v,dt);m.rotation.x+=p.w.x*dt;m.rotation.y+=p.w.y*dt;m.rotation.z+=p.w.z*dt;
   if((p.tr-=dt)<=0){p.tr=.05;part(m.position.x,m.position.y,m.position.z,rr(-1,1),rr(0,2),rr(-1,1),rr(.08,.16),ri(BL),rr(5,10))}
   if(m.position.y<p.s/2){m.position.y=p.s/2;if(p.v.y<-4){p.v.y*=-.35;p.v.x*=.6;p.v.z*=.6;p.w.multiplyScalar(.6);splat(m.position.x,m.position.z,rr(.5,1.1));for(let k=0;k<6;k++)part(m.position.x,.2,m.position.z,rr(-3,3),rr(2,6),rr(-3,3),rr(.08,.18),ri(BL),rr(6,12))}
