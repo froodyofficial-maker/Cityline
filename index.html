@@ -123,12 +123,14 @@ button.rc-r{background:#c0202a;color:#fff}button.rc-b{background:#222;color:#fff
 .tog{width:56px;height:24px;background:#222;box-shadow:0 0 0 2px #fff;position:relative;cursor:pointer;display:inline-block}.tog::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;background:#888}.tog.on{background:#3ec24a}.tog.on::after{left:32px;background:#fff}
 .sw{display:inline-block;width:28px;height:28px;margin:3px 5px;box-shadow:0 0 0 2px #000;cursor:pointer}.sw.sel{box-shadow:0 0 0 3px #fff,0 0 0 6px #ff4fa3}
 #pre{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}#setup.out{animation:wp .9s steps(12) forwards}
+#war{top:14px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:12px;font-size:12px;background:linear-gradient(135deg,#1c0a30ee,#33113fdd);padding:10px 16px;box-shadow:0 0 0 2px var(--pk)}
+#war .bar2{width:200px}#wab,#web{height:100%;transition:width .3s}#wab{background:#37e6ff}#web{background:#ff4f4f}#wa{color:#37e6ff}#we{color:#ff4f4f}#hel{top:92px!important}
 </style></head><body><div id="home"><canvas id="hc"></canvas><div class="scan"></div><div id="hm"><h1 id="ttl"><span>GTA</span><span>VI</span></h1><div id="tag">WELCOME TO EMBER CITY</div><button class="mb" id="go">&gt; NEW GAME</button><button class="mb" id="ctl">&gt; CONTROLS</button><div id="cp">WASD - MOVE / SHIFT - SPRINT<br>CLICK or SPACE - SHOOT<br>MOUSE - LOOK (CLICK TO LOCK)<br>SCROLL - ZOOM / FIRST PERSON<br>F - CAR  E - INTERACT<br>M - MAP  T - SKIP TIME</div><div id="hint">PRESS ENTER</div></div></div>
 <div id="w"><canvas id="c"></canvas></div>
 <div id="sir"></div><div class="bar" id="b1"></div><div class="bar" id="b2"></div>
 <div class="h" id="st"><div class="chip"><i id="ci"></i><span id="dy">DAY 1</span><span id="clk"></span></div><div id="stars"></div><div class="row"><i data-s="coin"></i>$<span id="cash">500</span></div><div class="row"><i data-s="skull"></i><span id="k">0</span> <i data-s="badge"></i><span id="cpk">0</span>/<span id="cpl">10</span></div><div class="chip" id="wc"></div></div>
 <div class="h" id="help"><b>GTA VI</b><br>CASINO: SLOTS · ROULETTE · BLACKJACK<br>WASD MOVE · SHIFT SPRINT<br>CLICK/SPACE SHOOT · RMB SCOPE<br>1-4 WEAPONS · I INVENTORY<br>E USE/STEAL · R ROB REGISTER<br>F CAR · M MAP · SCROLL = 1ST PERSON<br>LADDERS = ROOFTOP SNIPER NESTS<br>HELI: F FLY · LMB/B BOMB<br>EAT OR STARVE: ORDER FROM YOUR PC<br><span class=dot style=background:#ffd23f></span>BANK <span class=dot style=background:#c050ff></span>CASINO <span class=dot style=background:#2bf0ff></span>HOME <span class=dot style=background:#ffb02b></span>STORES</div>
-<div class="h" id="pr"></div><div class="h" id="vit"><div class="vr"><i data-s="heart"></i><div class="bar2"><div id="hpb"></div></div></div><div class="vr"><i data-s="burger"></i><div class="bar2"><div id="hgb"></div></div></div></div><div class="h" id="hot"></div><div class="h" id="feed"></div><div class="h" id="hurt"></div><div class="h" id="xh"></div><div id="scope"></div><div class="h" id="lk">CLICK TO LOCK MOUSE<br><small>ESC RELEASES IT</small></div><div class="h" id="hel"></div><div id="fx"></div><div id="setup"><div class="pn" id="sp"><h2>GAME SETUP</h2><div class="stat">PICK A PRESET, THEN TWEAK ANYTHING</div><div id="pre"></div><div id="sg"></div><div id="sbtn"><button id="sb">&lt; BACK</button><button id="sgo">BEGIN GAME &gt;</button></div></div></div><div id="md"><div class="pn" id="mdp"></div></div><div id="eod"><div class="pn" id="eodp"></div></div><canvas id="mm" width="160" height="160"></canvas><div class="h" id="tt"></div><div class="h" id="sub"></div>
+<div class="h" id="pr"></div><div class="h" id="vit"><div class="vr"><i data-s="heart"></i><div class="bar2"><div id="hpb"></div></div></div><div class="vr"><i data-s="burger"></i><div class="bar2"><div id="hgb"></div></div></div></div><div class="h" id="hot"></div><div class="h" id="feed"></div><div class="h" id="hurt"></div><div class="h" id="xh"></div><div id="scope"></div><div class="h" id="lk">CLICK TO LOCK MOUSE<br><small>ESC RELEASES IT</small></div><div class="h" id="war"><span id="wa">0</span><div class="bar2"><div id="wab"></div></div><b id="wt">0:00</b><div class="bar2"><div id="web"></div></div><span id="we">0</span></div><div class="h" id="hel"></div><div id="fx"></div><div id="setup"><div class="pn" id="sp"><h2>GAME SETUP</h2><div class="stat">PICK A PRESET, THEN TWEAK ANYTHING</div><div id="pre"></div><div id="sg"></div><div id="sbtn"><button id="sb">&lt; BACK</button><button id="sgo">BEGIN GAME &gt;</button></div></div></div><div id="md"><div class="pn" id="mdp"></div></div><div id="eod"><div class="pn" id="eodp"></div></div><canvas id="mm" width="160" height="160"></canvas><div class="h" id="tt"></div><div class="h" id="sub"></div>
 <div id="cas"><div class="pn"><h2>GOLDEN EMBER CASINO</h2>Balance: $<b id="cb"></b><div id="rl"></div>
 <div>Bet: <button class="bt" data-b="100">$100</button><button class="bt" data-b="500">$500</button><button class="bt" data-b="2000">$2000</button></div>
 <button id="sp">SPIN SLOTS</button><hr>Roulette: <button class="ro" data-c="r">RED x2</button><button class="ro" data-c="b">BLACK x2</button><button class="ro" data-c="g">GREEN x30</button>
@@ -282,7 +284,7 @@ function leaveApt(){IN=0;P.x=apt.x;P.z=apt.z+1.5;P.h=0;camYaw=0;cam.position.set
 function sleep(){tod=.27;P.hp=100;heat=0;msg('Slept until morning. Fully healed.');snd(400,.4,'sine')}
 /* ---- home screen ---- */
 function startGame(){openSetup()}
-function beginGame(){if(started)return;started=1;homeOn=0;document.body.classList.add('run');$('home').classList.add('out');$('setup').classList.add('out');setTimeout(()=>{$('home').remove();$('setup').remove()},1000);last=performance.now();applyCfg();snd(180,.35,'square',.07);snd(500,.2,'sawtooth',.04);if(CFG.skip)cam.position.set(P.x-sin(camYaw)*7.7,5.1,P.z-cos(camYaw)*7.7);else intro();reLock()}
+function beginGame(){if(started)return;started=1;homeOn=0;document.body.classList.add('run');$('home').classList.add('out');$('setup').classList.add('out');setTimeout(()=>{$('home').remove();$('setup').remove()},1000);last=performance.now();applyCfg();snd(180,.35,'square',.07);snd(500,.2,'sawtooth',.04);if(CFG.skip)cam.position.set(P.x-sin(camYaw)*7.7,5.1,P.z-cos(camYaw)*7.7);else if(CFG.mode==1)warIntro();else intro();reLock()}
 $('go').onclick=startGame;$('ctl').onclick=()=>{const c=$('cp');c.style.display=c.style.display=='block'?'none':'block'};
 function homeAnim(){const hc=$('hc'),g=hc.getContext('2d'),H=180;let W;const sz=()=>{W=Math.round(H*innerWidth/innerHeight);hc.width=W;hc.height=H};sz();addEventListener('resize',sz);
  const mk=(a0,a1,w0,w1,col,lit)=>{const a=[];let x=0;while(x<760){const w=w0+R()*(w1-w0)|0;a.push({x,w,h:a0+R()*(a1-a0)|0,n:ri(NC),s:R()<.4,ws:Array.from({length:80},()=>R()<lit)});x+=w+(R()*3|0)}return{a,TW:x,col}};
@@ -371,9 +373,9 @@ addEventListener('pointermove',e=>{if(drag||document.pointerLockElement||(lockFa
 addEventListener('wheel',e=>{zoom=Math.max(0,Math.min(1,zoom+e.deltaY*.0012))},{passive:true});cvs.addEventListener('contextmenu',e=>e.preventDefault());
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 function nearCar(){let b=null,bd=4.5;for(const c of cars){const d=dist(c,P);if(d<bd){bd=d;b=c}}return b}
-const cD=new T.Color(0x66b8ff),cN=new T.Color(0x070914),cO=new T.Color(0xff8c4a),tmp=new T.Color();let tod=.42;
+const cD=new T.Color(0x66b8ff),cN=new T.Color(0x1d2b5e),MOON=new T.Color(0x9fb4ff),cO=new T.Color(0xff8c4a),tmp=new T.Color();let tod=.42;
 function skyU(){const sh=-cos(tod*2*PI),day=Math.max(0,Math.min(1,sh*2.2+.4)),n=1-day;tmp.copy(cN).lerp(cD,day).lerp(cO,Math.max(0,1-Math.abs(sh)*4)*.55);sc.background.copy(tmp);sc.fog.color.copy(tmp);
- hemi.intensity=.28+.65*day;sun.intensity=.06+.95*day;for(const o of NEON)o.m.color.copy(o.b).multiplyScalar(.3+.7*n);for(const m of BM)m.emissive.setRGB(.95*n,.78*n,.45*n);
+ hemi.intensity=.7+.25*day;sun.intensity=.45+.5*day;hemi.color.setHex(0xffe2c4).lerp(MOON,n*.6);for(const o of NEON)o.m.color.copy(o.b).multiplyScalar(.3+.7*n);for(const m of BM)m.emissive.setRGB(.95*n,.78*n,.45*n);
  $('clk').textContent=String(tod*24|0).padStart(2,'0')+':'+String((tod*24%1)*60|0).padStart(2,'0');const ni=n>.6?'moon':'sun';if(ni!==lastN){lastN=ni;$('ci').innerHTML=si(ni,16)}}
 const MS=document.createElement('canvas');MS.width=MS.height=160;const mg=$('mm').getContext('2d'),mq=160/240,MX=v=>Math.round((v+120)*mq);
 function mmInit(){const g=MS.getContext('2d');g.fillStyle='#2f5a2f';g.fillRect(0,0,160,160);g.fillStyle='#3a3d44';for(const r of RD){g.fillRect(MX(r)-4,0,8,160);g.fillRect(0,MX(r)-4,160,8)}
@@ -460,12 +462,12 @@ function hit(by){dmgBy=by;dmgT=performance.now();hurt=1}
 function setW(id){if(!own[id])return;cw=id;const w=WP[id];P.g.gm.scale.z=w.len;P.g.gm.material=mat(w.col);snd(500,.05);lastHot=''}
 function copsOffChk(){if(!copsOff&&CFG.copLimit<=50&&dS.cops>=CFG.copLimit){copsOff=1;for(const c of cops)sc.remove(c.g);cops.length=0;heat=0;msg('POLICE FORCE WIPED OUT - NO MORE COPS TODAY','#2bf0ff');snd(80,1,'sawtooth',.1)}}
 function kill(e,dx,dz,big,byP){if(e.dead)return;e.dead=1;e.dt=0;e.g.rotation.x=-PI/2;e.g.position.y=.18;gore(e,dx,dz,big);scare(e.x,e.z,18);
- if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
+ if(e.sol){if(byP&&e.team==1)WAR.pk++;if(e.tank&&!e.boom){e.boom=1;setTimeout(()=>explode(e.x,0,e.z),60)}}else if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
 function mkCop(d){const e={g:person('#e0ac69','#1d3b8a','#14234a','#111',1),hp:3,dead:0,cop:1,cd:rr(.5,1.5),dt:0,ph:0};const a=rr(0,6.28);d=d||42;e.x=P.x+sin(a)*d;e.z=P.z+cos(a)*d;push(e,2);cops.push(e)}
 function shoot(){const w=WP[cw];if(shT>0)return;
  if(ammo[cw]<=0){shT=.3;snd(90,.05,'square',.03);if(!P.noAm){P.noAm=1;msg('OUT OF AMMO - switch weapon or buy more','#ff6a6a');setTimeout(()=>P.noAm=0,2500)}return}
  if(!CFG.infAmmo)ammo[cw]--;shT=w.cd;dS.shots++;lastHot='';snd(w.pel>1?140:cw=='sniper'?90:320,.12,'sawtooth',.07);if(w.pel>1||cw=='sniper')shake=Math.max(shake,.4);
- const all=peds.concat(cops,clerks).filter(e=>!e.dead&&(!e.st||e.st===IN));let ax=sin(P.h),az=cos(P.h);
+ const all=peds.concat(cops,clerks,SOL.filter(e=>e.team==1)).filter(e=>!e.dead&&(!e.st||e.st===IN));let ax=sin(P.h),az=cos(P.h);
  if(!(zoom<.1||scoped)){let bd=Math.min(w.rng,30),bt=null;for(const e of all){const dx=e.x-P.x,dz=e.z-P.z,l=Math.hypot(dx,dz);if((dx*ax+dz*az)/l>.8&&l<bd){bd=l;bt=e}}if(bt){ax=(bt.x-P.x)/bd;az=(bt.z-P.z)/bd;P.h=Math.atan2(ax,az)}}
  for(let i=0;i<w.pel;i++){const a=Math.atan2(ax,az)+(R()-.5)*2*w.spr,qx=sin(a),qz=cos(a);let h=null,hd=w.rng;
   for(const e of all){const dx=e.x-P.x,dz=e.z-P.z,pr=dx*qx+dz*qz;if(pr>0&&pr<hd&&Math.abs(dx*qz-dz*qx)<.8){hd=pr;h=e}}
@@ -561,10 +563,10 @@ function ptxt(){if(P.car)return'F - exit car';if(P.heli)return P.y-groundH(P.x,P
  if(ladders.find(l=>dist(P,l)<2.8))return'E - Climb to rooftop (sniper nest)';if(dist(P,bank)<3.5)return bank.cd>0?'Bank locked down ('+Math.ceil(bank.cd)+'s)':'E - ROB THE BANK';if(dist(P,casino)<3.5)return'E - Enter casino';if(dist(P,apt)<3.5)return'E - Enter your apartment';
  const o=shops.find(o=>dist(P,o)<3.5);return o?'E - Enter '+o.name:nearCar()?'F - enter car':''}
 /* ---- per-frame systems ---- */
-function xUpdate(dt){const live=!cut&&!P.dead;bpUpdate(dt);heliU(dt);bombU(dt);cfgU(dt);
+function xUpdate(dt){const live=!cut&&!P.dead;bpUpdate(dt);heliU(dt);bombU(dt);cfgU(dt);warU(dt);
  if(live&&CFG.hunger){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
  for(let i=pend.length-1;i>=0;i--){pend[i].t-=dt;if(pend[i].t<=0)deliver(pend.splice(i,1)[0])}
- if(eodReq&&live)endDay(eodReq);
+ if(eodReq&&live){if(CFG.mode==1)eodReq=0;else endDay(eodReq)}
  const dc=cash-lastCash;lastCash=cash;if(dc>0)dS.earn+=dc;else dS.spend-=dc;dS.maxStars=Math.max(dS.maxStars,Math.min(5,Math.floor(heat)));if(copsOff)heat=0;
  scoped=cw=='sniper'&&K.R&&live&&!P.car&&!P.heli&&!IN?1:0;const tf=scoped?18:60;if(Math.abs(cam.fov-tf)>.3){cam.fov+=(tf-cam.fov)*Math.min(1,dt*10);cam.updateProjectionMatrix()}
  $('scope').style.opacity=scoped?1:0;$('xh').style.opacity=((zoom<.1||scoped)&&!P.car&&live)?1:0;
@@ -583,13 +585,13 @@ function endDay(why){eodReq=0;if(mode!='play')return;mode='eod';document.exitPoi
  $('eodp').innerHTML=h;$('eod').style.display='flex';snd(200,.4,'sine',.06);
  $('eodp').querySelectorAll('b[data-v]').forEach(b=>{const v=+b.dataset.v,p=b.dataset.p,sf=b.dataset.s;setTimeout(()=>{const t=performance.now();(function f(){const q=Math.min(1,(performance.now()-t)/600);b.textContent=(v<0?'-':'')+p+Math.abs(Math.round(v*q))+sf;if(q<1)requestAnimationFrame(f);else snd(500,.05,'square',.03)})()},b.dataset.d*1000+250)});
  $('eodgo').onclick=()=>contDay(why)}
-function contDay(why){$('eod').style.display='none';day++;cash=Math.max(0,cash-(CFG.rent?100:0));lastCash=cash;dS=newDS();copsOff=0;fridge=0;for(const st of STORES){st.cash=st.kind=='casino'?Math.round(rr(5000,9000)):Math.round(rr(250,700));st.alarm=0;st.counted=0}
+function contDay(why){$('eod').style.display='none';day++;cash=Math.max(0,cash-(CFG.rent?100:0));lastCash=cash;dS=newDS();copsOff=CFG.mode==1?1:0;fridge=0;for(const st of STORES){st.cash=st.kind=='casino'?Math.round(rr(5000,9000)):Math.round(rr(250,700));st.alarm=0;st.counted=0}
  for(const o of items){o.taken=0;o.m.visible=true}for(const c of clerks){if(c.dead){c.dead=0;c.hp=2;c.g.rotation.x=0;c.g.position.y=0;c.g.hd.forEach(h=>h.visible=true)}c.g.a.forEach(a=>a.rotation.x=0)}bank.cd=0;
  if(why=='sleep'){tod=.27;P.hp=100;heat=0;hunger=Math.max(hunger-10,40)}msg('DAY '+day+' BEGINS - POLICE BACK AT FULL STRENGTH','#2bf0ff');mode='play';reLock()}
 /* ---- death, execution ---- */
 function wasted(){dropRoof();if(CFG.exec&&dmgBy=='cop'&&performance.now()-dmgT<5000)return execute();P.dead=1;const px=(P.car||P).x,pz=(P.car||P).z;if(!P.car)P.g.rotation.x=-PI/2,P.g.position.y=.18;if(P.car)P.car=null;
  cutscene(5,p=>{const a=p*2;cam.position.set(px+sin(a)*7,3+p*6,pz+cos(a)*7);cam.lookAt(px,0,pz)},[[.4,'WASTED']],respawn)}
-function respawn(){if(CFG.perma){gameOver();return}P.dead=0;P.hp=100;hunger=Math.max(hunger,40);P.x=4;P.z=14;IN=0;P.roof=null;P.heli=null;P.y=0;P.car=null;P.g.rotation.set(0,0,0);P.g.position.y=0;P.g.visible=true;P.g.a.forEach(a=>a.rotation.x=0);heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;
+function respawn(){if(CFG.perma){gameOver();return}P.dead=0;P.hp=100;hunger=Math.max(hunger,40);P.x=CFG.mode?0:4;P.z=CFG.mode?92:14;IN=0;P.roof=null;P.heli=null;P.y=0;P.car=null;P.g.rotation.set(0,0,0);P.g.position.y=0;P.g.visible=true;P.g.a.forEach(a=>a.rotation.x=0);heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;
  if(execd){cash=Math.floor(cash*.5);inv={};own={pistol:1};ammo={pistol:30,shotgun:0,smg:0,sniper:0};setW('pistol');msg('EXECUTED - lost half your cash, loot and guns','#ff3b3b')}else{cash=Math.floor(cash*.9);msg('Hospital bill: -10% cash')}
  execd=0;dmgBy='';$('sir').style.opacity=0;$('fx').style.opacity=0;lastHot=''}
 function execute(){dropRoof();P.dead=1;execd=1;const px=P.x,pz=P.z;if(P.car){P.car.v=0;P.car=null}P.g.visible=true;P.g.position.set(px,0,pz);P.g.rotation.set(0,0,0);P.g.a[0].rotation.x=P.g.a[1].rotation.x=-2.9;P.g.l[0].rotation.x=P.g.l[1].rotation.x=0;
@@ -608,18 +610,52 @@ function nuke(px,pz,fx){const mis=new T.Group();bx(.8,5,.8,0x888888,0,0,0,mis);b
    const q=t-6.6,s=Math.min(1+q*9,26);fx.style.background='#fff';fx.style.opacity=Math.max(0,1-q*.5);fb.scale.setScalar(s);fb.position.set(px,s*.5,pz);fb.material.opacity=Math.max(0,.95-q*.18);ring.scale.setScalar(1+q*30);ring.material.opacity=Math.max(0,.8-q*.12);
    const sh=Math.min(q*7,38),w=Math.min(1+q*.6,4);stalk.scale.set(w,sh,w);stalk.position.set(px,sh/2,pz);cap.scale.set(Math.min(3+q*2.2,16),Math.min(2+q*1.4,9),Math.min(3+q*2.2,16));cap.position.set(px,sh+2,pz);cam.position.x+=rr(-1,1)*Math.max(0,1-q*.15)}},
  [[0,'THE CITY HAS VOTED.'],[2.5,'TACTICAL STRIKE AUTHORIZED.'],[4.4,'IMPACT IN 3...'],[5.2,'2...'],[5.9,'1...'],[8,'.'],[11.5,'EXECUTED']],()=>{for(const o of[mis,fb,stalk,cap,ring])sc.remove(o);fx.style.opacity=0;respawn()})}
+/* ---- war mode ---- */
+const SOL=[],WAR={on:0,res:[0,0],tot:[0,0],t:0,over:0,pk:0,sp:0,cc:0,cav:0},TC=[{sh:'#2b8fff',pa:'#1d3b8a',tr:0x37e6ff},{sh:'#c0392b',pa:'#4a1010',tr:0xff4f4f}];
+function spawnSol(t,x0,z0){const heavy=R()<.1,tc=TC[t],g=person('#e0ac69',tc.sh,tc.pa,heavy?'#111':'#3a4a2a',1);if(heavy)g.scale.setScalar(1.35);
+ const x=x0!==undefined?x0:rr(-95,95),z=z0!==undefined?z0:(t==0?100:-100)+rr(-4,4),e={g,x,z,team:t,hp:heavy?8:3,dead:0,sol:1,cd:rr(.2,1),ph:rr(0,6),dt:0,heavy,lane:ri(RD)+rr(-3,3),tg:null,tt:0};g.position.set(x,0,z);SOL.push(e);return e}
+function spawnTank(t){const g=new T.Group();g.rotation.order='YXZ';const col=t?0x5a2a2a:0x2a4a6a;bx(2.6,.9,4.2,col,0,.8,0,g);bx(1.8,.7,2,col^0x101010,0,1.5,-.2,g);bx(.3,.3,2.6,0x222222,0,1.5,1.9,g);for(const q of[-1.4,1.4])bx(.7,.7,4.4,0x222222,q,.4,0,g);
+ g.hd=[{visible:1},{visible:1}];sc.add(g);const x=rr(-80,80),z=t==0?100:-100,e={g,x,z,team:t,hp:40,dead:0,sol:1,tank:1,cd:rr(1,3),dt:0,lane:ri(RD),tg:null,tt:0,ph:0};g.position.set(x,0,z);SOL.push(e)}
+function startWar(){WAR.on=1;WAR.res=[CFG.armyA,CFG.armyE];WAR.tot=[CFG.armyA,CFG.armyE];WAR.t=0;WAR.over=0;WAR.pk=0;for(let t=0;t<2;t++){const n=Math.min(WAR.res[t],t?55:40);for(let i=0;i<n;i++){WAR.res[t]--;spawnSol(t)}}
+ if(CFG.tanks){for(let i=0;i<2;i++)spawnTank(0);for(let i=0;i<4;i++)spawnTank(1)}P.x=0;P.z=92;P.h=PI;camYaw=PI;copsOff=1;heat=0;msg('WAR MODE - HOLD THE LINE','#ff4f4f')}
+function warIntro(){cutscene(9,p=>fly([0,70,-70],[0,9,104],[0,4,-100],[0,2,90],p),[[0,'THEY OUTNUMBER US.'],[3,'BUT THEY HAVE NEVER FACED US.'],[6,'HOLD THE LINE.']])}
+function soldierFire(e,tg,d){e.cd=e.tank?rr(2.5,4):rr(.45,1.1);const near=Math.hypot(e.x-P.x,e.z-P.z)<75,tc=TC[e.team].tr;
+ if(e.tank){const sx=tg.x+rr(-3,3),sz=tg.z+rr(-3,3);if(near)tracer(e.x,e.z,sx,sz,0xffaa33,2);explode(sx,0,sz);return}
+ const ox=e.x+(e.fx||0)*.6,oz=e.z+(e.fz||0)*.6;
+ if(tg===P){if(P.heli&&P.y>10)return;if(near)tracer(ox,oz,P.x,P.z,tc);if(R()<.35*(1-d/28)+.1){P.hp-=P.car?2:4;shake=Math.max(shake,.2);hit('enemy')}return}
+ if(near)tracer(ox,oz,tg.x,tg.z,tc);if(R()<.4){tg.hp-=1;if(tg.hp<=0)kill(tg,(tg.x-e.x)/d,(tg.z-e.z)/d,R()<.25,0);else part(tg.x,1,tg.z,0,3,0,.12,BL[1],4)}}
+function warU(dt){if(!WAR.on)return;WAR.t+=dt;const al=[[],[]];for(const e of SOL)if(!e.dead)al[e.team].push(e);
+ if((WAR.sp-=dt)<=0){WAR.sp=.35;for(let t=0;t<2;t++)if(al[t].filter(e=>!e.tank).length<(t?55:40)&&WAR.res[t]>0){WAR.res[t]--;spawnSol(t)}}
+ if(!WAR.cav&&WAR.t>50&&!WAR.over){WAR.cav=1;msg('THE CAVALRY HAS ARRIVED!','#37e6ff');snd(300,1,'sine',.1);for(let i=0;i<30;i++){const a=i/30*6.28,x=P.x+sin(a)*16,z=P.z+cos(a)*16,e=spawnSol(0,x,z);push(e,1);const pm=new T.Mesh(new T.CylinderGeometry(.8,.8,14,10),new T.MeshBasicMaterial({color:0x37e6ff,transparent:true,opacity:.5}));pm.position.set(e.x,7,e.z);sc.add(pm);setTimeout(()=>sc.remove(pm),1400)}}
+ for(const e of SOL){if(e.dead){e.dt+=dt;if(e.dt>25&&!e.rm){e.rm=1;sc.remove(e.g)}continue}
+  if((e.tt-=dt)<=0){e.tt=rr(.4,.9);let b=null,bd=1e9;for(const o of al[1-e.team]){const d=(o.x-e.x)**2+(o.z-e.z)**2;if(d<bd){bd=d;b=o}}if(e.team==1&&!P.dead){const d=(P.x-e.x)**2+(P.z-e.z)**2;if(d<bd){bd=d;b=P}}e.tg=b}
+  const tg=e.tg;let dx=0,dz=0,mv=0;const sp=e.tank?3:e.heavy?3.6:5.2,fwd=e.team==0?-1:1;
+  if(tg&&!tg.dead){const tx=tg.x-e.x,tz=tg.z-e.z,d=Math.hypot(tx,tz)||1,rng=e.tank?38:20;
+   if(d<rng){e.fx=tx/d;e.fz=tz/d;if(d>(e.tank?25:11)){dx=tx/d;dz=tz/d;mv=1}else if(d<7&&!e.tank){dx=-tx/d;dz=-tz/d;mv=1}if((e.cd-=dt)<=0)soldierFire(e,tg,d)}
+   else if(d<45){dx=tx/d;dz=tz/d;mv=1;e.fx=dx;e.fz=dz}
+   else{if(Math.abs(e.x-e.lane)>1.2)dx=Math.sign(e.lane-e.x);else dz=fwd;mv=1;e.fx=dx;e.fz=dz}}
+  else{dz=fwd;mv=1;e.fx=0;e.fz=fwd}
+  if(mv){e.x+=dx*sp*dt;e.z+=dz*sp*dt;e.ph+=dt*sp*1.6}
+  push(e,e.tank?1.8:.45);e.g.position.set(e.x,0,e.z);if(e.fx||e.fz)e.g.rotation.y=Math.atan2(e.fx,e.fz);
+  if(!e.tank){const q=mv?sin(e.ph)*.8:0;e.g.l[0].rotation.x=q;e.g.l[1].rotation.x=-q;e.g.a[0].rotation.x=-q*.6;e.g.a[1].rotation.x=e.cd>0&&e.cd<.15?-1.5:-.4}}
+ if((WAR.cc+=dt)>1){WAR.cc=0;for(let i=SOL.length-1;i>=0;i--)if(SOL[i].rm)SOL.splice(i,1)}
+ const na=al[0].length+WAR.res[0],ne=al[1].length+WAR.res[1];$('war').style.display='flex';$('wa').textContent=na;$('we').textContent=ne;$('wab').style.width=(na/Math.max(1,WAR.tot[0])*100)+'%';$('web').style.width=(ne/Math.max(1,WAR.tot[1])*100)+'%';
+ const mm=WAR.t/60|0,ss=String(WAR.t%60|0).padStart(2,'0');$('wt').textContent=mm+':'+ss;if(!WAR.over&&WAR.t>3&&(na==0||ne==0)){WAR.over=1;warEnd(ne==0,na,ne)}}
+function warEnd(win,na,ne){mode='eod';document.exitPointerLock&&document.exitPointerLock();
+ $('eodp').innerHTML='<h2>'+(win?'VICTORY':'DEFEAT')+'</h2><div class="er"><span>BATTLE TIME</span><b>'+(WAR.t/60|0)+':'+String(WAR.t%60|0).padStart(2,'0')+'</b></div><div class="er"><span>YOUR KILLS</span><b>'+WAR.pk+'</b></div><div class="er"><span>ALLIES LEFT</span><b>'+na+'</b></div><div class="er"><span>ENEMIES LEFT</span><b>'+ne+'</b></div><div class="stamp" style="animation-delay:.6s">'+(win?'W':'L')+'</div><button id="eodgo">KEEP PLAYING &gt;</button> <button id="eodnew">REMATCH</button>';
+ $('eod').style.display='flex';$('eodgo').onclick=()=>{$('eod').style.display='none';mode='play';reLock()};$('eodnew').onclick=()=>location.reload();snd(win?800:120,.8,win?'sine':'sawtooth',.1)}
 /* ---- setup page / game modes ---- */
-const CFG={copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:0,shirt:'#e8452c'};
+const CFG={mode:0,armyA:60,armyE:120,tanks:1,copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:0,shirt:'#e8452c'};
 try{Object.assign(CFG,JSON.parse(localStorage.getItem('gta6cfg')||'{}'))}catch(e){}
-const SPEC=[['range','copLimit','COPS TO KILL BEFORE POLICE LEAVE (PER DAY)',1,51,1,v=>v>50?'NEVER':v],['tog','skip','SKIP INTRO CUTSCENE'],['tog','hunger','HUNGER SURVIVAL'],['tog','rent','DAILY RENT ($100)'],
+const SPEC=[['opt','mode','GAME MODE',[['OPEN CITY',0],['WAR',1]]],['range','armyA','WAR: YOUR ARMY SIZE',10,100,5,v=>v],['range','armyE','WAR: ENEMY ARMY SIZE',10,200,10,v=>v],['tog','tanks','WAR: TANKS'],['range','copLimit','COPS TO KILL BEFORE POLICE LEAVE (PER DAY)',1,51,1,v=>v>50?'NEVER':v],['tog','skip','SKIP INTRO CUTSCENE'],['tog','hunger','HUNGER SURVIVAL'],['tog','rent','DAILY RENT ($100)'],
  ['range','dayLen','DAY LENGTH',60,600,30,v=>v+' SEC'],['opt','start','START TIME',[['MORNING',.27],['NOON',.5],['SUNSET',.73],['NIGHT',.95]]],['range','cash','START CASH',0,50000,500,v=>'$'+v],
  ['range','peds','PEDESTRIANS',0,100,5,v=>v],['range','traffic','TRAFFIC',0,30,1,v=>v],['opt','heatMult','POLICE AGGRESSION',[['CHILL',.5],['NORMAL',1],['HEAVY',2]]],['opt','gore','GORE LEVEL',[['MILD',.4],['NORMAL',1],['EXTREME',2.2]]],
  ['tog','exec','EXECUTION SCENES'],['tog','allW','ALL WEAPONS UNLOCKED'],['tog','infAmmo','INFINITE AMMO'],['tog','god','GOD MODE'],['tog','perma','HARDCORE (ONE LIFE)'],
  ['opt','goal','WIN GOAL (CASH)',[['NONE',0],['$25K',25000],['$100K',100000],['$1M',1000000]]],['sw','shirt','OUTFIT COLOR',['#e8452c','#2b8fff','#3ec24a','#ffd23f','#a14bff','#ff4fa3','#222222','#ffffff']]];
-const PRE={STORY:{copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:100000},
- SANDBOX:{copLimit:3,skip:1,hunger:0,rent:0,dayLen:360,start:.5,cash:50000,peds:50,traffic:14,heatMult:.5,gore:1,exec:1,allW:1,infAmmo:1,god:1,perma:0,goal:0},
- HARDCORE:{copLimit:51,skip:0,hunger:1,rent:1,dayLen:200,start:.27,cash:0,peds:40,traffic:12,heatMult:2,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:1,goal:100000},
- CHAOS:{copLimit:25,skip:1,hunger:0,rent:0,dayLen:240,start:.95,cash:10000,peds:100,traffic:30,heatMult:2,gore:2.2,exec:1,allW:1,infAmmo:1,god:0,perma:0,goal:0}};
+const PRE={WAR:{mode:1,armyA:60,armyE:140,tanks:1,skip:0,hunger:0,rent:0,dayLen:600,start:.5,cash:0,peds:0,traffic:3,heatMult:1,gore:2.2,exec:0,allW:1,infAmmo:0,god:0,perma:0,goal:0,copLimit:10},STORY:{mode:0,copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:100000},
+ SANDBOX:{mode:0,copLimit:3,skip:1,hunger:0,rent:0,dayLen:360,start:.5,cash:50000,peds:50,traffic:14,heatMult:.5,gore:1,exec:1,allW:1,infAmmo:1,god:1,perma:0,goal:0},
+ HARDCORE:{mode:0,copLimit:51,skip:0,hunger:1,rent:1,dayLen:200,start:.27,cash:0,peds:40,traffic:12,heatMult:2,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:1,goal:100000},
+ CHAOS:{mode:0,copLimit:25,skip:1,hunger:0,rent:0,dayLen:240,start:.95,cash:10000,peds:100,traffic:30,heatMult:2,gore:2.2,exec:1,allW:1,infAmmo:1,god:0,perma:0,goal:0}};
 let setupOpen=0,won=0,lastHeat=0;
 function renderSetup(){$('pre').innerHTML=Object.keys(PRE).map(k=>'<button data-p="'+k+'">'+k+'</button>').join('');
  $('sg').innerHTML=SPEC.map((sp,i)=>{const t=sp[0],k=sp[1];let c='';
@@ -634,10 +670,11 @@ $('sp').addEventListener('click',e=>{const t=e.target;if(t.dataset.p){Object.ass
  if(t.dataset.t){CFG[k]=CFG[k]?0:1;t.classList.toggle('on')}else if(t.dataset.v!==undefined){CFG[k]=isNaN(t.dataset.v)?t.dataset.v:+t.dataset.v;t.parentNode.querySelectorAll('[data-k]').forEach(x=>x.classList.toggle('sel',x===t));if(!t.classList.contains('sw')&&t.parentNode.classList.contains('sr'))t.classList.add('sel')}});
 function setShirt(c){const o=mat('#e8452c'),n=mat(c);P.g.traverse(m=>{if(m.isMesh&&m.material===o)m.material=n})}
 function applyCfg(){try{localStorage.setItem('gta6cfg',JSON.stringify(CFG))}catch(e){}
+ if(CFG.mode==1){CFG.hunger=0;CFG.rent=0;CFG.peds=0;CFG.traffic=3;CFG.dayLen=600;copsOff=1}
  while(peds.length<CFG.peds)mkPed();while(peds.length>CFG.peds){const e=peds.pop();sc.remove(e.g)}
  const ai=cars.filter(c=>c.ai);while(ai.length<CFG.traffic){const c=car(ri([0xd03030,0x2a6fd0,0xe0b020,0x30a060,0xeeeeee,0x333333]));c.ai=1;c.ax=R()<.5?1:0;const d=R()<.5?1:-1,r=ri(RD);c.d=d;c.r=r;c.ln=d*3;const a=rr(-100,100);setCar(c,c.ax?r+c.ln:a,c.ax?a:r+c.ln,c.ax?(d>0?0:PI):(d>0?PI/2:-PI/2));cars.push(c);ai.push(c)}
  while(ai.length>CFG.traffic){const c=ai.pop();sc.remove(c.g);cars.splice(cars.indexOf(c),1)}
- cash=dispCash=lastCash=CFG.cash;tod=CFG.start;if(CFG.allW)for(const k of WK2){own[k]=1;ammo[k]=Math.max(ammo[k],200)}lastHot='';setShirt(CFG.shirt)}
+ cash=dispCash=lastCash=CFG.cash;tod=CFG.start;if(CFG.allW)for(const k of WK2){own[k]=1;ammo[k]=Math.max(ammo[k],200)}lastHot='';setShirt(CFG.shirt);if(CFG.mode==1)startWar()}
 function cfgU(dt){const dh=heat-lastHeat;if(dh>0&&CFG.heatMult!=1)heat=lastHeat+dh*CFG.heatMult;lastHeat=heat;if(CFG.god){P.hp=100;hunger=100}if(CFG.goal&&cash>=CFG.goal&&!won&&!cut&&!P.dead){won=1;winScreen()}}
 function winScreen(){mode='eod';document.exitPointerLock&&document.exitPointerLock();$('eodp').innerHTML='<h2>YOU MADE IT</h2><div class="er"><span>GOAL REACHED</span><b>$'+CFG.goal+'</b></div><div class="er"><span>DAY</span><b>'+day+'</b></div><div class="er"><span>CIVILIANS KILLED</span><b>'+kills+'</b></div><div class="stamp" style="animation-delay:.6s">W</div><button id="eodgo">KEEP PLAYING &gt;</button> <button id="eodnew">NEW GAME</button>';
  $('eod').style.display='flex';$('eodgo').onclick=()=>{$('eod').style.display='none';mode='play';reLock()};$('eodnew').onclick=()=>location.reload();snd(700,.4,'sine')}
@@ -740,7 +777,7 @@ function explode(x,y,z){const mk=(g,c,o)=>{const m=new T.Mesh(g,new T.MeshBasicM
  const fb=mk(new T.SphereGeometry(1,12,8),0xffa030,.95),ring=mk(new T.RingGeometry(.9,1,32),0xffffff,.7),sm=mk(new T.SphereGeometry(1,10,8),0x333038,.8);ring.rotation.x=-PI/2;ring.position.y=y+.3;EXP.push({fb,ring,sm,t:0,y});
  snd(60,.9,'sawtooth',.2);snd(35,1.3,'square',.12);const dc=Math.hypot(x-cam.position.x,z-cam.position.z);shake=Math.max(shake,Math.min(2.2,45/Math.max(8,dc)));scorch(x,z);
  for(let k=0;k<45;k++)part(x,y+.5,z,rr(-10,10),rr(4,17),rr(-10,10),rr(.15,.42),ri([mat(0xff8a2b),mat(0xffd23f),mat(0x333333)]),rr(1,3));
- for(const e of peds.concat(cops,clerks)){if(e.dead||(e.st&&e.st!==IN))continue;const dx=e.x-x,dz=e.z-z,d=Math.hypot(dx,dz)||1;
+ for(const e of peds.concat(cops,clerks,SOL)){if(e.dead||(e.st&&e.st!==IN))continue;const dx=e.x-x,dz=e.z-z,d=Math.hypot(dx,dz)||1;
   if(d<13&&(y<6||d<5)){const w=d<8;kill(e,dx/d*1.4,dz/d*1.4,1,1);bloodBurst(e.x,e.z,w?35:15);if(w){bodyParts(e.x,e.z,7,14,1);e.g.visible=false}}}
  for(const c of cars){if(Math.hypot(c.x-x,c.z-z)<10&&!c.wreck){c.wreck=1;c.ai=0;c.v*=.2;c.g.traverse(o=>{if(o.isMesh&&o.material&&o.material.isMeshLambertMaterial)o.material=mat(0x1a1a1a)});if(P.car===c){P.hp-=45;hit('bomb')}}}
  const pd=Math.hypot(P.x-x,P.z-z);if(!P.heli&&pd<10&&Math.abs((P.y||0)-y)<6){P.hp-=(10-pd)*9;hit('bomb');shake=1}}
