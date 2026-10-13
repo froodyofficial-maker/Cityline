@@ -283,7 +283,8 @@ const SHOPT=(()=>{const P=painter(512,256),R=P.R;R(0,0,512,256,'#232329',.55,.5,
 function R2(n){return Math.random()*n|0}
 const ROOFT=(()=>{const W=256,H=new Float32Array(W*W);const t=cvsT(W,W,(g)=>{const im=g.createImageData(W,W),d=im.data;for(let y=0;y<W;y++)for(let x=0;x<W;x++){const n=nz(x*2,y*2),s=nz(x*7+50,y*7),v=(70+n*40+s*30)|0,i=(y*W+x)*4,seam=(x%128<2||y%128<2)?-25:0;d[i]=v+seam;d[i+1]=v+seam;d[i+2]=v+4+seam;d[i+3]=255;H[y*W+x]=s+(seam?-.5:0)}g.putImageData(im,0,0)});return{map:t,nrm:nrmTex(H,W,W,2)}})();
 /* ---------- materials ---------- */
-const STD=o=>LOWM?new T.MeshLambertMaterial(o):new T.MeshStandardMaterial(o);
+const LAMK=['color','map','emissive','emissiveMap','vertexColors','side','transparent','opacity','alphaTest','depthWrite'];
+const STD=o=>{if(!LOWM)return new T.MeshStandardMaterial(o);const q={};for(const k of LAMK)if(o[k]!==undefined&&o[k]!==null)q[k]=o[k];return new T.MeshLambertMaterial(q)};
 function plainMat(c){const m=STD({color:c,roughness:.8,metalness:.02});m.userData.plain=1;return m}
 const PLAINM=STD({vertexColors:true,roughness:.8,metalness:.02}),NEONM=new T.MeshBasicMaterial({vertexColors:true});
 function facadeHook(s){s.uniforms.uNight=GU.uNight;s.uniforms.uTime=GU.uTime;
@@ -463,6 +464,13 @@ const GRASSM=STD({color:0x6fb455,map:GRT.map,normalMap:LOWM?null:GRT.nrm,roughne
 const GRASSD=(()=>{const t=surfTex(256,256,(x,y,o)=>{const n=nz(x*1.5,y*1.5),b=nz(x*8+13,y*8+77),v=.8+n*.2+(b>.66?.1:0)-(b<.26?.09:0);o.r=o.g=o.b=v*255;o.ro=.95;o.h=b},1).map;t.repeat.set(170,170);return t})();
 function curbs(){for(const k in PADS){const p=PADS[k];if(!p.parent)continue;const[cx,cz]=k.split(',').map(Number);for(const s of[-1,1]){bx(28.2,.16,.32,0xc9c5bc,cx,.08,cz+s*13.95,sc);bx(.32,.16,28.2,0xc9c5bc,cx+s*13.95,.08,cz,sc)}}}
 const LPG=new T.CylinderGeometry(.08,.12,5,7);
+
+/* ---------- interior ceilings (face down only: invisible to the overhead gameplay camera, solid in cutscenes) ---------- */
+const CEILM=new T.MeshBasicMaterial({color:0xfff1d6});
+function ceilings(){const cl=(x,z,w,d,y,c)=>{const m=new T.Mesh(new T.PlaneGeometry(w,d),mat(c));m.rotation.x=PI/2;m.position.set(x,y,z);sc.add(m)},lp=(x,z,y,w,d)=>{const m=new T.Mesh(new T.PlaneGeometry(w||1.3,d||1.3),CEILM);m.rotation.x=PI/2;m.position.set(x,y-.02,z);sc.add(m)};
+ cl(OX,OZ,24.4,19.4,3.5,0xefebe2);for(const[x,z]of[[-8,-4],[-8,6],[3,3],[8,-5]])lp(OX+x,OZ+z,3.5);
+ for(const st of STORES){if(st.kind=='casino'){cl(st.ox,st.oz,28.4,21.4,4.5,0x1a0c24);for(const x of[-9,0,9])for(const z of[-6,0,6])lp(st.ox+x,st.oz+z,4.5,.8,.8)}else{cl(st.ox,st.oz,16.4,13.4,3.5,0xeceae4);for(const x of[-4,4])for(const z of[-3,2])lp(st.ox+x,st.oz+z,3.5,2.4,.5)}}
+ if(typeof GH!=='undefined'&&GH.ox){cl(GH.ox,GH.oz,16.4,13.4,3.5,0xd8ccb6);lp(GH.ox,GH.oz,3.5,1,1)}}
 
 /* ---- city ---- */
 const RD=[-100,-60,-20,20,60,100],CC=[-80,-40,0,40,80],B=[];
@@ -754,7 +762,7 @@ function hit(by){dmgBy=by;dmgT=performance.now();hurt=1}
 function setW(id){if(!own[id])return;cw=id;const w=WP[id];P.g.gm.scale.z=w.len;P.g.gm.material=mat(w.col);snd(500,.05);lastHot=''}
 function copsOffChk(){if(!copsOff&&CFG.copLimit<=50&&dS.cops>=CFG.copLimit){copsOff=1;for(const c of cops)sc.remove(c.g);cops.length=0;heat=0;msg('POLICE FORCE WIPED OUT - NO MORE COPS TODAY','#2bf0ff');snd(80,1,'sawtooth',.1)}}
 function kill(e,dx,dz,big,byP){if(e.isVeh){if(!e.dead){e.dead=1;e.hp=0;e.onDie&&e.onDie()}return}if(e.dead)return;e.dead=1;e.dt=0;e.g.rotation.x=-PI/2;e.g.position.y=.18;gore(e,dx,dz,big);scare(e.x,e.z,18);
- if(e.enm){if(e.onDie)e.onDie();if(byP)ST.kills=(ST.kills||0)+1}else if(e.sol){if(byP&&e.team==1)WAR.pk++;if(e.tank&&!e.boom){e.boom=1;setTimeout(()=>explode(e.x,0,e.z),60)}}else if(e.granny){if(byP){dS.kills++;kills++;heat+=1.2;cash+=400;msg('GRANNY DOWN +$400','#ffd23f')}}else if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
+ if(e.enm){if(e.onDie)e.onDie();if(byP)ST.kills=(ST.kills||0)+1;if(!e.isVeh&&ST.act&&!e.noLoot)lootDrop(e.x,e.z)}else if(e.sol){if(byP&&e.team==1)WAR.pk++;if(e.tank&&!e.boom){e.boom=1;setTimeout(()=>explode(e.x,0,e.z),60)}}else if(e.granny){if(byP){dS.kills++;kills++;heat+=1.2;cash+=400;msg('GRANNY DOWN +$400','#ffd23f')}}else if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
 function mkCop(d){const e={g:person('#e0ac69','#1d3b8a','#14234a','#111',1),hp:3,dead:0,cop:1,cd:rr(.5,1.5),dt:0,ph:0,ms:'search',srch:22,sx:P.x+rr(-18,18),sz:P.z+rr(-18,18),lx:P.x,lz:P.z};const a=rr(0,6.28);d=d||42;e.x=P.x+sin(a)*d;e.z=P.z+cos(a)*d;push(e,2);cops.push(e)}
 function shoot(){const w=WP[cw];if(shT>0)return;
  if(ammo[cw]<=0){shT=.3;snd(90,.05,'square',.03);if(!P.noAm){P.noAm=1;msg('OUT OF AMMO - switch weapon or buy more','#ff6a6a');setTimeout(()=>P.noAm=0,2500)}return}
@@ -980,7 +988,7 @@ const SPEC=[['opt','gfx','GRAPHICS QUALITY',[['LOW',0],['MEDIUM',1],['HIGH',2],[
  ['range','peds','PEDESTRIANS',0,100,5,v=>v],['range','traffic','TRAFFIC',0,30,1,v=>v],['opt','heatMult','POLICE AGGRESSION',[['CHILL',.5],['NORMAL',1],['HEAVY',2]]],['opt','gore','GORE LEVEL',[['MILD',.4],['NORMAL',1],['EXTREME',2.2]]],
  ['tog','exec','EXECUTION SCENES'],['tog','allW','ALL WEAPONS UNLOCKED'],['tog','infAmmo','INFINITE AMMO'],['tog','god','GOD MODE'],['tog','perma','HARDCORE (ONE LIFE)'],
  ['opt','goal','WIN GOAL (CASH)',[['NONE',0],['$25K',25000],['$100K',100000],['$1M',1000000]]],['sw','shirt','OUTFIT COLOR',['#e8452c','#2b8fff','#3ec24a','#ffd23f','#a14bff','#ff4fa3','#222222','#ffffff']]];
-const PRE={WAR:{mode:1,armyA:60,armyE:140,tanks:1,skip:0,hunger:0,rent:0,dayLen:600,start:.5,cash:0,peds:0,traffic:3,heatMult:1,gore:2.2,exec:0,allW:1,infAmmo:0,god:0,perma:0,goal:0,copLimit:10},STORY:{mode:0,copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:100000},
+const PRE={WAR:{mode:1,armyA:60,armyE:140,tanks:1,skip:0,hunger:0,rent:0,dayLen:600,start:.5,cash:0,peds:0,traffic:3,heatMult:1,gore:2.2,exec:0,allW:1,infAmmo:0,god:0,perma:0,goal:0,copLimit:10},CLASSIC:{mode:0,copLimit:10,skip:0,hunger:1,rent:1,dayLen:240,start:.42,cash:500,peds:40,traffic:12,heatMult:1,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:0,goal:100000},
  SANDBOX:{mode:0,copLimit:3,skip:1,hunger:0,rent:0,dayLen:360,start:.5,cash:50000,peds:50,traffic:14,heatMult:.5,gore:1,exec:1,allW:1,infAmmo:1,god:1,perma:0,goal:0},
  HARDCORE:{mode:0,copLimit:51,skip:0,hunger:1,rent:1,dayLen:200,start:.27,cash:0,peds:40,traffic:12,heatMult:2,gore:1,exec:1,allW:0,infAmmo:0,god:0,perma:1,goal:100000},
  CHAOS:{mode:0,copLimit:25,skip:1,hunger:0,rent:0,dayLen:240,start:.95,cash:10000,peds:100,traffic:30,heatMult:2,gore:2.2,exec:1,allW:1,infAmmo:1,god:0,perma:0,goal:0}};
@@ -1376,14 +1384,15 @@ function initGfx(){const q=CFG.gfx;rd.setPixelRatio(Math.min(devicePixelRatio,q>
    'col=aces(col*uExpo);float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,sat);col+=(vec3(-.016,.006,.03)*(1.-l)+vec3(.032,.012,-.022)*l)*uWarm;col*=1.-vig*dot(c,c)*2.2;col+=(rnd(vUv*1000.+time)-.5)*.018;gl_FragColor=vec4(col,1.);}'});
   gradeP.renderToScreen=true;comp.addPass(gradeP);comp.setSize(w,h)}catch(e){comp=null;console.log('post-processing unavailable',e)}}
  if(!comp){rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1.1}}
-const GSV=new T.Vector3();let ILS=null,HEADL=null;
+const GSV=new T.Vector3();let ILS=null,HEADL=null,KEYL=null;
 function gradeU(){if(!gradeP)return;const u=gradeP.uniforms,n=1-Math.max(0,Math.min(1,-cos(tod*2*PI)*2.2+.4));u.time.value=performance.now()*.001;
  if(bloomP){bloomP.strength=IN?.25:.32+.55*n;bloomP.threshold=IN?.97:.92-.32*n;bloomP.radius=.42+.22*n}
  const d=SKYU.uSunDir.value;GSV.copy(cam.position).addScaledVector(d,300).project(cam);const vis=GSV.z<1&&d.y>-.02&&!IN?Math.max(0,1-Math.max(Math.abs(GSV.x),Math.abs(GSV.y))*.6):0;u.uSun.value.set(GSV.x*.5+.5,GSV.y*.5+.5);u.uRay.value=CFG.gfx>=2?vis*(1-n):0;u.uRayCol.value.copy(SKYU.uSunCol.value);u.uWarm.value=.6+.6*(1-n)}
-function lightsU(){if(!ILS){ILS=[];sc.traverse(o=>{if(o.isPointLight)ILS.push(o)});HEADL=new T.SpotLight(0xfff0d0,0,48,.55,.55,1.4);sc.add(HEADL,HEADL.target)}
+function lightsU(){if(!ILS){ILS=[];sc.traverse(o=>{if(o.isPointLight)ILS.push(o)});HEADL=new T.SpotLight(0xfff0d0,0,48,.55,.55,1.4);sc.add(HEADL,HEADL.target);KEYL=new T.PointLight(0xffe4c4,0,18,1.4);sc.add(KEYL)}
  for(const l of ILS){if(l.userData.i0===undefined){l.userData.i0=l.intensity;l.intensity*=LOWM?1:.42}const v=!!IN&&Math.abs(l.position.x-P.x)<40&&Math.abs(l.position.z-P.z)<40;if(l.visible!==v)l.visible=v}
- const c=P.car,n=GU.uNight.value;if(c&&n>.05&&!IN){const s=sin(c.h),k=cos(c.h);HEADL.intensity=2.4*n;HEADL.position.set(c.x+s*2.3,1.1,c.z+k*2.3);HEADL.target.position.set(c.x+s*16,0,c.z+k*16)}else HEADL.intensity=0}
-function gfxFinalize(){curbs();if(CFG.map<2&&CFG.mode!=1)addPalms();if(GLOWP.length&&!GLOWS){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(GLOWP,3));GLOWS=new T.Points(g,new T.PointsMaterial({map:glowTex(),size:1.8,transparent:true,depthWrite:false,blending:T.AdditiveBlending,color:0xffe0b0,opacity:0}));GLOWS.frustumCulled=false;sc.add(GLOWS)}
+ const c=P.car,n=GU.uNight.value;if(c&&n>.05&&!IN){const s=sin(c.h),k=cos(c.h);HEADL.intensity=2.4*n;HEADL.position.set(c.x+s*2.3,1.1,c.z+k*2.3);HEADL.target.position.set(c.x+s*16,0,c.z+k*16)}else HEADL.intensity=0;
+ if(typeof CIN!=='undefined'&&CIN&&cut){const k2=Math.max(n,IN?.55:0,.12);cam.getWorldDirection(GSV);KEYL.position.copy(cam.position).addScaledVector(GSV,1.1);KEYL.position.y+=1.1;KEYL.intensity=(LOWM?.9:1.25)*k2}else KEYL.intensity=0}
+function gfxFinalize(){curbs();ceilings();if(CFG.map<2&&CFG.mode!=1)addPalms();if(GLOWP.length&&!GLOWS){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(GLOWP,3));GLOWS=new T.Points(g,new T.PointsMaterial({map:glowTex(),size:1.8,transparent:true,depthWrite:false,blending:T.AdditiveBlending,color:0xffe0b0,opacity:0}));GLOWS.frustumCulled=false;sc.add(GLOWS)}
  if(CFG.gfx>=1)mergeStatic();skyU()}
 function addPalms(){const pl=(x,z,s)=>{if(B.some(b=>!b.air&&x>b.x1-1&&x<b.x2+1&&z>b.z1-1&&z<b.z2+1))return;const m=new T.Mesh(palmGeo(),PALMM);m.scale.setScalar(s);m.position.set(x,0,z);m.rotation.y=rr(0,6);m.castShadow=true;sc.add(m);B.push({x1:x-.3,x2:x+.3,z1:z-.3,z2:z+.3,h:2})};
  for(let z=-112;z<=112;z+=11){if(RD.some(r=>Math.abs(z-r)<9))continue;pl(68.2,z+rr(-1,1),rr(.9,1.15));pl(91.6,z+rr(-1,1),rr(.9,1.15))}
@@ -1612,7 +1621,8 @@ function npcAnim(a,dt,talk){const g=a.g;if(!g)return;let mv=0;a.ph+=dt;
 /* ---------- cinematic engine ---------- */
 function cinPlay(shots,done,instant){CIN={shots,i:-1,st:0,li:0,lt:0,done,tm:0,ev:{},fov:50};if(instant){cinEnd(1);return}
  for(const k in K)K[k]=0;heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;$('sir').style.opacity=0;document.body.classList.add('cin');objSet('');SAYQ.length=0;subShow();cut={t:0,dur:1e9,fn:cinFn,lines:[],done:()=>cinEnd(0)};document.body.classList.add('on');$('pr').textContent='';$('lk').style.display='none';cinShot(0)}
-function cinShot(i){const C=CIN;C.i=i;C.st=0;C.li=0;C.lt=0;C.evf={};const s=C.shots[i];if(!s)return;if(s.tod!==undefined)tod=s.tod;if(s.on)s.on();if(s.fade!==undefined)fadeTo(s.fade,s.fs);if(s.title)titleCard(s.title[0],s.title[1],s.title[2]);
+function snapA(a){if(!a.to)return;const t=a.path&&a.path.length?a.path[a.path.length-1]:a.to;a.x=t[0];a.z=t[1];a.to=null;a.path=null;if(a.toH!==undefined&&a.toH!==null)a.h=a.toH}
+function cinShot(i){const C=CIN;C.i=i;C.st=0;C.li=0;C.lt=0;C.evf={};const s=C.shots[i];if(!s)return;if(i>0&&!s.keep){for(const n in NPC)snapA(NPC[n]);snapA(PN)}if(s.tod!==undefined)tod=s.tod;if(s.on)s.on();if(s.fade!==undefined)fadeTo(s.fade,s.fs);if(s.title)titleCard(s.title[0],s.title[1],s.title[2]);
  s._d=s.d||((s.l||[]).reduce((a,l)=>a+lineDur(l),0)+(s.pad||.4));C.fov=s.fov||50;if(s.sfx)s.sfx()}
 function cinFn(p,t){const C=CIN;if(!C)return;let dt=Math.min(.1,t-C.tm);C.tm=t;if(dt<0)dt=0;const s=C.shots[C.i];if(!s){cut.t=cut.dur;return}
  C.st+=dt;C.lt+=dt;const L=s.l||[];if(C.li<L.length&&C.lt>=lineDur(L[C.li])){C.li++;C.lt=0}
@@ -1631,14 +1641,17 @@ function cinCam(s,k,dt){const e=k*k*(3-2*k),c=s.c;let p,l;
  else if(s.fol){const A=npc(s.fol[0]);p=[A.x+s.fol[1],(A.y||0)+s.fol[2],A.z+s.fol[3]];l=[A.x,(A.y||0)+(s.fol[4]||1.2),A.z]}
  else if(s.orb){const o=s.orb,a=o[5]+(o[6]-o[5])*e;p=[o[0]+sin(a)*o[3],o[1]+o[4],o[2]+cos(a)*o[3]];l=[o[0],o[1]+(o[7]||1.2),o[2]]}
  else if(c){const c2=s.c2||c;p=[c[0]+(c2[0]-c[0])*e,c[1]+(c2[1]-c[1])*e,c[2]+(c2[2]-c[2])*e];l=[c[3]+(c2[3]-c[3])*e,c[4]+(c2[4]-c[4])*e,c[5]+(c2[5]-c[5])*e]}
- if(!p)return;cam.position.set(p[0],p[1],p[2]);if(s.shake){cam.position.x+=rr(-1,1)*s.shake;cam.position.y+=rr(-1,1)*s.shake}cam.lookAt(l[0],l[1],l[2])}
+ if(!p)return;if(!c||s.clip)camFree(p,l);cam.position.set(p[0],p[1],p[2]);if(s.shake){cam.position.x+=rr(-1,1)*s.shake;cam.position.y+=rr(-1,1)*s.shake}cam.lookAt(l[0],l[1],l[2])}
+function camIn(x,z,y){if(GHB&&x>GHB.x1-.3&&x<GHB.x2+.3&&z>GHB.z1-.3&&z<GHB.z2+.3)for(const b of GHR)if(x>b.x1-.28&&x<b.x2+.28&&z>b.z1-.28&&z<b.z2+.28)return 1;const L=IN?IB:B;for(const b of L)if(!b.air&&(b.h===undefined||y<b.h+.25)&&x>b.x1-.28&&x<b.x2+.28&&z>b.z1-.28&&z<b.z2+.28)return 1;return 0}
+function camFree(p,l){let k=0;while(k<45&&camIn(p[0],p[2],p[1])){p[0]+=(l[0]-p[0])*.06;p[1]+=(l[1]-p[1])*.06;p[2]+=(l[2]-p[2])*.06;k++}}
 function cinNext(){const C=CIN;if(!C||!cut)return;const s=C.shots[C.i];if(!s)return;const L=s.l||[];if(C.li<L.length){C.li++;C.lt=0;if(C.li>=L.length)C.st=Math.max(C.st,s._d)}else C.st=s._d}
 function cinEnd(instant){const C=CIN;if(!C)return;for(let i=Math.max(0,C.i);i<C.shots.length;i++){const s=C.shots[i];if(i>C.i){if(s.tod!==undefined)tod=s.tod;if(s.on)s.on()}if(s.post&&!s._pd){s._pd=1;s.post()}}PN.anim='idle';PN.y=0;P.g.rotation.set(0,P.h,0);for(const l of P.g.l)l.rotation.x=0;for(const a of P.g.a){a.rotation.x=0;a.rotation.z=0}if(P.g.hd[0].rotation)P.g.hd[0].rotation.x=P.g.hd[1].rotation.x=0;
  for(const n in NPC){const a=NPC[n];if(!a.hidden&&a.g.visible)npcAnim(a,0,0)}subShow();document.body.classList.remove('cin');fadeTo(0,.5);const d=C.done;CIN=null;if(!instant)cam.position.set(P.x-sin(camYaw)*7.7,(P.y||0)+5.1,P.z-cos(camYaw)*7.7);d&&d()}
 /* ---------- enemies ---------- */
 const SUITS=[['#1b1b20','#18181c'],['#2a2a30','#1a1a1e'],['#3a1b1b','#18181c']];
+function lootDrop(x,z){const r=R();if(r<.24)pickup(x,z,'',{auto:1,r:1.7,col:0xe8222c,onPick:()=>{P.hp=Math.min(100,P.hp+30);msg('+30 HEALTH','#43ff7a')}});else if(r<.46)pickup(x,z,'',{auto:1,r:1.7,col:0x3a5a2a,onPick:()=>{const w=WP[cw];ammo[cw]+=Math.ceil(w.pk*.6);lastHot='';msg('+'+Math.ceil(w.pk*.6)+' '+w.n+' AMMO','#43ff7a')}})}
 function thug(x,z,o){o=o||{};const s=ri(SUITS),g=person(ri(skins),o.shirt||s[0],o.pants||s[1],ri(['#111','#2a1a10','#3a2a1a']),1);if(o.big)g.scale.setScalar(1.25);
- const e={g,x,z,h:0,hp:o.hp||(o.big?7:3),dead:0,enm:1,cd:rr(.6,1.6),ph:R()*6,tg:o.tg||null,mode:o.mode||'attack',to:o.to||null,sp:o.sp||(o.big?3.6:4.4),acc:o.acc||.32,dmg:o.dmg||(o.big?8:5),rng:o.rng||40,pref:o.pref||rr(9,15),st:0,alert:o.alert||22,y:o.y||0,onDie:o.onDie,lbl:o.lbl};
+ const e={g,x,z,h:0,hp:o.hp||(o.big?7:3),dead:0,enm:1,cd:rr(.6,1.6),ph:R()*6,tg:o.tg||null,mode:o.mode||'attack',to:o.to||null,sp:o.sp||(o.big?3.6:4.4),acc:o.acc||.27,dmg:o.dmg||(o.big?8:5),rng:o.rng||40,pref:o.pref||rr(9,15),st:0,alert:o.alert||22,y:o.y||0,onDie:o.onDie,lbl:o.lbl};
  g.position.set(x,e.y,z);ENM.push(e);if(ST.act)ST.act.ents.push(e);return e}
 function thugU(dt){const live=!cut&&!P.dead;for(const e of ENM){if(e.isVeh)continue;if(e.dead){e.dt=(e.dt||0)+dt;continue}if(IN&&!e.inside)continue;
   const tg=e.tg&&!e.tg.dead&&e.tg.hp>0&&!e.tg.hidden?e.tg:P,tx=tg.x,tz=tg.z,d=Math.hypot(tx-e.x,tz-e.z);let sp=0,dx=0,dz=0;e.cd-=dt;
@@ -1713,7 +1726,7 @@ function stClean(ok){const A=ST.act;for(let i=ENM.length-1;i>=0;i--){const e=ENM
 function stPass(){const A=ST.act;if(!A)return;ST.pass=1;const D=A.D;objSet('');sbarSet('');const rw=D.reward||0;cash+=rw;
  ST.m=Math.min(MIS.length,A.i+1);ST.max=Math.max(ST.max,ST.m);if(D.onPass)D.onPass();stSave();snd(520,.25,'sine',.07);setTimeout(()=>snd(780,.35,'sine',.07),180);setTimeout(()=>snd(1040,.5,'sine',.06),380);
  const r=$('mres');r.className='pass';r.innerHTML='<div class="big">MISSION PASSED</div><div class="mn">'+D.t+'</div>'+(rw?'<div class="rw">+$'+rw.toLocaleString()+'</div>':'')+(ST.flags.debt?'<div class="dbt">MARA\'S DEBT: $'+ST.flags.debt.toLocaleString()+'</div>':'');r.style.display='flex';
- setTimeout(()=>{r.style.display='none';ST.pass=0;if(ST.act!==A)return;const keep=D.keepAfter;stClean(1);ST.act=null;if(keep)keep();if(D.final){storyCredits();return}const N=MIS[ST.m];if(N){smkSet(N);objSet(D.hint||'');setTimeout(()=>{if(!ST.act)objSet('')},14000)}},4600)}
+ setTimeout(()=>{r.style.display='none';ST.pass=0;if(ST.act!==A)return;const keep=D.keepAfter;stClean(1);ST.act=null;if(keep)keep();if(D.final){storyCredits();return}const N=MIS[ST.m];if(D.after)setTimeout(()=>{if(!ST.act&&!cut)say(D.after)},2600);if(N){smkSet(N);objSet(D.hint||'');setTimeout(()=>{if(!ST.act)objSet('')},14000)}},4600)}
 function stFail(why){if(ST.fail||!ST.act)return;ST.fail=1;mode='eod';document.exitPointerLock&&document.exitPointerLock();for(const k in K)K[k]=0;if(CIN){const d=CIN;CIN=null;cut=null;document.body.classList.remove('on','cin');subShow()}
  const r=$('mres');r.className='fail';r.innerHTML='<div class="big">MISSION FAILED</div><div class="mn">'+why+'</div><div class="btns"><button id="mretry">RETRY (ENTER)</button><button id="mquit">QUIT MISSION (ESC)</button></div>';r.style.display='flex';snd(140,.8,'sawtooth',.08);
  $('mretry').onclick=stRetry;$('mquit').onclick=stQuit}
@@ -1809,7 +1822,7 @@ function nicoAt(x,z,h){place('NICO',x,z,h);camYaw=h;P.h=h}
 const CS={};
 CS.pro1=A=>[
  {tod:.27,fade:0,fs:2,title:['HOMECOMING','PROLOGUE · EMBER CITY · SIX YEARS LATER',5],c:[-70,62,130,0,8,0],c2:[30,40,95,40,4,10],on:()=>{nicoAt(116,27.5,-PI/2);hideAll();objSet('')},l:[["NICO","Six years. Two thousand, one hundred and ninety-one days."],["NICO","You count them at first. Then you stop. Counting is how they get you."]]},
- {c:[106,1.7,33.5,115,1.3,27.5],c2:[100,1.6,33,104,1.3,27.5],on:()=>{walk('NICO',99.5,25.4,1.35)},l:[["NICO","The van left me at the edge of the bridge. No bus fare. No phone. A plastic bag with a shirt in it that doesn't fit anymore."],["NICO","Ember City looks exactly the same. It never changes. It just gets more expensive."]]},
+ {fol:['NICO',-2.6,1.6,4.2,1.3],on:()=>{walk('NICO',99.5,25.4,1.35)},l:[["NICO","The van left me at the edge of the bridge. No bus fare. No phone. A plastic bag with a shirt in it that doesn't fit anymore."],["NICO","Ember City looks exactly the same. It never changes. It just gets more expensive."]]},
  {d:4.6,c:[94,1.4,31,108,1.1,17],on:()=>{const c=svCar('mara',0x3fb8af,0,150,17,-PI/2,{top:15});c.keep=1;vgo(c,101,17,-PI/2,15)},ev:[[3.6,()=>{snd(420,.18,'square',.05);setTimeout(()=>snd(420,.25,'square',.05),220)}]]},
  {on:()=>{vset(A.v.mara,101,17,-PI/2);nicoAt(99.5,25.2,PI);place('MARA',101.6,19.3,0);walk('MARA',100.2,22.6,1.3);face('NICO','MARA')},two:['NICO','MARA',4.4,-1],l:[["MARA","You look old."],["NICO","You look... grown up."],["MARA","That happens. When you're gone for six years."],["NICO","Mara, I—"]]},
  {cu:['MARA',1.6],l:[["MARA","Don't. Not on the side of the road, Nico."],["MARA","Get in. I'm double parked and I can't afford the ticket."]],post:()=>{face('MARA',null)}}];
@@ -1855,7 +1868,7 @@ CS.lena1=A=>[
  {two:['NICO','LENA',4.3,-1],l:[["LENA","I want someone with a reason to want him gone. You have a sister with a hundred and twenty thousand reasons."],["LENA","Every Thursday a courier leaves the Golden Ember with a bag of cash. He drops it somewhere we've never found. Follow him. Don't get spotted. Find me the drop."],["NICO","And if I say no?"]]},
  {cu:['LENA',1.4],l:[["LENA","Then you're a parole violator who assaulted three men."],["LENA","...Please don't make me do that, Nico."],["NICO","You used to say please like you meant it."],["LENA","I still do. That's the problem."]],post:()=>{const c=svCar('lcar',0x2a3038,0,8,-23,PI/2);c.free=1;c.keep=1;hideN('LENA');nicoAt(3,-27,PI/2)}}];
 CS.photo=A=>[
- {tod:.9,c:[262,1.5,5.6,286,1.3,12],c2:[262.5,1.45,5.4,287,1.3,12.5],on:()=>{nicoAt(262,5,PI*.55);anim('NICO','kneel');const c=A.v.cour;if(c)vset(c,287,9,PI/2);place('COURIER',285.6,11.3,PI/2,'idle');place('HARLAN',288.2,12.4,-PI/2,'cross');place('THUG1',284,14.8,PI,'cross');face('COURIER','HARLAN');face('HARLAN','COURIER')},
+ {tod:.9,c:[271,1.7,6.2,286.5,1.3,11.8],c2:[272,1.6,6.6,286.5,1.3,11.8],fov:42,on:()=>{nicoAt(262,5,PI*.55);anim('NICO','kneel');const c=A.v.cour;if(c)vset(c,287,9,PI/2);place('COURIER',285.6,11.3,PI/2,'idle');place('HARLAN',288.2,12.4,-PI/2,'cross');place('THUG1',284,14.8,PI,'cross');face('COURIER','HARLAN');face('HARLAN','COURIER')},
   l:[["COURIER","Same as always, Captain. Count it if you want."],["HARLAN","If I wanted to count, I'd have become an accountant. Tell Victor the Delacroix thing is handled. Nobody's reopening anything."]],ev:[[1,()=>{$('fx').style.background='#fff';$('fx').style.opacity=.6;setTimeout(()=>$('fx').style.opacity=0,80);snd(1500,.05,'square',.04)}],[3.4,()=>{$('fx').style.opacity=.6;setTimeout(()=>$('fx').style.opacity=0,80);snd(1500,.05,'square',.04)}]]},
  {cu:['NICO',1.4,.4],l:[["NICO","(whispering) Lena. Your captain's here. He's taking the bag."],["RADIO","...Harlan. You son of a— Get the photos and get out of there, Nico."]],ev:[[.5,()=>{$('fx').style.opacity=.6;setTimeout(()=>$('fx').style.opacity=0,80);snd(1500,.05,'square',.04)}]]},
  {cu:['HARLAN',1.8],l:[["HARLAN","...Did you hear that? Somebody's by the crates."],["HARLAN","Handle it. I was never here."]],post:()=>{hideN('HARLAN');hideN('COURIER');hideN('THUG1');anim('NICO','idle');const c=A.v.cour;if(c){c.top=20;svRoute(c,[[270,20],[180,20],[120,20]],20)}}}];
@@ -1894,12 +1907,13 @@ CS.lena3=A=>[
  {ots:['NICO','LENA'],l:[["LENA","Ten years ago, Remy disappeared. Calloway owned everything within a month."],["NICO","Let me guess. Remy's in the river."],["LENA","Never found. But Remy's accountant told a grand jury that Remy kept a ledger. Every payoff, every cop, every judge. Including Victor's first 'investments.'"],["LENA","The accountant died before his second day of testimony. The ledger was never found."]]},
  {cu:['LENA',1.6],l:[["LENA","I think his mother has it. Ma Delacroix. Eighty-one years old. She still lives in the family house on the west side."],["NICO","So we knock and ask nicely."],["LENA","The last process server who knocked on her door is still eating through a straw."]]},
  {two:['NICO','LENA',4.2,-1],l:[["LENA","She keeps a baseball bat by the door. Everybody in the neighborhood calls her 'Granny.' Nobody calls her that to her face."],["NICO","You're sending me to rob an old woman."],["LENA","I'm sending you to borrow evidence from an old woman. Stay low — crouch, stay out of her sight."],["LENA","I mean it, Nico. She hits harder than Brick."]],post:()=>{hideN('LENA')}}];
-CS.ma1=A=>{const d=GDOOR,lp=ledgerSpot();return[
- {tod:.52,c:[lp[0]+2.4,1.9,lp[1]+2.4,lp[0],1,lp[1]],on:()=>{ST.hideGr=1;nicoAt(lp[0]+.6,lp[1]+.6,PI*.8);place('MA',d.x,d.z-1.2,PI,'bat');face('NICO','MA');face('MA','NICO')},l:[["MA","Put it down, boy. Slowly. I've broken better wrists than yours."]]},
- {two:['NICO','MA',3.2],on:()=>{walk('MA',(d.x+lp[0])/2+.6,(d.z+lp[1])/2+.6,1)},l:[["NICO","Ma'am, I'm not here to hurt you—"],["MA","Nobody ever is. And yet here we are. You. In my house. Holding my son's book."]]},
+CS.ma1=A=>{const d=GDOOR,lp=ledgerSpot(),dx=d.x-lp[0],dz=d.z-lp[1],dl=Math.hypot(dx,dz)||1,mx=lp[0]+dx/dl*2.1,mz=lp[1]+dz/dl*2.1,hN=Math.atan2(dx,dz);return[
+ {tod:.52,cu:['NICO',1.35,.3],on:()=>{ST.hideGr=1;nicoAt(lp[0],lp[1],hN+PI);place('MA',mx,mz,hN+PI,'bat')},l:[["MA","Put it down, boy. Slowly. I've broken better wrists than yours."]],post:()=>{face('NICO','MA');face('MA','NICO')}},
+ {ots:['NICO','MA'],l:[["NICO","Ma'am, I'm not here to hurt you—"],["MA","Nobody ever is. And yet here we are. You. In my house. Holding my son's book."]]},
  {cu:['MA',1.3],on:()=>{anim('MA','idle')},l:[["MA","...Turn your face to the light."],["MA","You're Rosa's boy. Rosa Vance."],["NICO","You knew my mother?"]]},
- {cu:['MA',1.25,-.3],l:[["MA","Rosa cleaned this house for eleven years, before she went to work for that snake Calloway. She used to bring a little boy with a runny nose who broke my Chinese vase."],["MA","That was you."],["NICO","...I'm sorry about the vase."],["MA","You should be. It was ugly, but it was mine."]]},
- {two:['MA','NICO',3,-1],l:[["MA","Why do you want Remy's book?"],["NICO","To bury Victor Calloway."]]},
+ {cu:['MA',1.25,-.3],l:[["MA","Rosa cleaned this house for eleven years, before she went to work for that snake Calloway. She used to bring a little boy with a runny nose who broke my Chinese vase."],["MA","That was you."]]},
+ {cu:['NICO',1.3],l:[["NICO","...I'm sorry about the vase."],["MA","You should be. It was ugly, but it was mine."]]},
+ {ots:['MA','NICO'],l:[["MA","Why do you want Remy's book?"],["NICO","To bury Victor Calloway."]]},
  {cu:['MA',1.25],l:[["MA","Victor sat at my kitchen table. Ate my gumbo. Called me 'Mama.'"],["MA","Then my Remy went out one night to meet him and never came home."],["MA","Ten years I kept that book under the floor. Waiting for somebody with enough spine to use it."]]},
  {ots:['NICO','MA'],l:[["MA","Half of it's gone. Remy tore out the last pages the night he died — the pages about Victor. Hid them somewhere. I never found where."],["NICO","Then I'll find them."],["MA","You'll get yourself killed, is what you'll do."],["MA","...Take it. And Rosa's boy? Come back alive. I want my vase money."]],ev:[[9,()=>{snd(300,.15,'square',.05)}]]},
  {c:[GHX.cx+6,2.4,GHX.cz+14,GHX.cx,1.4,GHX.cz+18],d:4,on:()=>{for(const[x,z]of[[-74,24],[-86,23],[-80,26]])place(x==-74?'THUG1':x==-86?'THUG2':'SAL2',x,z,PI)},l:[["MA","...Hm. You brought friends."],["NICO","They're not mine."]],post:()=>{hideN('THUG1');hideN('THUG2');hideN('SAL2');nicoAt(GDOOR.x+1,GDOOR.z+2.4,0)}}]};
@@ -1974,24 +1988,24 @@ CS.heist1=A=>[
  {two:['NICO','DEX',3.6],on:()=>{const v=A.v.arm2;vset(v,6,17.2,-PI/2);nicoAt(2,14.6,PI);place('DEX',-.4,14.4,PI*1.1);face('NICO','DEX');face('DEX','NICO')},l:[["DEX","Alarm's looped. We've got four minutes before the backup line calls it in. Maybe less."],["NICO","Then we take three."],["DEX","Hey. Whatever happens in there—"],["NICO","Tell me after."]]},
  {c:[0,2.2,22,0,2.4,10],on:()=>{walk('DEX',0,10.6,1.6)},d:3.5,post:()=>{hideN('DEX');nicoAt(1,13.6,0)}}];
 CS.heist2=A=>[
- {tod:.03,c:[7,2.4,8+12,0,1.2,12],on:()=>{nicoAt(2.5,15,PI*.9);place('DEX',-.6,11.4,0,'idle');walk('DEX',.6,13.8,1.6);place('MARA',5,16.4,-PI/2);face('NICO','DEX')},l:[["DEX","Nico! It's here. Remy's pages — and more. Victor kept everything. Every payoff since Remy."],["DEX","There's a page in here about Ruiz. Dates. Names. Who held him under."],["NICO","Lena needs to see that."]]},
- {c:[30,3,26,6,1.5,16],d:2.6,on:()=>{const v=svCar('vic',0xf2f0ea,1,60,17.2,-PI/2,{top:22});vgo(v,22,17.2,-PI/2,22);snd(200,.6,'sawtooth',.05)}},
- {two:['DEX','MARA',3.6],ev:[[.3,()=>{tracer(22,17,1.4,14.2,0xff8855,1.3);tracer(22,17,3,15,0xff8855,1.3);snd(300,.1,'sawtooth',.06)}],[.7,()=>{walk('DEX',3.2,15.4,4);snd(300,.1,'sawtooth',.06)}],[1.4,()=>{anim('DEX','hurt');snd(110,.25,'sawtooth',.08);part(3.2,1.2,15.4,0,3,0,.15,BL[1],5)}],[2.4,()=>{anim('DEX','lie')}]],l:[["MARA","DEX!"]],d:3.4},
- {c:[6.5,1.2,18,3.2,.3,15.4],on:()=>{const v=A.v.vic;vgo(v,-40,17.2,-PI/2,26);place('DEX',3.2,15.4,PI/2,'lie');place('MARA',3.4,16.5,PI,'kneel');nicoAt(2.2,16.2,PI*.6);anim('NICO','kneel');face('MARA','DEX')},l:[["DEX","Hey... hey, Nico."],["DEX","Square now?"],["NICO","We were always square, you idiot. Stay with me."]]},
+ {tod:.03,c:[9,2.2,19,1.5,1.2,12],on:()=>{const v=A.v.arm2;if(v){if(P.car===v)P.car=null;vset(v,13,17.2,-PI/2)}nicoAt(2.6,13.2,PI*.85);place('DEX',-.6,11,0,'idle');walk('DEX',.8,12.6,1.6);place('MARA',9.6,15.4,-PI/2,'cross');face('NICO','DEX')},l:[["DEX","Nico! It's here. Remy's pages — and more. Victor kept everything. Every payoff since Remy."],["DEX","There's a page in here about Ruiz. Dates. Names. Who held him under."],["NICO","Lena needs to see that."]]},
+ {c:[32,3,25,8,1.5,16],d:2.6,on:()=>{const v=svCar('vic',0xf2f0ea,1,64,17.2,-PI/2,{top:22});vgo(v,26,17.2,-PI/2,22);snd(200,.6,'sawtooth',.05);walk('MARA',5.2,13.9,1.4);face('MARA','NICO')}},
+ {c:[-2.5,1.8,17.5,4,1.1,13.4],on:()=>{place('MARA',5.2,13.9,PI*1.1)},ev:[[.3,()=>{tracer(26,17,5,14,0xff8855,1.3);tracer(26,17,3,13.5,0xff8855,1.3);snd(300,.1,'sawtooth',.06)}],[.6,()=>{walk('DEX',4.2,14.2,4.5);snd(300,.1,'sawtooth',.06)}],[1.3,()=>{anim('DEX','hurt');snd(110,.25,'sawtooth',.08);part(4.2,1.2,14.2,0,3,0,.15,BL[1],5)}],[2.3,()=>{anim('DEX','lie')}]],l:[["MARA","DEX!"]],d:3.4},
+ {c:[.6,1.25,16.6,4,.35,13.8],on:()=>{const v=A.v.vic;vgo(v,-40,17.2,-PI/2,26);place('DEX',4,13.8,PI/2,'lie');place('MARA',4.4,14.9,PI,'kneel');nicoAt(2.9,14.7,PI*.65);anim('NICO','kneel');face('MARA','DEX')},l:[["DEX","Hey... hey, Nico."],["DEX","Square now?"],["NICO","We were always square, you idiot. Stay with me."]]},
  {cu:['MARA',1.2,.2],l:[["MARA","I've got pressure on it — Dex, look at me, keep your eyes open—"],["DEX","Tell Imani..."],["DEX","Tell her her dad fixed something. Finally."]],pad:2.4},
- {c:[3,4.5,22,3,.4,15.4],c2:[3,7,24,3,.4,15.4],d:5,fade:.0,l:[["MARA","Dex? Dex!"],["MARA","...Nico, he's gone."]]},
- {cu:['MARA',1.3],on:()=>{anim('NICO','idle');nicoAt(2.4,17,PI*.4)},l:[["MARA","Victor's running. He's going to the airport — he has a plane."],["MARA","Go. GO! Don't let him get away with this too!"]],post:()=>{hideN('DEX');hideN('MARA');nicoAt(4,18,PI/2)}}];
+ {c:[4,4.5,19,4,.4,13.8],c2:[4,7.5,21,4,.4,13.8],d:5,l:[["MARA","Dex? Dex!"],["MARA","...Nico, he's gone."]]},
+ {cu:['MARA',1.3],on:()=>{anim('NICO','idle');nicoAt(3,15.8,PI*.4);anim('MARA','kneel')},l:[["MARA","Victor's running. He's going to the airport — he has a plane."],["MARA","Go. GO! Don't let him get away with this too!"]],post:()=>{hideN('DEX');hideN('MARA');nicoAt(8,15.6,PI/2)}}];
 CS.jet1=A=>[
  {tod:.06,c:[168,4,-40,154,1.6,-52],on:()=>{const j=A.jet;if(P.car){P.car.v=0}place('VICTOR',150,-48,PI,'idle');walk('VICTOR',151,-53,2.2);place('THUG1',148.5,-49.6,PI)},l:[["VICTOR","(into his phone) Wheels up in two minutes. I don't care what the tower says. I own the tower."]],d:4.2,post:()=>{hideN('VICTOR');hideN('THUG1')}}];
-CS.final1=A=>{const j=A.jet,x=j?j.x:220,z=-56;return[
- {tod:.08,c:[x-14,6,z+14,x,2,z],on:()=>{if(P.car){P.car.v=0;P.car=null}place('VICTOR',x-6,z+3,-PI*.7,'hurt');nicoAt(x-10.4,z+7,PI*.7);anim('NICO','gun');face('NICO','VICTOR');face('VICTOR','NICO');setRain(0)},l:[["VICTOR","(laughing, coughing) Rosa's boy. Look at you. Covered in ash."],["VICTOR","Ember City finally made you one of us."]]},
+CS.final1=A=>{const j=A.jet,x=(j?j.x:220)-6,z=-45;return[
+ {tod:.08,c:[x-14,6,z+14,x+4,2,z-8],on:()=>{for(const c of cars){if(c.key=='vic'||c.key=='lena4')continue;if(Math.hypot(c.x-(x-8),c.z-(z+6))<16){if(P.car===c)P.car=null;setCar(c,x-30,z+26,PI/2);c.v=0;c.sp=0;if(c.sv)c.mode='park'}}if(P.car){P.car.v=0;P.car=null}place('VICTOR',x-6,z+3,-PI*.7,'hurt');nicoAt(x-10.4,z+7,PI*.7);anim('NICO','gun');face('NICO','VICTOR');face('VICTOR','NICO');setRain(0)},l:[["VICTOR","(laughing, coughing) Rosa's boy. Look at you. Covered in ash."],["VICTOR","Ember City finally made you one of us."]]},
  {cu:['NICO',1.5],l:[["NICO","I'm nothing like you."]]},
  {cu:['VICTOR',1.5,-.3],on:()=>{anim('VICTOR','kneel')},l:[["VICTOR","No? You lied to your sister. You used the woman who loves you. You let your best friend bleed out for a stack of paper."],["VICTOR","Tell me the difference, Nico. Please. I'd love to know."]]},
  {ots:['NICO','VICTOR'],l:[["VICTOR","Go on. Six years in a cage for my mistake. Your mother's bills. Dex."],["VICTOR","You've earned it. Nobody in this city would blame you."]],ev:[[3,()=>{$('sir').style.opacity=.8;snd(600,.6,'sine',.03)}]]},
  {cu:['NICO',1.2,.1],pad:2,l:[["NICO","..."]],post:()=>{$('sir').style.opacity=0}}]};
-CS.endA=A=>{const j=A.jet,x=j?j.x:220,z=-56;return[
+CS.endA=A=>{const j=A.jet,x=(j?j.x:220)-6,z=-45;return[
  {cu:['NICO',1.4],on:()=>{anim('NICO','idle')},l:[["NICO","No. You don't get to make me into you."]]},
- {c:[x-20,3,z+16,x-8,1.4,z+5],on:()=>{const c=svCar('lena4',0x2a3038,0,x-40,-20,PI*.8,{top:16});vgo(c,x-14,z+12,PI*.75,16);place('LENA',x-14,z+10.6,PI*.75);npc('LENA').g.visible=false},d:4.2,post:()=>{npc('LENA').g.visible=true;walk('LENA',x-7.6,z+4.4,1.6);face('LENA','VICTOR')}},
+ {c:[x-20,3,z+16,x-8,1.4,z+5],on:()=>{const c=svCar('lena4',0x2a3038,0,x-46,-20,PI*.8,{top:16});vgo(c,x-24,z+17,PI*.75,16);place('LENA',x-22,z+15,PI*.75);npc('LENA').g.visible=false},d:4.2,post:()=>{npc('LENA').g.visible=true;walk('LENA',x-7.6,z+4.4,1.6);face('LENA','VICTOR')}},
  {two:['LENA','VICTOR',4.6],l:[["LENA","Victor Calloway. You're under arrest for the murders of Detective Antonio Ruiz, Remy Delacroix, and Dexter Okafor."],["LENA","Honestly, Victor, I'm going to need a bigger notebook."],["VICTOR","I'll be out in a week."],["LENA","Federal judge, Victor. Not one of yours. And Harlan's been singing since breakfast."]]},
  {two:['NICO','LENA',3.6],on:()=>{hideN('VICTOR');face('NICO','LENA');face('LENA','NICO')},l:[["LENA","You could have killed him. Nobody would have known."],["NICO","I would have. And Mara would have."],["LENA","...So. I believe you had a question."]]},
  {cu:['NICO',1.3],l:[["NICO","It's six years late."]]},
@@ -1999,9 +2013,9 @@ CS.endA=A=>{const j=A.jet,x=j?j.x:220,z=-56;return[
  {tod:.27,fade:0,c:[-80,70,120,0,10,0],c2:[60,40,110,30,5,0],title:['SIX MONTHS LATER','',5],l:[["NICO","Victor Calloway got two life sentences. Remy's ledger took down forty-one people — a judge, a deputy mayor, and most of Harlan's precinct."],["NICO","Mara passed her boards in the spring. First in her class. She works nights at Ember General now. She says the hardest part is the paperwork."]]},
  {c:[GHX.cx+12,6,GHX.cz+28,GHX.cx,2,GHX.cz],l:[["NICO","Ma Delacroix finally buried an empty coffin for Remy. Half the west side came. She made gumbo for three hundred people, and hit a councilman with a ladle."],["NICO","Dex's daughter Imani got a letter from me. I told her the truth. That her father made a terrible mistake when he was scared — and fixed it when it counted."]]},
  {c:[30,3,40,0,2,20],c2:[10,2,34,0,2,20],l:[["NICO","And me? I drive a cab. The pay is terrible. Nobody shoots at me."],["NICO","Most days, I don't count anything at all."]],post:()=>{ST.ending='justice';hideAll()}}]};
-CS.endB=A=>{const j=A.jet,x=j?j.x:220,z=-56;return[
+CS.endB=A=>{const j=A.jet,x=(j?j.x:220)-6,z=-45;return[
  {cu:['NICO',1.4],l:[["NICO","You're right. Nobody would blame me."]],ev:[[2.6,()=>{$('fx').style.background='#fff';$('fx').style.opacity=.9;setTimeout(()=>$('fx').style.opacity=0,120);snd(90,.5,'sawtooth',.2);shake=1;tracer(x-10.4,z+7,x-6,z+3,0xffe066,1.3);setTimeout(()=>{anim('VICTOR','dead');part(x-6,1.2,z+3,0,3,0,.2,BL[1],6);splat(x-6,z+3,1.4)},100)}]]},
- {c:[x-18,2.4,z+15,x-8,1.2,z+4],d:3.4,on:()=>{const c=svCar('lena4',0x2a3038,0,x-40,-20,PI*.8,{top:16});vgo(c,x-14,z+12,PI*.75,16)},post:()=>{place('LENA',x-12.6,z+9.6,PI*.75);walk('LENA',x-9.2,z+6.4,1.2);face('LENA','NICO')}},
+ {c:[x-18,2.4,z+15,x-8,1.2,z+4],d:3.4,on:()=>{const c=svCar('lena4',0x2a3038,0,x-46,-20,PI*.8,{top:16});vgo(c,x-24,z+17,PI*.75,16)},post:()=>{place('LENA',x-14,z+11,PI*.75);walk('LENA',x-9.2,z+6.4,1.2);face('LENA','NICO')}},
  {cu:['LENA',1.4],l:[["LENA","...Nico. What did you do."],["NICO","What he deserved."]]},
  {ots:['NICO','LENA'],l:[["LENA","That wasn't your call to make. He was supposed to answer for Ruiz. For all of it. In a courtroom, where the whole city could watch."],["LENA","Now he's just another body in Ember City. And you're just another man who made one."],["NICO","Lena—"]]},
  {cu:['LENA',1.3],pad:1.5,l:[["LENA","Go. Before I have to arrest you."],["LENA","...And don't ask me the question. Not now. Not ever."]]},
@@ -2024,14 +2038,14 @@ const MIS=[
   SKILL("Deal with Calloway's *collectors*.",(A,G)=>{G.push(thug(-40.2,10.6,{lbl:'SAL',acc:.25}),thug(-42.7,10.9,{acc:.25}),thug(-62,25.4,{acc:.25}),thug(-64,26,{acc:.25}))}),
   SSAY([["NICO","(to himself) Day one. Great start."]]),
   SGO(-40,12.5,"Go *inside* to Mara.",{r:2.6,foot:1}),
-  SC('pro3')],onPass:()=>{ST.flags.debt=120000},hint:"Visit your old friend *Dex* at Okafor Auto — east of the river, by the airport (*D*)."},
+  SC('pro3')],onPass:()=>{ST.flags.debt=120000},after:[["MARA","(text) I put clean sheets on your bed. Don't make it weird."],["MARA","(text) ...I'm glad you're home."]],hint:"Visit your old friend *Dex* at Okafor Auto — east of the river, by the airport (*D*)."},
  {t:'OLD FRIENDS',ch:'CHAPTER 1',L:'D',col:'#5aa8ff',at:[GFC[0],GFC[1]-1],tod0:.45,reward:18000,steps:[
   SC('dex1'),
   SDO(A=>{const c=svCar('comet',0xd8161c,1,47,14.7,PI/2);c.free=1;c.dmg=0;c.keep=1}),
   SCOND(A=>{beaconObj(A.v.comet,0x37e6ff);return P.car===A.v.comet},"Steal the cherry-red *Comet SR* parked outside the *Golden Ember Casino*."),
   SDO(A=>{heat=Math.max(heat,2.6);say([["THUG","Hey! HEY! That's Mr. Calloway's car!"],["NICO","Easy, sweetheart. Just like the old days."]]);A.grp=[thug(40,10.5,{acc:.25}),thug(44,11,{acc:.25})]}),
   SGO(GAR[0]-3,GAR[1]-11,"Lose the cops and bring the *Comet* to *Okafor Auto*. Don't wreck it.",{veh:'comet',maxDmg:140,clean:1,r:4.5,vehTxt:"Get back in the *Comet*.",vehFail:"You wrecked the Comet."}),
-  SC('dex2')],hint:"A text from an unknown number: “Fountain park. 10pm. — L.” (*L*)"},
+  SC('dex2')],after:[["RADIO","(unknown number) You still drive like you're angry at the road."],["RADIO","(unknown number) Fountain park. Ten o'clock. Come alone. — L"]],hint:"A text from an unknown number: “Fountain park. 10pm. — L.” (*L*)"},
  {t:'THE DETECTIVE',ch:'CHAPTER 2',L:'L',col:'#ff5f93',at:[0,-24],tod0:.84,reward:5000,steps:[
   SC('lena1'),
   SGO(32,26,"Take Lena's car and wait near the *Golden Ember Casino*.",{car:1,r:9,carTxt:"Get in *Lena's car*."}),
@@ -2044,21 +2058,21 @@ const MIS=[
   SKILL("Calloway's men spotted you. *Survive*.",(A,G)=>spawnAround(A,G,[[283,15],[287,16],[290,26],[279,24],[296,12]])),
   SLOSE("Harlan called it in. *Lose the cops*.",3),
   SGO(64,-24,"Meet *Lena* at the west end of the Fourth St bridge.",{r:4,clean:1}),
-  SC('lena2')],hint:"Mara texted: “Come by the Sunrise Café. I'll make you lunch.” (*M*)"},
+  SC('lena2')],after:[["MARA","(phone) Lena Cruz came by the café today asking about you. She tipped twenty percent. Should I be worried?"],["NICO","Probably."],["MARA","Come by tomorrow. I'll make you lunch. Real food. Not whatever they fed you inside."]],hint:"Mara texted: “Come by the Sunrise Café. I'll make you lunch.” (*M*)"},
  {t:'SMALL BUSINESS',ch:'CHAPTER 3',L:'M',col:'#3fd6c4',at:[0,48.5],tod0:.55,reward:3000,steps:[
   SC('cafe1'),
   SDO(A=>{A.burn=0;A.burned={}}),
   SDEF("Stop Brick's crew from torching the *shops* — café, burger joint and noodle bar.",62,arsonWave,{every:10,clear:1,lab:'DEFEND',check:A=>{for(const e of A.grp)if(!e.dead&&e.at>3.5&&!A.burned[e.tgt]){A.burned[e.tgt]=1;A.burn++;FIRES.push({x:e.tgt,z:39.5,t:90});FIRES.push({x:e.tgt+3,z:39.5,t:90});say([["NICO","They lit one up — damn it!"]])}if(A.burn>=2)return'Two shops burned down.'}}),
   SDO(A=>{const c=svCar('brick',0x26262c,2,-20,57,PI/2,{hp:42,top:21});c.mode='flee';say([["MARA","(phone) Nico! Brick's running — the black SUV! Don't let him come back here!"]])}),
   SCHASE("Take down *Brick's* SUV before he gets away.",'brick',{lab:'BRICK'}),
-  SC('brick1')],hint:"Victor Calloway wants to meet. The *Golden Ember Casino* (*V*)."},
+  SC('brick1')],after:[["NEWS","Ember News: a fire on Fourth Street was put out before it could spread. Witnesses describe 'a man in a red shirt' chasing the arsonists."],["MARA","(phone) Mr. Okonkwo is back. He cried when he saw the windows. He wants to name a sandwich after you."],["NICO","What's in it?"],["MARA","Mostly hot sauce. He says that's your personality."]],hint:"Victor Calloway wants to meet. The *Golden Ember Casino* (*V*)."},
  {t:'HIGH ROLLER',ch:'CHAPTER 4',L:'V',col:'#ffd23f',at:[40,17],tod0:.9,reward:0,steps:[
   SC('cas0'),
   SCOND(()=>IN===CAS,"Enter the *Golden Ember Casino* (E at the door).",[40,12.5]),
   SDO(A=>{ST.games=0;cash+=2000;say([["THUG","Compliments of Mr. Calloway. Two thousand in chips. He'll find you when he's ready."],["NICO","(to himself) Of course he will."]])}),
   SCOND(()=>ST.games>=3,"Play *3 rounds* — slots, roulette or blackjack (walk up and press E)."),
   SDO(()=>{closeCas();if(IN!==CAS)IN=CAS}),
-  SC('victor1')],keepIn:1,hint:"Lena wants to talk. West end of the Fourth St bridge (*L*)."},
+  SC('victor1')],keepIn:1,after:[["NICO","I didn't tell Mara about Victor's offer. I didn't tell Lena either."],["NICO","Six years in a cell teaches you to keep things in. It doesn't teach you when to stop."]],hint:"Lena wants to talk. West end of the Fourth St bridge (*L*)."},
  {t:'MA DELACROIX',ch:'CHAPTER 5',L:'L',col:'#ff5f93',at:[62,-26],tod0:.5,reward:0,pre:()=>{ST.flags.maFriend=0},steps:[
   SC('lena3'),
   SGO(GHX.cx,GHX.cz+13,"Go to *Ma Delacroix's* house on the west side.",{r:4.5}),
@@ -2068,7 +2082,7 @@ const MIS=[
   SC('ma1'),
   SDO(A=>{ST.gsneak=0;ST.hideGr=1;const m=ally('MA',GDOOR.x,GDOOR.z+1.5,{hp:420,follow:0,vital:1});m.anim='bat';m.melee=1}),
   SKILL("Calloway's men followed you. Protect *Ma Delacroix*.",(A,G)=>{const m=npc('MA');spawnAround(A,G,[[-74,26],[-86,25],[-80,28],[-70,22],[-90,22],[-78,32],[-84,33]],{tg:m});for(let i=0;i<3;i++)G[i].tg=null},{check:A=>{maMelee(A)}}),
-  SC('ma2')],onPass:()=>{ST.flags.maFriend=1;ST.flags.ledger=1},hint:"Victor's job. Pick up the van at Okafor Auto (*D*)."},
+  SC('ma2')],onPass:()=>{ST.flags.maFriend=1;ST.flags.ledger=1},after:[["MA","(phone) Rosa's boy. You left mud on my rug. I'm adding it to the vase."],["NICO","Yes, ma'am."],["MA","And eat something. You look like a coat hanger."]],hint:"Victor's job. Pick up the van at Okafor Auto (*D*)."},
  {t:'THE RUN',ch:'CHAPTER 6',L:'D',col:'#5aa8ff',at:[GFC[0],GFC[1]-1],tod0:.27,reward:0,steps:[
   SC('dex3'),
   SGO(40,-17.4,"Drive the *van* to the casino loading dock.",{veh:'van',r:5,vehTxt:"Get in the *van*.",vehFail:"You destroyed Victor's van."}),
@@ -2088,7 +2102,7 @@ const MIS=[
   SDO(A=>{ally('MARA',302.6,-.2,{hp:120});heat=Math.max(heat,4.6);say([["MARA","Nico, they're coming from everywhere!"]])}),
   SLOSE("Lose *Harlan's* dirty cops. Keep *Mara* safe.",4),
   SGO(GHX.cx,GHX.cz+14,"Take *Mara* to *Ma Delacroix's* house.",{ally:['MARA'],clean:1,r:5}),
-  SC('ma3')],hint:"Lena: “Bank roof. Bring steady hands.” Climb the ladder on the west side of the bank (*L*)."},
+  SC('ma3')],after:[["LENA","(phone) I heard about the freight yard. Is Mara okay?"],["NICO","She's with an eighty-one-year-old woman who owns a bat and a shotgun."],["LENA","...That's not even the strangest sentence I've heard today."]],hint:"Lena: “Bank roof. Bring steady hands.” Climb the ladder on the west side of the bank (*L*)."},
  {t:'ROOFTOPS',ch:'CHAPTER 8',L:'L',col:'#ff5f93',at:[-13,2.5],tod0:.86,reward:5000,steps:[
   SC('roof1'),
   SDO(A=>{own.sniper=1;ammo.sniper=Math.max(ammo.sniper,30);setW('sniper');lastHot='';const l=ally('LENA',-11.5,2.5,{hp:240,follow:0,vital:1,shoot:24});l.to=[-13,-13];l.path=[[-1,-26],[1.2,-36.2]];l.sp=1.5;place('HARLAN',-12,-62,0);walk('HARLAN',-1.6,-38.6,1.4);place('THUG3',-13.4,-62.6,0);walk('THUG3',-3.2,-40.4,1.4)}),
@@ -2097,7 +2111,7 @@ const MIS=[
   SKILL("It's a setup! Snipe the *hitmen* before they reach *Lena*.",(A,G)=>{const L=npc('LENA');spawnAround(A,G,[[-14,-54],[14,-53],[-16,-28],[15,-29]],{tg:L,pref:7,rng:30,acc:.22,dmg:3});say([["LENA","Nico! Left side — they're everywhere!"]])},{check:A=>{if(!A.hf&&A.t>2){A.hf=1;walk('HARLAN',-1.6,-62,4)}if(!A.w2&&A.t>14){A.w2=1;spawnAround(A,A.grp,[[0,-58],[-18,-44],[18,-44],[7,-25]],{tg:npc('LENA'),pref:7,rng:30,acc:.22,dmg:3});say([["LENA","More of them — south and east!"]])}}}),
   SDO(A=>{hideN('HARLAN');const c=svCar('harlan',0x1d3b8a,0,-6,-63,-PI/2,{hp:40,top:20});c.mode='flee';say([["LENA","Harlan's running! Blue cruiser, heading out of the park! Get down there!"]])}),
   SCHASE("Get down from the roof and stop *Harlan*.",'harlan',{lab:'HARLAN',lose:240}),
-  SC('harlan1')],onPass:()=>{ST.flags.harlan=1},hint:"Ma Delacroix has an idea. Her house on the west side (*G*)."},
+  SC('harlan1')],onPass:()=>{ST.flags.harlan=1},after:[["NEWS","Ember News: Police Captain Richard Harlan was taken into federal custody overnight. The department has declined to comment."],["MARA","(phone) Ma taught me to make gumbo. I think she's adopting me."],["MARA","Come home soon, okay? Both of us are worried. She just shows it with a ladle."]],hint:"Ma Delacroix has an idea. Her house on the west side (*G*)."},
  {t:'THE CREW',ch:'CHAPTER 9',L:'G',col:'#c890ff',at:[GHX.cx,GHX.cz+15.5],tod0:.43,reward:0,steps:[
   SC('crew1'),
   SDO(A=>{ally('DEX',GHX.cx+3,GHX.cz+16.6,{hp:150,shoot:20});ST.hideGr=1}),
@@ -2116,7 +2130,7 @@ const MIS=[
   SDO(A=>{const m=ally('MARA',6,17.2,{hp:150,follow:0,vital:0});m.hidden=1;m.g.visible=false;A.vt=0}),
   SDEF("Hold the *bank entrance* while *Dex* cuts the vault.",95,(A,G,w)=>{const sp=[[30,24],[-30,24],[0,45],[24,40],[-24,40],[30,-2],[-28,-2]];for(let i=0;i<3+Math.min(2,w>>1);i++){const p=ri(sp);G.push(thug(p[0]+rr(-3,3),p[1]+rr(-3,3),{acc:.28}))}if(w==3)heat=Math.max(heat,2.4)},{every:12,clear:1,lab:'VAULT',prog:'DRILL'}),
   SC('heist2'),
-  SDO(A=>{const v=A.v.vic;v.ent=null;v.top=21;svRoute(v,[[-20,20],[-20,-20],[20,-20],[60,-20],[100,-20],[140,-20],[150,-36,0,10],[151,-48,0,6]],21);for(const[k,x]of[['e1',-60],['e2',-70]]){const c=svCar(k,0x111114,0,x,17,-PI/2,{hp:28,top:22});c.mode='pursue';c.gunner=1}heat=Math.max(heat,1.6)}),
+  SDO(A=>{const v=A.v.vic;v.ent=null;v.top=21;svRoute(v,[[-60,20],[-60,-20],[-20,-20],[20,-20],[60,-20],[100,-20],[140,-20],[150,-36,0,10],[151,-48,0,6]],21);for(const[k,x]of[['e1',-60],['e2',-70]]){const c=svCar(k,0x111114,0,x,17,-PI/2,{hp:28,top:22});c.mode='pursue';c.gunner=1}heat=Math.max(heat,1.6)}),
   STAIL("Follow *Victor* — he's heading for the airport.",'vic',{min:2,max:150,spot:1e9,lostTxt:'Victor got away.'}),
   SDO(A=>{const j=mkPlane('jet',150,-56,PI/2);planes.splice(planes.indexOf(j),1);A.jet={j,x:150,z:-56,v:0};const e={isVeh:1,enm:1,x:150,z:-56,hp:70,hp0:70,rad:4.8,dead:0,onDie:()=>{A.jet.dead=1}};A.jet.e=e;ENM.push(e);A.ents.push(e);A.ents.push({obj:j.g})}),
   SC('jet1'),
