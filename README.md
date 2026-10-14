@@ -8,7 +8,7 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 **Desktop app (Windows):** run `EmberCity-2.1.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
 
-Every run of the **Desktop app** GitHub Actions workflow builds the `.exe` (Actions tab → *Desktop app* → *Run workflow*). The build appears as a downloadable artifact. Pushing a tag such as `v2.1.0` also publishes it as a Release.
+The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.1.0` does the same.
 
 **Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
