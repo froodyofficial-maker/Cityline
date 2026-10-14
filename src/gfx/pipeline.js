@@ -29,7 +29,9 @@ function initGfx(){const q=CFG.gfx;BASEPR=Math.min(devicePixelRatio,q>=3?2:q>=2?
    fogP=new T.ShaderPass({uniforms:{tDiffuse:{value:null},tDepth:{value:gtaoP.depthTexture},uInvProj:{value:new T.Matrix4()},uCamW:{value:new T.Matrix4()},uCam:{value:new T.Vector3()},uFogCol:{value:new T.Color()},uSunDir:{value:new T.Vector3(0,1,0)},uSunCol:{value:new T.Color()},uA:{value:.008},uB:{value:.04}},vertexShader:QUAD_VS,fragmentShader:FOG_FS});comp.addPass(fogP)}
   bloomP=new T.UnrealBloomPass(new T.Vector2(w/(q>=3?1:2),h/(q>=3?1:2)),.5,.5,.9);comp.addPass(bloomP);
   gradeP=new T.ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0},sat:{value:1.08},vig:{value:.38},uSun:{value:new T.Vector2(.5,.5)},uRay:{value:0},uRayCol:{value:new T.Color(1,.9,.7)},uExpo:{value:.95},uWarm:{value:1}},vertexShader:QUAD_VS,fragmentShader:GRADE_FS});comp.addPass(gradeP);
-  outP=new T.OutputPass();comp.addPass(outP);if(q==1&&T.SMAAPass)comp.addPass(new T.SMAAPass(w*pr,h*pr));comp.setSize(w,h)}catch(e){comp=null;console.warn('post-processing unavailable',e)}}
+  outP=new T.OutputPass();comp.addPass(outP);
+  /* after a resize the GTAO depth texture keeps its old GPU allocation (framebuffer incomplete -> garbage depth -> the fog pass floods the screen blue); rebuild the G-buffer at the new size */
+  comp.onResize=()=>{if(!gtaoP)return;const ort=gtaoP.normalRenderTarget,od=gtaoP.depthTexture;gtaoP.setGBuffer();ort.dispose();od.dispose();if(fogP)fogP.uniforms.tDepth.value=gtaoP.depthTexture};if(q==1&&T.SMAAPass)comp.addPass(new T.SMAAPass(w*pr,h*pr));comp.setSize(w,h)}catch(e){comp=null;console.warn('post-processing unavailable',e)}}
  if(!comp){rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1}
  sc.fog.near=fogP?240:75;sc.fog.far=fogP?600:q>=2?340:260}
 /* dynamic resolution: keep the frame rate up by trading render resolution (50-100% of the preset) */
