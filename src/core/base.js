@@ -42,7 +42,7 @@ const QDEF=(()=>{let q;try{q=JSON.parse(localStorage.getItem('embercity_cfg')||'
 let comp=null,gradeP=null,bloomP=null;const rd=new T.WebGLRenderer({canvas:$('c'),antialias:QDEF===0,powerPreference:'high-performance',stencil:false});rd.setPixelRatio(Math.min(devicePixelRatio,2));rd.shadowMap.enabled=true;
 const sc=new T.Scene(),SKY=0xf7b27b;sc.background=new T.Color(SKY);sc.fog=new T.Fog(SKY,60,200);
 const cam=new T.PerspectiveCamera(60,1,.1,400);
-function rs(){rd.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();if(comp)comp.setSize(innerWidth,innerHeight)}addEventListener('resize',rs);rs();
+function rs(){rd.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();if(comp){comp.setSize(innerWidth,innerHeight);if(comp.onResize)comp.onResize()}}addEventListener('resize',rs);rs();
 const hemi=new T.HemisphereLight(0xffe2c4,0x4a5a6a,.9);sc.add(hemi);
 const sun=new T.DirectionalLight(0xfff0d0,.9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
 {const s=sun.shadow.camera;s.left=s.bottom=-45;s.right=s.top=45;s.far=200}sc.add(sun,sun.target);
