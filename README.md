@@ -26,7 +26,9 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse.
 
-**The loop:** every floor is generated fresh. Follow the buzzing flies to the dead workers and hold **E** to cut the brass ID tags out of them, which is slow and loud. Carry the tags back to the freight lift, feed them to the panel and pull the lever while the gate grinds shut. Each floor down is darker and bigger, needs more tags, and the Foreman gets faster. From B5 there are two of him. Die and you start again at B1. Your deepest floor, the tags you've cut and every shift you've worked go on your time card.
+**Windows app:** `cd offal-desktop && npm ci && npm run dist:win` builds `offal-desktop/release/OFFAL-1.0.0-portable.exe` (run `npm run build:offal` in the repo root first). It needs no install. F11 or Alt+Enter toggles fullscreen. The *OFFAL desktop app* GitHub Actions workflow builds the same file.
+
+**The loop:** every floor is generated fresh. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the nearest body (and back to the lift once you have every tag). Find the dead workers and hold **E** to cut the brass ID tags out of them, which is slow and loud. Carry the tags back to the freight lift, feed them to the panel and pull the lever while the gate grinds shut. Each floor down is darker and bigger, needs more tags, and the Foreman gets faster. From B5 there are two of him. Die and you start again at B1. Your deepest floor, the tags you've cut and every shift you've worked go on your time card.
 
 **The Foreman** hunts by sound and by light:
 - Running, cutting and a gasping breath all carry. Crouching is nearly silent.
@@ -46,6 +48,7 @@ Everything is procedural: textures, models and gore are painted and built in cod
 | F | Torch on/off (the battery drains) |
 | E | Use: cut, take, hide, feed the lift, pull the lever |
 | Space | Hold your breath (in a locker) |
+| Q (hold) | Listen: show the way to the next body, or the lift |
 | Esc | Pause |
 
 Source is in `offal/` (ES modules on the vendored three.js). `npm run build:offal` writes `dist/offal.html`.

@@ -1,0 +1,30 @@
+name: OFFAL desktop app
+
+# Builds the OFFAL Windows app (portable .exe + zip) and uploads it as a downloadable artifact.
+# Actions -> OFFAL desktop app -> Run workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the single-file game
+        run: |
+          npm ci
+          npm run build:offal
+      - name: Package the Windows app
+        working-directory: offal-desktop
+        run: |
+          npm ci
+          npm run dist:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OFFAL-windows
+          path: |
+            offal-desktop/release/*.exe
+            offal-desktop/release/*.zip

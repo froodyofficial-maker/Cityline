@@ -51,7 +51,7 @@
     <h2>NEW HIRE ORIENTATION</h2>
     <ol class="rules">
       <li>Every worker on the line swallowed their <b>brass ID tag</b>. The freight lift only goes down when you <b>feed it tags</b>.</li>
-      <li>Find the bodies. <b>Follow the flies.</b> Hold <kbd>E</kbd> to cut the tag out. It is slow and it is <b>loud</b>.</li>
+      <li>Find the bodies. Hold <kbd>Q</kbd> to <b>listen for the flies</b>: a red arrow shows the way to the nearest body, and back to the lift once you have every tag. Hold <kbd>E</kbd> to cut the tag out. It is slow and it is <b>loud</b>.</li>
       <li>Bring the tags back to the lift, feed the panel, pull the lever, and go <b>deeper</b>. There is no bottom.</li>
       <li><b>The Foreman</b> is still on shift. He hunts by <b>sound</b> and by <b>light</b>. Don't run unless you have to. Never shine your torch in his face.</li>
       <li>Hide in lockers with <kbd>E</kbd>. If he comes close, hold <kbd>SPACE</kbd> to hold your breath. If he watched you climb in, it will not help.</li>
@@ -61,7 +61,7 @@
       <tr><td><kbd>W A S D</kbd></td><td>move</td><td><kbd>SHIFT</kbd></td><td>run (loud)</td></tr>
       <tr><td><kbd>C</kbd> / <kbd>CTRL</kbd></td><td>crouch (quiet)</td><td><kbd>F</kbd></td><td>torch</td></tr>
       <tr><td><kbd>E</kbd></td><td>use / cut / hide</td><td><kbd>SPACE</kbd></td><td>hold breath</td></tr>
-      <tr><td><kbd>ESC</kbd></td><td>pause</td><td></td><td></td></tr>
+      <tr><td><kbd>Q</kbd> (hold)</td><td>listen: show the way</td><td><kbd>ESC</kbd></td><td>pause</td></tr>
     </table>
     <button class="back" data-act="back">Back</button>
   </div>
@@ -70,23 +70,36 @@
 <section id="settings" class="screen panel-screen">
   <div class="panel paper">
     <h2>SETTINGS</h2>
-    <label>Mouse sensitivity <input type="range" id="sens" min="0.3" max="3" step="0.05"></label>
-    <label>Volume <input type="range" id="vol" min="0" max="1" step="0.01"></label>
-    <label>Brightness <input type="range" id="gamma" min="0.6" max="1.8" step="0.02"></label>
+    <h3 class="set-h">TORCH</h3>
+    <label>Beam width <span class="val" id="beamV"></span><input type="range" id="beam" min="0.3" max="0.95" step="0.01"></label>
+    <label>Beam brightness <span class="val" id="powerV"></span><input type="range" id="power" min="60" max="400" step="5"></label>
+    <h3 class="set-h">CONTROLS</h3>
+    <label>Mouse sensitivity <span class="val" id="sensV"></span><input type="range" id="sens" min="0.2" max="3" step="0.05"></label>
+    <label>Field of view <span class="val" id="fovV"></span><input type="range" id="fov" min="60" max="100" step="1"></label>
+    <label class="check">Invert mouse Y <input type="checkbox" id="invert"></label>
+    <h3 class="set-h">PICTURE &amp; SOUND</h3>
+    <label>Brightness <span class="val" id="gammaV"></span><input type="range" id="gamma" min="0.6" max="1.8" step="0.02"></label>
     <label>Picture
       <select id="pix">
         <option value="200">Crunchy (200p)</option>
         <option value="300">Grim (300p)</option>
         <option value="450">Clear (450p)</option>
+        <option value="720">Sharp (720p)</option>
       </select>
     </label>
+    <label>Volume <span class="val" id="volV"></span><input type="range" id="vol" min="0" max="1" step="0.01"></label>
     <label class="check">Screen shake <input type="checkbox" id="shake"></label>
+    <label class="check">Head bob <input type="checkbox" id="bob"></label>
+    <label class="check">Shift briefing &amp; objective hints <input type="checkbox" id="hints"></label>
     <button class="back" data-act="back">Back</button>
   </div>
 </section>
 
 <section id="hud" class="screen">
   <div id="floorLabel" class="hud-tl"></div>
+  <div id="objective" class="objective"></div>
+  <div id="compass"><div class="needle" id="needle"><i></i></div><span id="compassD"></span></div>
+  <div id="brief" class="brief"><b>SHIFT BRIEFING</b><p id="briefText"></p></div>
   <div class="hud-bl"><div id="tags" class="tags"></div><div id="tagText" class="hud-small"></div></div>
   <div class="hud-br"><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
   <div id="dot"></div>

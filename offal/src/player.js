@@ -14,7 +14,7 @@ addEventListener('blur', () => keys.clear());
 export function tapped(code) { return pressed.has(code); }
 export function endFrame() { pressed = new Set(); }
 
-const EYE = 1.62, CROUCH_EYE = 1.0, TORCH = 150;
+const EYE = 1.62, CROUCH_EYE = 1.0;
 
 export class Player {
   constructor(camera) {
@@ -26,7 +26,8 @@ export class Player {
     this.sens = 1;
     this.mouse = { x: 0, y: 0 };
     // the torch hangs off the camera, slightly to the right like it's in your hand
-    this.torch = new THREE.SpotLight(0xffe4c4, TORCH, 28, 0.5, 0.62, 1.5);
+    this.torchPower = 160;
+    this.torch = new THREE.SpotLight(0xffe4c4, this.torchPower, 30, 0.55, 0.62, 1.5);
     this.torch.castShadow = true;
     this.torch.shadow.mapSize.set(512, 512);
     this.torch.shadow.camera.near = 0.2;
@@ -72,9 +73,11 @@ export class Player {
   }
 
   look(dx, dy) {
-    const k = 0.0022 * this.sens;
+    // Chrome sometimes reports one huge jump under pointer lock; drop those instead of snapping the view
+    if (Math.abs(dx) > 250 || Math.abs(dy) > 250) return;
+    const k = 0.0014 * this.sens;
     this.yaw -= dx * k;
-    this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch - dy * k));
+    this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch - dy * k * (this.invertY ? -1 : 1)));
     if (this.hidden) {
       // inside a locker you can only look out through the slats
       let rel = ((this.yaw - this.hidden.camYaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
@@ -110,7 +113,7 @@ export class Player {
       this.battery = Math.max(0, this.battery - dt * 0.62);
       if (this.battery <= 0) { this.lightOn = false; audio.flashlight(); w.say('The torch dies. The dark comes right up to your face.'); }
     }
-    let ti = this.lightOn ? TORCH : 0;
+    let ti = this.lightOn ? this.torchPower : 0;
     if (this.lightOn && this.battery < 20) {
       this.flickerT -= dt;
       if (this.flickerT < 0) this.flickerT = Math.random() * (this.battery / 10 + 0.2);
@@ -138,7 +141,7 @@ export class Player {
     if (keys.has('KeyA') || keys.has('ArrowLeft')) ix -= 1;
     if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
     const moving = ix || iz;
-    const wantRun = (keys.has('ShiftLeft') || keys.has('ShiftRight')) && moving && iz <= 0 && !crouching;
+    const wantRun = (keys.has('ShiftLeft') || keys.has('ShiftRight')) && moving && iz <= 0 && !crouching && !w.listening;
     const running = wantRun && !this.exhausted;
     if (running) {
       this.stamina = Math.max(0, this.stamina - dt * 19);
@@ -152,6 +155,7 @@ export class Player {
     let speed = running ? 5.1 : crouching ? 1.35 : 2.6;
     if (this.hp < 50) speed *= 0.88;
     if (w.slowT > 0) speed *= 0.5;
+    if (w.listening) speed = Math.min(speed, 1.3); // you can't listen and hurry
     const len = Math.hypot(ix, iz) || 1;
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
     const tx = ((ix * c + iz * s) / len) * (moving ? speed : 0), tz = ((-ix * s + iz * c) / len) * (moving ? speed : 0);
@@ -185,15 +189,19 @@ export class Player {
     const cam = this.cam;
     const v = Math.hypot(this.vel.x, this.vel.z);
     this.shake = Math.max(0, this.shake - dt * 2.5);
-    const sh = this.shake * w.shakeScale;
+    this.shakeT = (this.shakeT || 0) + dt;
+    const sh = this.shake * w.shakeScale, st = this.shakeT;
+    // smooth shake (layered sines), not per-frame noise, so it rattles without strobing
+    const nx = Math.sin(st * 31) * 0.6 + Math.sin(st * 17.3) * 0.4, ny = Math.sin(st * 27.1 + 1) * 0.6 + Math.sin(st * 13.7) * 0.4;
+    const bob = w.bobScale ?? 1;
     if (this.hidden) {
       const h = this.hidden;
-      cam.position.set(h.pos.x - h.facing.x * 0.12, 1.55, h.pos.z - h.facing.z * 0.12);
+      cam.position.set(h.pos.x - h.facing.x * 0.05, 1.55, h.pos.z - h.facing.z * 0.05);
     } else {
-      cam.position.set(this.pos.x, this.eyeY + Math.sin(this.bob * 2) * 0.035 * Math.min(1, v / 2.6), this.pos.z);
+      cam.position.set(this.pos.x, this.eyeY + Math.sin(this.bob * 2) * 0.03 * bob * Math.min(1, v / 2.6), this.pos.z);
     }
-    cam.position.x += (Math.random() - 0.5) * sh * 0.08;
-    cam.position.y += (Math.random() - 0.5) * sh * 0.08;
-    cam.rotation.set(this.pitch + (Math.random() - 0.5) * sh * 0.03, this.yaw, Math.sin(this.bob) * 0.006 * v + this.roll, 'YXZ');
+    cam.position.x += nx * sh * 0.04;
+    cam.position.y += ny * sh * 0.04;
+    cam.rotation.set(this.pitch + ny * sh * 0.015, this.yaw + nx * sh * 0.01, Math.sin(this.bob) * 0.004 * v * bob + this.roll, 'YXZ');
   }
 }

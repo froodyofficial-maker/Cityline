@@ -144,7 +144,7 @@ export function buildLevel(L, mats) {
     for (const [dx, dy] of DIRS) {
       if (!isWall(L, x + dx, y + dy)) continue;
       const n = [-dx, 0, -dy];
-      const r = [dy, 0, -dx]; // up x n
+      const r = [-dy, 0, dx]; // so that r x up points along n: the face is front-facing from inside the tile
       const p0 = [cx + dx * TILE / 2 - r[0] * TILE / 2, 0, cz + dy * TILE / 2 - r[2] * TILE / 2];
       let gore = rng() < 0.3 + 0.17 * D.gore + goreBoost * 0.2 ? Math.min(3, 1 + Math.floor(rng() * (D.gore + 1 + goreBoost))) : 0;
       buf(wallBufs, gore * 3 + style).quad(p0, [r[0] * TILE, 0, r[2] * TILE], [0, WALL_H, 0], n, rng() < 0.5);

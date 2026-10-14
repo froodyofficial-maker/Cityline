@@ -34,7 +34,11 @@ export class Director {
     this.phantom.root.visible = false;
     this.drops.length = 0;
     this.paUsed = new Set();
+    this.face = null;
+    this.queued = null;
   }
+
+  queue(kind, delay) { this.queued = { kind, t: delay }; }
 
   // a floor spot straight ahead, in view, at a distance
   ahead(min, max) {
@@ -103,6 +107,25 @@ export class Director {
         G.player.shake = Math.max(G.player.shake, 0.6);
         return true;
       }
+      case 'face': { // not him. not really. it doesn't matter.
+        if (pl.inLift) return false;
+        const fx = -Math.sin(pl.yaw), fz = -Math.cos(pl.yaw);
+        const px = pl.pos.x + fx * 1.3, pz = pl.pos.z + fz * 1.3;
+        if (!lineOfSight(G.L, pl.pos.x, pl.pos.z, px, pz)) return false;
+        const f = this.phantom;
+        f.root.position.set(px, pl.crouch ? -1.0 : -0.5, pz); // sunk so the face is level with yours
+        f.root.rotation.y = Math.atan2(-fx, -fz);
+        f.root.visible = true;
+        if (!f.root.parent) G.scene.add(f.root);
+        this.ph = null;
+        this.face = { t: 0 };
+        a.jumpscare(0.75);
+        G.flash = 1;
+        G.scare = 1;
+        G.torchKill = 0;
+        pl.shake = 1.4;
+        return true;
+      }
       case 'pa': {
         const lines = PA_LINES.filter((l) => !this.paUsed.has(l));
         const line = lines[(Math.random() * lines.length) | 0] || PA_LINES[0];
@@ -131,6 +154,13 @@ export class Director {
         this.ph = null;
       }
     }
+    if (this.face) {
+      const fc = this.face, f = this.phantom;
+      fc.t += dt;
+      poseForeman(f, { gait: 0, speed: 0, mode: 'grab', t: fc.t, jawOpen: 1, twitch: { x: (Math.random() - 0.5) * 0.4, y: (Math.random() - 0.5) * 0.3, z: (Math.random() - 0.5) * 0.5, r: (Math.random() - 0.5) * 0.7 } });
+      if (fc.t < 0.15) G.flash = Math.floor(fc.t * 40) % 2 ? 0.9 : 0.1;
+      if (fc.t > 0.42) { f.root.visible = false; G.torchKill = 0.9; this.face = null; }
+    }
     for (let i = this.drops.length - 1; i >= 0; i--) {
       const dr = this.drops[i];
       dr.t += dt;
@@ -150,6 +180,11 @@ export class Director {
 
     if (pl.hidden) return;
     const chasing = G.hunters.some((h) => h.state === 'chase');
+    if (this.queued && !chasing) {
+      this.queued.t -= dt;
+      if (this.queued.t <= 0) { if (this.run(this.queued.kind)) this.queued = null; else this.queued.t = 1.5; }
+      return;
+    }
     this.t -= dt;
     if (this.t > 0 || chasing) return;
     const near = Math.min(...G.hunters.map((h) => h.pos.distanceTo(pl.pos)));
@@ -157,6 +192,7 @@ export class Director {
     if (near > 16) opts.push('steps', 'phantom', 'phantom');
     if (G.floorTime > 35) opts.push('pa', 'pa');
     if (near > 10 && G.depth >= 2) opts.push('drop');
+    if (near > 12 && G.depth >= 2 && G.floorTime > 45) opts.push('face');
     const kind = opts[(Math.random() * opts.length) | 0];
     this.t = this.run(kind) ? Math.max(14, 34 + Math.random() * 26 - G.depth * 2.5) : 3;
   }

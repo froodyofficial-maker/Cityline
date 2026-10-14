@@ -40,10 +40,21 @@ export class AudioEngine {
       b[i] = last * 3.5;
     }
     this.dist = this.curve(60);
+    // jumpscares skip the compressor (it would soften them) and go through their own hard clipper
+    this.shockClip = ctx.createWaveShaper();
+    this.shockClip.curve = this.curve(4);
+    this.shockOut = this.gain(this.volume, ctx.destination);
+    this.shockClip.connect(this.shockOut);
+    this.fliesBus = this.gain(1, this.sfx);
     this.startAmbience();
   }
 
-  setVolume(v) { this.volume = v; if (this.out) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); }
+  setVolume(v) {
+    this.volume = v;
+    if (this.out) { this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); this.shockOut.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05); }
+  }
+  // listening: the flies come up out of the mix
+  setListen(on) { if (this.ctx) this.fliesBus.gain.setTargetAtTime(on ? 3.2 : 1, this.t, 0.15); }
   get t() { return this.ctx.currentTime; }
 
   // ---------- building blocks ----------
@@ -273,6 +284,51 @@ export class AudioEngine {
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
     this.tone(this.sfx, { f: 90, f2: 30, dur: 0.8, vol: 1 });
   }
+  // the shock: everything else drops out and this hits at full level with no attack at all
+  jumpscare(v = 1) {
+    if (!this.ctx) return;
+    const t = this.t, len = 0.9 + v * 0.9;
+    this.out.gain.cancelScheduledValues(t);
+    this.out.gain.setValueAtTime(this.volume * 0.05, t);
+    this.out.gain.setValueAtTime(this.volume * 0.05, t + len * 0.6);
+    this.out.gain.linearRampToValueAtTime(this.volume, t + len + 1.5);
+    const bus = this.gain(0, this.shockClip);
+    bus.gain.setValueAtTime(1.6 * v, t);
+    bus.gain.setValueAtTime(1.6 * v, t + len * 0.45);
+    bus.gain.exponentialRampToValueAtTime(0.001, t + len);
+    const stop = t + len + 0.05;
+    // full-band blast
+    const n = this.noise(false, this.gain(0.9, bus));
+    n.start(t, Math.random());
+    n.stop(t + 0.3);
+    // the scream: a dissonant cluster of saws with a fast, sick vibrato, sliding down
+    const scream = this.filter('highpass', 400, 0.7, this.gain(0.32, bus));
+    for (const f of [740, 784, 1046, 1108, 1480, 1568, 2217]) {
+      const o = this.osc('sawtooth', f * 1.15, scream), vib = this.osc('sine', 11 + Math.random() * 6), vg = this.gain(f * 0.045);
+      vib.connect(vg).connect(o.frequency);
+      o.frequency.exponentialRampToValueAtTime(f * 0.62, t + len);
+      o.start(t); vib.start(t); o.stop(stop); vib.stop(stop);
+    }
+    // a throat in it
+    const throat = this.gain(0.5, bus), f1 = this.filter('bandpass', 1150, 5, throat), f2 = this.filter('bandpass', 2900, 7, throat);
+    const v1 = this.osc('sawtooth', 420);
+    v1.connect(f1); v1.connect(f2);
+    v1.frequency.linearRampToValueAtTime(610, t + 0.12);
+    v1.frequency.exponentialRampToValueAtTime(260, t + len);
+    v1.start(t); v1.stop(stop);
+    // metal on metal
+    const scr = this.filter('bandpass', 4200, 18, this.gain(1.4, bus));
+    scr.frequency.exponentialRampToValueAtTime(2600, t + len);
+    const sn = this.noise(false, scr);
+    sn.start(t); sn.stop(stop);
+    // the hit in your chest
+    const sub = this.gain(0, bus);
+    sub.gain.setValueAtTime(1.2, t);
+    sub.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+    const s1 = this.osc('sine', 62, sub), s2 = this.osc('square', 41, this.filter('lowpass', 180, 1, sub));
+    s1.frequency.exponentialRampToValueAtTime(26, t + 1);
+    s1.start(t); s2.start(t); s1.stop(t + 1.2); s2.stop(t + 1.2);
+  }
   roar(pos) {
     const t = this.t, p = this.pan(pos, 3, 0.8), g = this.gain(0, p), ws = this.ctx.createWaveShaper();
     ws.curve = this.curve(30);
@@ -444,7 +500,7 @@ export class AudioEngine {
     };
   }
   flies(pos) {
-    const p = this.pan({ ...pos, y: 0.5 }, 0.9, 1.4), g = this.gain(0.045, p), bp = this.filter('bandpass', 420, 1.4, g);
+    const p = this.pan({ ...pos, y: 0.5 }, 1.2, 1.1, this.fliesBus), g = this.gain(0.05, p), bp = this.filter('bandpass', 420, 1.4, g);
     const a = this.osc('sawtooth', 188, bp), b = this.osc('sawtooth', 203, bp);
     const lfo = this.osc('sine', 9 + Math.random() * 4), lg = this.gain(30);
     lfo.connect(lg); lg.connect(a.frequency); lg.connect(b.frequency);

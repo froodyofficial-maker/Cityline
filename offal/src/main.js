@@ -9,6 +9,7 @@ import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
 import { Post } from './post.js';
 import { Director } from './director.js';
+import { Guide } from './guide.js';
 import * as UI from './ui.js';
 import * as P from './props.js';
 import { floorInfo, WALL_H } from './config.js';
@@ -17,7 +18,7 @@ import { animateFlies } from './props.js';
 // ---------- save ----------
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
-  const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true } };
+  const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, settings: { ...fresh.settings, ...s.settings } };
@@ -67,15 +68,26 @@ const G = {
   onGrab(h, lk) { startDeath(h, 'locker', lk); },
 };
 const director = new Director(G, mats);
+const guide = new Guide(G);
 
 function applySettings() {
   const s = save.settings;
   player.sens = s.sens;
+  player.invertY = s.invert;
+  player.torchPower = s.power;
+  player.torch.angle = s.beam;
+  player.torch.penumbra = 0.55 + (s.beam - 0.3) * 0.3;
+  camera.fov = s.fov;
+  camera.updateProjectionMatrix();
   audio.setVolume(s.vol);
   post.u.bright.value = s.gamma;
   post.height = +s.pix;
   G.shakeScale = s.shake ? 1 : 0.15;
+  G.bobScale = s.bob ? 1 : 0;
+  G.hints = s.hints;
   resize();
+  const show = { sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%' };
+  for (const k in show) UI.$(k + 'V').textContent = show[k];
 }
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -206,6 +218,7 @@ function loadFloor(depth) {
   G.lift = { phase: 'arrive', t: 0 };
   G.liftSealed = true;
   director.reset();
+  guide.reset();
   audio.setDepth(depth);
 }
 
@@ -220,6 +233,7 @@ function startRun() {
   applySettings();
   player.reset();
   blood.clear();
+  guide.newRun();
   save.shifts++;
   G.shift = save.shifts;
   G.runTime = 0;
@@ -232,8 +246,13 @@ function startRun() {
   lockPointer();
 }
 
+// raw mouse input where the browser supports it: no OS acceleration, and none of Chrome's lock jitter
 function lockPointer() {
-  try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch {}
+  const plain = () => { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch {} };
+  try {
+    const r = canvas.requestPointerLock({ unadjustedMovement: true });
+    if (r && r.catch) r.catch(plain); else if (!r) plain();
+  } catch { plain(); }
 }
 
 function updateTransition(dt) {
@@ -263,8 +282,7 @@ function updateTransition(dt) {
     G.lift = { phase: 'opening', t: 0 };
     audio.gateSlide(G.B.lift.pos);
     G.state = 'play';
-    if (G.depth === 1) setTimeout(() => G.state === 'play' && UI.message('Follow the flies. Find the dead. Cut out their tags.', 5), 2500);
-    else setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time.`, 4), 2500);
+    if (G.depth > 1) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the flies.`, 4.5), 2500);
   }
 }
 
@@ -295,9 +313,12 @@ function startDeath(h, kind, locker) {
   if (G.state === 'dying' || G.state === 'dead') return;
   G.state = 'dying';
   G.death = { t: 0, h, kind, cut: false, splat: false, eye: camera.position.clone(), floorPos: player.pos.clone() };
-  audio.scream();
+  audio.jumpscare(1);
   audio.setChase(0);
   audio.setBreath(0, 1);
+  audio.setListen(false);
+  G.listening = false;
+  guide.reset();
   UI.prompt(null);
   UI.only();
   UI.$('slits').classList.remove('on');
@@ -318,7 +339,7 @@ function startDeath(h, kind, locker) {
   }
   G.death.dir = dir;
   h.yaw = Math.atan2(-dir.x, -dir.z);
-  G.flash = 0.6;
+  G.flash = 1;
   audio.setMuffle(false);
 }
 
@@ -330,7 +351,7 @@ function updateDeath(dt) {
   const grab = t < 1.35;
   if (grab) {
     // the face comes at you
-    const close = Math.min(1, t / 0.9);
+    const close = 0.55 + 0.45 * Math.min(1, t / 0.9); // no wind-up: it's just there
     // its head juts well out in front of its hips; this leaves the face a hand's width from yours
     const base = d.kind === 'locker' ? 1.25 : 1.3;
     h.pos.copy(d.kind === 'locker' ? player.hidden.pos : d.floorPos).addScaledVector(d.dir, base - close * 0.25);
@@ -346,7 +367,8 @@ function updateDeath(dt) {
   if (grab) {
     // it lifts you off the floor by the throat, up to its face
     camera.position.copy(d.eye);
-    camera.position.y += 0.4 * Math.min(1, t / 0.5);
+    camera.position.y += 0.4 * Math.min(1, t / 0.12);
+    if (t < 0.2) G.flash = Math.floor(t * 40) % 2 ? 1 : 0.15; // strobe on impact
     camera.lookAt(_head);
     faceLight.position.lerpVectors(camera.position, _head, 0.55);
     faceLight.intensity = 1.6 + Math.random() * 1.4;
@@ -370,7 +392,7 @@ function updateDeath(dt) {
     }
     camera.position.set(d.floorPos.x, 0.22, d.floorPos.z);
     player.torch.intensity = 40; // dropped, still on, pointing at it
-    if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
+    if (camera.fov !== 55) { camera.fov = 55; camera.updateProjectionMatrix(); }
     _head.y -= 0.3;
     camera.lookAt(_head);
     camera.rotation.z += 0.75;
@@ -388,7 +410,7 @@ function updateDeath(dt) {
       G.blackout = Math.min(1, (t - 2.3) / 1.2);
     }
   }
-  if (t > 3.9) { camera.fov = 72; camera.updateProjectionMatrix(); showDeath(); }
+  if (t > 3.9) { camera.fov = save.settings.fov; camera.updateProjectionMatrix(); showDeath(); }
 }
 
 const DEATH_TITLES = ['PROCESSED', 'TENDERIZED', 'HUNG TO BLEED', 'DEBONED', 'RENDERED DOWN', 'PUT ON THE LINE', 'OPENED UP'];
@@ -570,6 +592,7 @@ function harvest(c) {
   player.tags++;
   G.runTags++;
   G.noise(c.pos, 12, true);
+  if (G.runTags === 1) director.queue('face', 6 + Math.random() * 5);
   const got = G.B.lift.inserted + player.tags;
   if (got >= G.D.tags) {
     // the last one: and now he knows exactly where you are
@@ -699,12 +722,15 @@ function updateGame(dt, t) {
   G.lampKill -= dt;
   G.torchKill -= dt;
   G.slowT -= dt;
+  const listen = keys.has('KeyQ') && !player.hidden;
+  if (listen !== !!G.listening) { G.listening = listen; audio.setListen(listen); }
   player.update(dt, G);
   for (const h of G.hunters) h.update(dt, t);
   if (G.state !== 'play') return; // a hunter may have just killed you
   updateLift(dt);
   if (G.state !== 'play') return;
   handleInteract(dt);
+  guide.update(dt);
   director.update(dt);
   updateLamps(t);
   updateSwingers(dt, t);
@@ -773,6 +799,8 @@ addEventListener('keydown', (e) => {
 
 function pause() {
   G.state = 'paused';
+  G.listening = false;
+  audio.setListen(false);
   UI.only('pause', 'hud');
   audio.setChase(0);
   audio.setBreath(0, 1);
@@ -809,11 +837,14 @@ function fillSettings() {
   UI.$('gamma').value = s.gamma;
   UI.$('pix').value = String(s.pix);
   UI.$('shake').checked = s.shake;
+  for (const id of ['fov', 'beam', 'power']) UI.$(id).value = s[id];
+  for (const id of ['invert', 'bob', 'hints']) UI.$(id).checked = s[id];
 }
-for (const id of ['sens', 'vol', 'gamma', 'pix', 'shake']) {
+const CHECKS = ['shake', 'invert', 'bob', 'hints'];
+for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
     const s = save.settings, el = UI.$(id);
-    s[id] = id === 'shake' ? el.checked : id === 'pix' ? +el.value : +el.value;
+    s[id] = CHECKS.includes(id) ? el.checked : +el.value;
     applySettings();
     writeSave();
   });
