@@ -105,7 +105,7 @@ function sideMM(big,c){if(IN)return;if(!ST.on&&BEAT&&!BEAT.obj){const p=mmPt(BEA
  for(const e of GANGP)if(!e.dead&&(e.hostile||e.crew)){const p=mmPt(e.x,e.z,big,c);if(p[2])continue;mg.fillStyle=e.crew?'#ff4fa3':GANGS[e.gk].c;mg.fillRect(p[0]-1.5,p[1]-1.5,3,3)}}
 /* ---------- glue: per-frame, keys, menu buttons, story missions ---------- */
 function sideU(dt){if(!started)return;fetchU(dt);dogParkU(dt);jobsU(dt);empireU(dt)}
-function sideKey(e){const c=e.code;if(c=='KeyQ'){throwBall();return 1}if(c=='KeyH'){rosyMenu();return 1}if(c=='KeyJ'){jobsMenu();return 1}if(c=='KeyP'){empMenu();return 1}return 0}
-function sideAct(k,id){if(k=='dog'){dogAct(id);return 1}if(k=='job'){jobAct(id);return 1}return 0}
+function sideKey(e){const c=e.code;if(c=='KeyQ'){throwBall();return 1}if(c=='KeyH'){rosyMenu();return 1}if(c=='KeyJ'){jobsMenu();return 1}if(c=='KeyP'){empMenu();return 1}if(c=='KeyN'){netMenu();return 1}if(c=='Enter'&&MP.on){chatOpen();return 1}return 0}
+function sideAct(k,id){if(k=='dog'){dogAct(id);return 1}if(k=='job'){jobAct(id);return 1}if(k=='net'){netAct(id);return 1}return 0}
 /* a story mission is starting: clear the stage */
 function freeRoamPause(){wxRelease();sjEnd(1);if(GW.on)gwEnd(null);gangClear();fetchReset();ROSY.trick=null;ROSY.play=null}

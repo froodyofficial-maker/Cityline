@@ -18,7 +18,7 @@ function weatherDyn(dt){const held=wxHold();
   WEA.cov=.55;WEA.dim=WEA.rain=WEA.wet=0;WEA.fog=1;txt('wxl','');return}
  WEA.held=0;
  /* pick the next weather every 3-8 in-game hours */
- WEA.t+=dt/CFG.dayLen;if(WEA.t>=WEA.next){WEA.t=0;WEA.next=rr(.12,.33);wxSet(ri(WXN[WEA.k]))}
+ if(!(NET.on&&!NET.host))WEA.t+=dt/CFG.dayLen;/* online, the host decides the weather */if(WEA.t>=WEA.next){WEA.t=0;WEA.next=rr(.12,.33);wxSet(ri(WXN[WEA.k]))}
  const W=WXK[WEA.k],k=Math.min(1,dt*.06);WEA.cov+=(W.cov-WEA.cov)*k;WEA.dim+=(W.dim-WEA.dim)*k;WEA.fog+=(W.fog-WEA.fog)*k;WEA.rain+=(W.rain-WEA.rain)*Math.min(1,dt*.15);
  WEA.wet=Math.max(0,Math.min(1,WEA.wet+(WEA.rain>.3?dt*.05:-dt*.012)));
  SKYU.uCover.value=WEA.cov;

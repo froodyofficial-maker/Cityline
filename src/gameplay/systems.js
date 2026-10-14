@@ -104,7 +104,7 @@ function xKey(e){if(e.code=='Space'&&!e.repeat)K.spDown=1;if(e.code=='KeyX'&&!P.
  if(e.code=='BracketLeft'||e.code=='BracketRight'){CFG.sens=Math.max(.2,Math.min(3,+(CFG.sens+(e.code=='BracketRight'?.1:-.1)).toFixed(1)));msg('MOUSE SENSITIVITY '+CFG.sens.toFixed(1)+'X','#2bf0ff');saveCfg()}
  if(e.code=='Minus'||e.code=='Equal'){CFG.scopeSens=Math.max(.1,Math.min(1.5,+(CFG.scopeSens+(e.code=='Equal'?.05:-.05)).toFixed(2)));msg('SCOPE SENSITIVITY '+CFG.scopeSens.toFixed(2)+'X','#2bf0ff');saveCfg()}
 if(sideKey(e))return;if(e.code.startsWith('Digit')){const i=+e.code[5]-1;if(WK2[i])setW(WK2[i])}if(e.code=='KeyI')invPanel();if(e.code=='KeyR')act('r');if(e.code=='Tab')e.preventDefault()}
-function xKeyModal(e){if(e.code=='Escape'&&mode=='cas')closeCas();else if(/^Key[HJP]$/.test(e.code)&&$('md').style.display=='flex')closeCas();else if(e.code=='KeyI'&&$('md').style.display=='flex')closeCas();else if(mode=='eod'&&e.code=='Enter'&&$('eodgo'))$('eodgo').click()}
+function xKeyModal(e){const ae=document.activeElement;if(ae&&ae.tagName=='INPUT'&&ae.id!='chi'){if(e.code=='Enter'&&ae.id=='nci')netAct('join');else if(e.code=='Escape')closeCas();return}if(e.code=='Escape'&&mode=='cas')closeCas();else if(/^Key[HJPN]$/.test(e.code)&&$('md').style.display=='flex')closeCas();else if(e.code=='KeyI'&&$('md').style.display=='flex')closeCas();else if(mode=='eod'&&e.code=='Enter'&&$('eodgo'))$('eodgo').click()}
 /* ---- interaction ---- */
 function act(k){if(P.dead||mode!='play'||cut)return;if(storyAct(k))return;if(P.hide){if(k=='e')exitDump();return}
  if(k=='f'){if(P.tank)exitTank();else if(P.plane)exitPlane();else if(P.heli)exitHeli();else if(P.car){const c=P.car;P.x=c.x+cos(c.h)*2.4;P.z=c.z-sin(c.h)*2.4;P.car=null;P.g.visible=true;c.v*=.5}else if(!IN){const pl=nearPlane(),hl=nearHeli(),tk=nearTank();if(tk)enterTank(tk);else if(pl)enterPlane(pl);else if(hl)enterHeli(hl);else if(!P.roof){const c=nearCar();if(c){if(c.ai)heat+=.6;c.ai=0;c.v=0;P.car=c;P.g.visible=false}}}return}
@@ -128,7 +128,7 @@ function ptxt(){{const s_=storyPrompt();if(s_)return s_}if(P.hide)return'E - Lea
 function xUpdate(dt){const live=!cut&&!P.dead;placesU(dt);streetU(dt);rosyU(dt);storyU(dt);storyWorldU();bpUpdate(dt);heliU(dt);bombU(dt);planeU(dt);tankU(dt);emoBub();mpU(dt);weatherU(dt);weatherDyn(dt);sideU(dt);worldU(dt);cfgU(dt);warU(dt);
  if(live&&CFG.hunger){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
  for(let i=pend.length-1;i>=0;i--){pend[i].t-=dt;if(pend[i].t<=0)deliver(pend.splice(i,1)[0])}
- if(eodReq&&live){if(CFG.mode==1||ST.on)eodReq=0;else endDay(eodReq)}
+ if(eodReq&&live){if(CFG.mode==1||ST.on||NET.on)eodReq=0;else endDay(eodReq)}
  const dc=cash-lastCash;lastCash=cash;if(dc>0)dS.earn+=dc;else dS.spend-=dc;dS.maxStars=Math.max(dS.maxStars,Math.min(5,Math.floor(heat)));if(copsOff)heat=0;
  scoped=cw=='sniper'&&K.R&&live&&!P.car&&!P.heli&&!P.plane&&!IN?1:0;const tf=scoped?18:(CIN&&cut)?CIN.fov:60;if(Math.abs(cam.fov-tf)>.3){cam.fov+=(tf-cam.fov)*Math.min(1,dt*10);cam.updateProjectionMatrix()}
  $('scope').style.opacity=scoped?1:0;$('xh').style.opacity=((zoom<.1||scoped)&&!P.car&&live)?1:0;

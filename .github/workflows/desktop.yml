@@ -2,13 +2,13 @@ name: Desktop app
 
 # Builds the Ember City desktop app on GitHub's Windows runners.
 # Every run uploads the .exe as a downloadable artifact and publishes it as a GitHub Release
-# (Actions -> Desktop app -> Run workflow; the release tag defaults to v2.4.0). Pushing a v* tag does the same.
+# (Actions -> Desktop app -> Run workflow; the release tag defaults to v2.5.0). Pushing a v* tag does the same.
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: Release tag
-        default: v2.4.0
+        default: v2.5.0
   push:
     tags: ['v*']
 
