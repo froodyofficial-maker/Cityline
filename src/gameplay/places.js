@@ -34,14 +34,15 @@ function buildMall(cx,cz){const ox=2560,oz=2300;
 function outfitPanel(){let h='<h2>THREADS</h2><div class="stat">CASH $'+cash+' / $150 PER OUTFIT</div>';for(const[n,c]of OUTFITS)h+='<div class="ln"><i style="display:inline-block;width:28px;height:28px;background:'+c+';box-shadow:0 0 0 3px #000"></i><span>'+n+(CFG.shirt==c?' (WEARING)':'')+'</span>'+(CFG.shirt==c?'':'<button data-a="outfit:'+c+'">BUY</button>')+'</div>';openMd(h+'<button data-a="close">LEAVE</button>')}
 function foodPanel(name,ids,mk){curFood={name,ids,mk};let h='<h2>'+name+'</h2><div class="stat">CASH $'+cash+' / HUNGER '+Math.round(hunger)+'%</div>';for(const id of ids){const t=IT[id],p=Math.round(t.p*(mk?1.3:1));h+=row(t.s,t.n,'$'+p+' / HUNGER +'+t.f+' HP +'+t.h,'EAT','eat:'+id)}openMd(h+'<button data-a="close">LEAVE</button>')}
 let curFood=null;
-function placesAct(k,id){if(k=='outfit'){if(!pay(150))return true;setShirt(id);CFG.shirt=id;saveCfg();snd(700,.1);msg('NEW OUTFIT','#43ff7a');outfitPanel();return true}
+function placesAct(k,id){if(k=='court'){courtAct(id);return true}if(k=='outfit'){if(!pay(150))return true;setShirt(id);CFG.shirt=id;saveCfg();snd(700,.1);msg('NEW OUTFIT','#43ff7a');outfitPanel();return true}
  if(k=='eat'){const t=IT[id],p=Math.round(t.p*(curFood&&curFood.mk?1.3:1));if(!pay(p))return true;addInv(id,1);useItem(id);foodPanel(curFood.name,curFood.ids,curFood.mk);return true}
  if(k=='car'){const m=MODELS[+id];if(!pay(m.p))return true;const c=car(ri(m.cols),m.t);setCar(c,DEAL.x+9,DEAL.z+13,PI/2);cars.push(c);snd(700,.15);msg(m.n+' BOUGHT - parked out front','#43ff7a');closeCas();return true}return false}
 /* ---------- EMBER MOTORS ---------- */
+const DISP=[];/* showroom cars get the same distance LOD as traffic */
 const MODELS=[{n:'EMBER SEDAN',t:0,p:3500,cols:[0xd03030,0x2a6fd0,0xeeeeee,0x333333]},{n:'VELOCE COUPE',t:1,p:9000,cols:[0xffc94a,0xff2f6d,0x111111,0x2bf0ff]},{n:'RANGER SUV',t:2,p:6000,cols:[0x30a060,0x6a7078,0x8a3aa8,0xe8e4d8]}];let DEAL=null;
 function dealership(cx,cz){dPad(cx,cz);WK=1;wall(18,6,10,0xb8c4d0,cx,cz-7);nsign('EMBER MOTORS','#2bf0ff',cx,6.6,cz-1.9,10);nRing(18.3,10.3,0x2bf0ff,cx,6.2,cz-7);foot(cx,cz-7,18,10,6);
  const pl=new T.Mesh(new T.PlaneGeometry(26,12),roadMat());pl.rotation.x=-PI/2;pl.position.set(cx,.075,cz+7);sc.add(pl);
- MODELS.forEach((m,i)=>{const c=car(m.cols[0],m.t);c.g.position.set(cx-8+i*8,0,cz+5);c.g.rotation.y=PI*.15;bx(5,.2,5,0x3a3f48,cx-8+i*8,.1,cz+5,sc);solid(cx-8+i*8,cz+5,2.4,4.6,1.4);for(const s of[-1,1])bx(.1,4,.1,0xdddddd,cx-8+i*8+s*2.4,2,cz+2.4,sc)});
+ MODELS.forEach((m,i)=>{const c=car(m.cols[0],m.t);c.x=cx-8+i*8;c.z=cz+5;DISP.push(c);c.g.position.set(cx-8+i*8,0,cz+5);c.g.rotation.y=PI*.15;bx(5,.2,5,0x3a3f48,cx-8+i*8,.1,cz+5,sc);solid(cx-8+i*8,cz+5,2.4,4.6,1.4);for(const s of[-1,1])bx(.1,4,.1,0xdddddd,cx-8+i*8+s*2.4,2,cz+2.4,sc)});
  DEAL={x:cx,z:cz};poi({x:cx,z:cz-1,r:3.4,txt:()=>'E - Buy a car',e:()=>{let h='<h2>EMBER MOTORS</h2><div class="stat">CASH $'+cash+' / DRIVE IT OFF THE LOT</div>';MODELS.forEach((m,i)=>h+=row('star',m.n,'$'+m.p.toLocaleString(),'BUY','car:'+i));openMd(h+'<button data-a="close">LEAVE</button>')}});PLACES.push({x:cx,z:cz,icon:'car'})}
 /* ---------- CHOP SHOP ---------- */
 function chopShop(cx,cz){dPad(cx,cz);const c=0x6a6e74;rib(.4,7,14,c,cx-10,3.56,cz-3);rib(.4,7,14,c,cx+10,3.56,cz-3);rib(20.4,7,.4,c,cx,3.56,cz-10);rib(20.4,.4,14.4,0x4a4e54,cx,7.2,cz-3);rib(20.4,2.2,.4,c,cx,6,cz+4);
@@ -97,5 +98,5 @@ function tokensU(dt){const t=performance.now()*.002;for(const k of TOKS){if(k.go
    try{localStorage.setItem('embercity_tokens',JSON.stringify(TOKS.filter(q=>q.got).map(q=>q.i)))}catch(e){}
    if(n==TOKS.length){cash+=10000;msg('ALL '+n+' EMBER TOKENS! +$10,000','#ffd23f')}else msg('EMBER TOKEN '+n+'/'+TOKS.length+'  +$250','#ffc94a')}}}
 /* ---------- per frame ---------- */
-function placesU(dt){for(const g of GASST)if(g.cd>0)g.cd-=dt;for(const c of CRATES)if(c.cd>0&&(c.cd-=dt)<=0)c.g.visible=true;if(TOWER&&TOWER.cd>0)TOWER.cd-=dt;tokensU(dt)}
-function buildPlaces(){beachPlaces();buildTokens()}
+function placesU(dt){for(const c of DISP)carLod(c);for(const g of GASST)if(g.cd>0)g.cd-=dt;for(const c of CRATES)if(c.cd>0&&(c.cd-=dt)<=0)c.g.visible=true;if(TOWER&&TOWER.cd>0)TOWER.cd-=dt;tokensU(dt)}
+function buildPlaces(){beachPlaces();buildTokens();buildCourt();buildPrison()}

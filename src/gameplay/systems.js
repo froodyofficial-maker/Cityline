@@ -16,7 +16,7 @@ function hit(by){dmgBy=by;dmgT=performance.now();hurt=1}
 function setW(id){if(!own[id])return;cw=id;const w=WP[id];P.g.gm.scale.z=w.len;P.g.gm.material=mat(w.col);snd(500,.05);lastHot=''}
 function copsOffChk(){if(!copsOff&&CFG.copLimit<=50&&dS.cops>=CFG.copLimit){copsOff=1;for(const c of cops)sc.remove(c.g);cops.length=0;heat=0;msg('POLICE FORCE WIPED OUT - NO MORE COPS TODAY','#2bf0ff');snd(80,1,'sawtooth',.1)}}
 function kill(e,dx,dz,big,byP){if(e.isVeh){if(!e.dead){e.dead=1;e.hp=0;e.onDie&&e.onDie()}return}if(e.dead)return;e.dead=1;e.dt=0;e.g.rotation.x=-PI/2;e.g.position.y=.18;gore(e,dx,dz,big);scare(e.x,e.z,18);
- if(e.enm){if(e.onDie)e.onDie();if(byP)ST.kills=(ST.kills||0)+1;if(!e.isVeh&&ST.act&&!e.noLoot)lootDrop(e.x,e.z)}else if(e.sol){if(byP&&e.team==1)WAR.pk++;if(e.tank&&!e.boom){e.boom=1;setTimeout(()=>explode(e.x,0,e.z),60)}}else if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
+ if(e.enm){if(e.onDie)e.onDie();if(byP)ST.kills=(ST.kills||0)+1;if(!e.isVeh&&ST.act&&!e.noLoot)lootDrop(e.x,e.z)}else if(e.sol){if(byP&&e.team==1)WAR.pk++;if(e.tank&&!e.boom){e.boom=1;setTimeout(()=>explode(e.x,0,e.z),60)}}else if(byP){if(e.cop){dS.cops++;heat+=1.3;copsOffChk()}else{dS.kills++;kills++;heat+=e.clerk?1.2:.7;provoke(e.x,e.z,22);if(peds.includes(e)&&!e.clerk)revengeRoll(e);if(e.avenger&&REV)REV.a=e;const m=Math.round(rr(10,90));cash+=m;msg('+$'+m,'#ffd23f');if(e.clerk)msg('CLERK DOWN','#ff6a6a')}}}
 function mkCop(d){const e={g:person('#e0ac69','#1d3b8a','#14234a','#111',1),hp:3,dead:0,cop:1,cd:rr(.5,1.5),dt:0,ph:0,ms:'search',srch:22,sx:P.x+rr(-18,18),sz:P.z+rr(-18,18),lx:P.x,lz:P.z};const a=rr(0,6.28);d=d||42;e.x=P.x+sin(a)*d;e.z=P.z+cos(a)*d;push(e,2);cops.push(e)}
 function shoot(){const w=WP[cw];if(shT>0)return;
  if(ammo[cw]<=0){shT=.3;snd(90,.05,'square',.03);if(!P.noAm){P.noAm=1;msg('OUT OF AMMO - switch weapon or buy more','#ff6a6a');setTimeout(()=>P.noAm=0,2500)}return}
@@ -26,8 +26,8 @@ function shoot(){const w=WP[cw];if(shT>0)return;
  for(let i=0;i<w.pel;i++){const a=Math.atan2(ax,az)+(R()-.5)*2*w.spr,qx=sin(a),qz=cos(a);let h=null,hd=w.rng;
   for(const e of all){const dx=e.x-P.x,dz=e.z-P.z,pr=dx*qx+dz*qz;if(pr>0&&pr<hd&&Math.abs(dx*qz-dz*qx)<(e.rad||.8)){hd=pr;h=e}}
   const mh=mpRay(qx,qz,hd);if(mh){hd=mh.d;h=null;mpDmg(mh.r)}if(i<3)tracer(P.x+qx*.6,P.z+qz*.6,P.x+qx*hd,P.z+qz*hd,cw=='sniper'?0xffffff:0xffe066,(P.y||0)+1.3);if(i==0)mpShot(P.x+qx*.6,P.z+qz*.6,P.x+qx*hd,P.z+qz*hd,(P.y||0)+1.3);
-  if(h){h.hp-=w.dmg*(h.isVeh?2:1);if(h.hp<=0)kill(h,qx,qz,w.pel>1&&hd<9||w.dmg>=3||R()<.2,1);else{part(h.x,1,h.z,qx*3,3,qz*3,.12,BL[1],5);if(h.cop)heat+=.02}}}
- scare(P.x,P.z,cw=='sniper'?15:26);heat=Math.max(heat,.15)}
+  if(h){h.hp-=w.dmg*(h.isVeh?2:1);if(h.hp<=0)kill(h,qx,qz,w.pel>1&&hd<9||w.dmg>=3||R()<.2,1);else{part(h.x,1,h.z,qx*3,3,qz*3,.12,BL[1],5);if(h.cop)heat+=.02;if(h.arm)h.hostile=1}}}
+ scare(P.x,P.z,cw=='sniper'?15:26);provoke(P.x,P.z,cw=='sniper'?15:26);heat=Math.max(heat,.15)}
 /* ---- interiors ---- */
 const cyg=(g,r,h,c,x,y,z)=>{const m=new T.Mesh(new T.CylinderGeometry(r,r,h,10),mat(c));m.position.set(x,y,z);g.add(m)};
 function itemMesh(t){const g=new T.Group();
@@ -125,7 +125,7 @@ function ptxt(){{const s_=storyPrompt();if(s_)return s_}if(P.hide)return'E - Lea
  {const gi=nearItem();if(gi)return'E - TAKE '+iname(gi.t)+' (STEAL)'}{const q=poiNear(0);if(q){const t=q.txt();if(t)return t}}if(ladders.find(l=>dist(P,l)<2.8))return'E - Climb to rooftop (sniper nest)';if(dist(P,bank)<3.5)return bank.cd>0?'Bank locked down ('+Math.ceil(bank.cd)+'s)':'E - ROB THE BANK';if(dist(P,casino)<3.5)return'E - Enter casino';if(dist(P,apt)<3.5)return'E - Enter your apartment';
  const o=shops.find(o=>dist(P,o)<3.5);return o?'E - Enter '+o.name:nearCar()?'F - enter car':nearRosy()?'E - Pet Rosy':''}
 /* ---- per-frame systems ---- */
-function xUpdate(dt){const live=!cut&&!P.dead;placesU(dt);rosyU(dt);storyU(dt);storyWorldU();bpUpdate(dt);heliU(dt);bombU(dt);planeU(dt);tankU(dt);emoBub();mpU(dt);weatherU(dt);worldU(dt);cfgU(dt);warU(dt);
+function xUpdate(dt){const live=!cut&&!P.dead;placesU(dt);streetU(dt);rosyU(dt);storyU(dt);storyWorldU();bpUpdate(dt);heliU(dt);bombU(dt);planeU(dt);tankU(dt);emoBub();mpU(dt);weatherU(dt);worldU(dt);cfgU(dt);warU(dt);
  if(live&&CFG.hunger){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
  for(let i=pend.length-1;i>=0;i--){pend[i].t-=dt;if(pend[i].t<=0)deliver(pend.splice(i,1)[0])}
  if(eodReq&&live){if(CFG.mode==1||ST.on)eodReq=0;else endDay(eodReq)}

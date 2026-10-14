@@ -17,15 +17,16 @@ const nearRosy=()=>ROSY.g.visible&&!P.car&&!P.dead&&ROSY.idle>2.2&&Math.hypot(RO
 function petRosy(){const D=ROSY;D.pet=2.2;D.idle=0;bark();if(performance.now()-(D.pt||-1e9)>20000){D.pt=performance.now();P.hp=Math.min(100,P.hp+10);msg('Rosy wags her whole body. Good girl! HP +10','#ffc94a')}else msg('Rosy leans into your leg. Good girl!','#ffc94a')}
 function rosyU(dt){const D=ROSY,g=D.g,t=performance.now()*.001,veh=P.car||P.heli||P.plane||P.tank;
  if(P.dead&&!D.watch)rosyWatch(D.inV?D.x:P.x,D.inV?D.z:P.z);else if(!P.dead&&D.watch)rosyHome();
- g.visible=!veh&&!(typeof CIN!=='undefined'&&CIN);if(veh){D.x=veh.x;D.z=veh.z;D.inV=1;return}
+ D.fight=0;g.visible=!veh&&!(typeof CIN!=='undefined'&&CIN)&&IN!==COURT&&IN!==PRISON;if(veh){D.x=veh.x;D.z=veh.z;D.inV=1;return}
  if(D.inV){D.inV=0;D.x=P.x+cos(P.h)*1.5;D.z=P.z-sin(P.h)*1.5;D.idle=0}
  if(D.inside!==IN){D.inside=IN;D.x=P.x+1.3;D.z=P.z+1.2}
- let tx,tz,lie=0;
+ let tx,tz,lie=0;const tg=P.dead?null:rosyTarget();
  if(P.dead&&D.watch){tx=D.watch.x+1.4;tz=D.watch.z+.6;lie=1;if((D.wt-=dt)<=0){D.wt=2.6;snd(640,.35,'sine',.018)}}
+ else if(tg){tx=tg.x;tz=tg.z;D.fight=1;if(Math.hypot(tg.x-D.x,tg.z-D.z)<1.4)rosyBite(tg,dt)}
  else if((P.y||0)>2.4||P.hide){tx=D.x;tz=D.z}
  else{tx=P.x-sin(P.h)*1.25+cos(P.h)*1.05;tz=P.z-cos(P.h)*1.25-sin(P.h)*1.05}
  let dx=tx-D.x,dz=tz-D.z,d=Math.hypot(dx,dz);if(d>34&&!lie){D.x=tx;D.z=tz;d=0}
- const sp=d>.45?Math.min(10.5,1.2+d*2.6):0;if(sp){D.x+=dx/d*sp*dt;D.z+=dz/d*sp*dt;D.h=Math.atan2(dx,dz);D.idle=0;D.pant=Math.min(6,D.pant+dt*sp*.25)}else{D.idle+=dt;D.pant=Math.max(0,D.pant-dt*.6);
+ const sp=d>(D.fight?1.1:.45)?Math.min(D.fight?12.5:10.5,1.2+d*2.6):0;if(sp){D.x+=dx/d*sp*dt;D.z+=dz/d*sp*dt;D.h=Math.atan2(dx,dz);D.idle=0;D.pant=Math.min(6,D.pant+dt*sp*.25)}else{D.idle+=dt;D.pant=Math.max(0,D.pant-dt*.6);
   const fx=(lie&&D.watch?D.watch.x:P.x)-D.x,fz=(lie&&D.watch?D.watch.z:P.z)-D.z;if(fx*fx+fz*fz>.01){let a=Math.atan2(fx,fz)-D.h;a=Math.atan2(Math.sin(a),Math.cos(a));D.h+=a*Math.min(1,dt*4)}}
  const pv={x:D.x,z:D.z,y:0};push(pv,.35);D.x=pv.x;D.z=pv.z;
  const y=IN?0:onPier(D.x,D.z)?.5:inWater(D.x,D.z)?-.35:Math.max(0,terrH(D.x,D.z));g.position.set(D.x,y,D.z);g.rotation.y=D.h;

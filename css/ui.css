@@ -216,3 +216,4 @@ button:hover{filter:none;transform:none;background:#ff2bd6;color:#fff;box-shadow
 .chs button{font-size:8px;background:#000;color:#fff;box-shadow:inset 0 0 0 2px #2a1a3a}.chs button:hover{background:#ff2bd6}.sbig{font-size:11px}
 #feed{left:50%;top:24px;transform:translateX(-50%);align-items:center;width:min(520px,90vw)}.nt{margin-left:0;box-shadow:var(--px3);border-left:0;text-align:center}
 #zn{right:28px;bottom:118px;font:15px/1.4 var(--head);color:var(--gold);text-shadow:3px 3px #000,0 0 18px rgba(0,0,0,.6);opacity:0;letter-spacing:.06em}#zn.on{animation:znf 3.6s steps(24) forwards}@keyframes znf{0%{opacity:0;transform:translateY(8px)}12%,75%{opacity:1;transform:none}100%{opacity:0}}
+#fps{position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:30;font:9px var(--body);color:#43ff7a;background:#000a;padding:4px 8px;pointer-events:none}

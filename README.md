@@ -6,9 +6,9 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 ## Play
 
-**Desktop app (Windows):** run `EmberCity-2.1.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
+**Desktop app (Windows):** run `EmberCity-2.2.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
 
-The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.1.0` does the same.
+The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.2.0` does the same.
 
 **Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
@@ -90,12 +90,23 @@ Traffic and pedestrians spawn on the streets around you wherever you are, and ar
 | Palm Grove | At night, break into houses with newspapers piling up on the porch. Sometimes the owners are home. |
 | Everywhere | Rooftop ladders, dumpsters to hide in, and 24 hidden Ember Tokens ($250 each, $10,000 for all of them, remembered between sessions). |
 
+## Street life
+
+- **Armed civilians:** about 1 in 10 pedestrians carries a gun. They fight back if you shoot near them, hit them, or kill someone close by.
+- **Revenge:** killing a civilian (never a cop) has a 1-in-10 chance of starting a revenge hunt. A cutscene shows who you killed and their furious relative across town, who then tracks you down with a gun. They're marked with a skull on the map.
+- **Arrests:** at 1–2 stars the police try to cuff you instead of shooting. If they hold on to you, you're **BUSTED**.
+  - **Court:** hire a lawyer ($1,500), represent yourself, or bribe the judge ($4,000). Then answer the prosecutor's three questions.
+  - **Verdict:** not guilty means you walk free from the courthouse steps (Midtown).
+  - **Prison:** guilty means time in Ember State Penitentiary (Foundry). Serve the sentence (the state keeps 15% of your cash), or steal the wire cutters from the workshop toolbox and cut through the weak spot in the yard fence without the guards seeing you. A prison break starts you outside at 3 stars.
+- **In the car:** when you drive, you can see yourself at the wheel and Rosy with her head out of the passenger window.
+
 ## Rosy
 
 Rosy is your golden retriever and goes everywhere with you.
 - **Following:** she trots at your side, rides along in any vehicle and follows you into buildings.
 - **Waiting:** she waits at the bottom of ladders and the tower elevator.
 - **Petting:** when you stand still she sits down; press E to pet her (+10 HP, once every 20 s).
+- **Fighting:** she charges anyone fighting you (cops when you're wanted, armed civilians, revenge hunters, story enemies) and bites until they go down.
 - **Wanted level:** she barks when your wanted level goes up.
 - **Invulnerable:** nothing can hurt her.
 - **If you go down:** she lies down beside you and keeps watch until you're back on your feet.
@@ -122,6 +133,8 @@ Graphics quality is set from the Open World setup screen. It has four levels: Lo
 - **Lighter rendering:** water reflects only the merged city, terrain and sky. Shadows are drawn once per frame instead of once per render pass.
 - **Level of detail:** cars past about 70 m draw as just body and glass, and pedestrians past about 170 m aren't drawn.
 - **Fast collisions:** collision and line-of-sight checks use a 16 m spatial grid over the buildings.
+- **Fewer per-frame updates:** object positions are updated once per frame instead of once per render pass, and above 50 fps the shadow map refreshes every other frame.
+- **FPS counter:** F3 shows frame rate and draw calls.
 
 ## Story mode
 

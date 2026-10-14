@@ -97,7 +97,8 @@ function person2(skin,shirt,pants,hair,gun,hs){skin=hx(skin);shirt=hx(shirt);pan
  if(gun)g.gm=bx(.1,.12,.35,0x222222,0,-.5,.15,g.a[1]);sc.add(g);return g}
 function reShirt(g,c){c=hx(c);g.cols[1]=c;const d=pTor(c,g.cols[0]);g.torso.geometry=vbox(d[0],d[1]);for(const a of g.a){const e=pArm(c,g.cols[0]);a.children[0].geometry=vbox(e[0],e[1])}}
 /* ---------- cars: extruded bodies, glass, clearcoat paint, spinning wheels ---------- */
-const GLASSM=STD({color:0x0b131b,roughness:.04,metalness:.9,envMapIntensity:1.6}),TIREM=STD({color:0x141414,roughness:.92}),RIMM=STD({color:0xc8ccd2,roughness:.22,metalness:1}),TRIMM=STD({color:0x18191c,roughness:.55,metalness:.3});
+/* tinted but see-through, so you can see who (and which dog) is in the car */
+const GLASSM=STD({color:0x07101a,roughness:.06,metalness:.2,envMapIntensity:.9,transparent:true,opacity:.62,depthWrite:false}),TIREM=STD({color:0x141414,roughness:.92}),RIMM=STD({color:0xc8ccd2,roughness:.22,metalness:1}),TRIMM=STD({color:0x18191c,roughness:.55,metalness:.3});
 const CPM={};function paintM(c){return CPM[c]||(CPM[c]=LOWM?new T.MeshLambertMaterial({color:c}):new T.MeshPhysicalMaterial({color:c,metalness:.12,roughness:.36,clearcoat:.75,clearcoatRoughness:.08,envMapIntensity:.9}))}
 const CARP=[{b:[[-2.15,.32],[2.1,.32],[2.18,.55],[2.05,.8],[1.05,.92],[-1.5,.95],[-2.12,.88],[-2.2,.6]],c:[[1.02,.9],[.22,1.42],[-.95,1.45],[-1.55,.92]],bw:1.9,cw:1.6,ly:.66,wz:1.35,wr:.36},
  {b:[[-2.2,.3],[2.15,.3],[2.26,.48],[2.12,.64],[.9,.78],[-1.6,.82],[-2.15,.78],[-2.26,.55]],c:[[.86,.76],[-.08,1.16],[-.78,1.18],[-1.66,.82]],bw:1.96,cw:1.52,ly:.56,wz:1.38,wr:.35},
@@ -183,7 +184,7 @@ const WU={uEnv:{value:null},uRefl:{value:null},uNrm:{value:WNRM},uHasEnv:{value:
 function waterMat(round){const u=Object.assign({},WU,{uTM:{value:new T.Matrix4()},uRound:{value:round?1:0},uHasRefl:{value:0},uRefl:{value:null}});return new T.ShaderMaterial({uniforms:u,vertexShader:WVS,fragmentShader:WFS})}
 /* ---------- planar reflection for the river (HIGH/ULTRA) ---------- */
 const RF={rt:null,cam:new T.PerspectiveCamera(),on:0,s:.4,pl:new T.Plane(),cp:new T.Vector4(),q:new T.Vector4(),v:new T.Vector3(),t:new T.Vector3(),l:new T.Vector3(),rm:new T.Matrix4(),n:new T.Vector3(0,1,0),wp:new T.Vector3()};
-function reflRender(){if(!RF.on||!WATER||IN)return;if(CFG.gfx<3&&(RF.k=(RF.k||0)+1)%2)return;/* HIGH: refresh the reflection every other frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
+function reflRender(){if(!RF.on||!WATER||IN)return;if((RF.k=(RF.k||0)+1)%2)return;/* refresh the reflection every other frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
  if(cp.y<RF.wp.y+.2){u.uHasRefl.value=0;return}RF.pm=RF.pm||new T.Matrix4();RF.fr=RF.fr||new T.Frustum();cam.updateMatrixWorld();RF.pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);RF.fr.setFromProjectionMatrix(RF.pm);RF.bb=RF.bb||new T.Box3(new T.Vector3(70.4,-.6,-480),new T.Vector3(89.6,-.4,COAST+40));RF.bo=RF.bo||new T.Box3(new T.Vector3(-1400,-.6,COAST+26),new T.Vector3(1400,-.4,2200));if(!RF.fr.intersectsBox(RF.bb)&&!RF.fr.intersectsBox(RF.bo)){u.uHasRefl.value=0;return}
  const w=Math.round(innerWidth*RF.s*rd.getPixelRatio()),h=Math.round(innerHeight*RF.s*rd.getPixelRatio());if(RF.rt.width!==w||RF.rt.height!==h)RF.rt.setSize(w,h);
  const n=RF.n,v=RF.v.subVectors(RF.wp,cp);v.reflect(n).negate();v.add(RF.wp);RF.rm.extractRotation(cam.matrixWorld);RF.l.set(0,0,-1).applyMatrix4(RF.rm).add(cp);
@@ -198,7 +199,7 @@ const ENV={cube:null,cc:null,pm:null,rt:null,t:-1e9,tod:-1,res:0};
 function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,350,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9}
 function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?5000:CFG.gfx>=2?8000:12000;if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.015&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;
  const c=ENV.cc,src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(OCEAN)OCEAN.visible=false;if(DOME)DOME.position.copy(c.position);if(GLOWS)GLOWS.visible=false;
- WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(OCEAN)OCEAN.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME)DOME.position.copy(cam.position);
+ c.updateMatrixWorld();if(DOME)DOME.updateMatrixWorld();WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(OCEAN)OCEAN.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME){DOME.position.copy(cam.position);DOME.updateMatrixWorld()}
  const old=ENV.rt;ENV.rt=ENV.pm.fromCubemap(ENV.cube.texture);sc.environment=ENV.rt.texture;if(old)old.dispose();WU.uEnv.value=ENV.cube.texture;WU.uHasEnv.value=1}
 /* ---------- static batching: merge thousands of static meshes into a few chunked draw calls ---------- */
 let MERGED=0;

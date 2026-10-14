@@ -69,8 +69,11 @@ function mkPark(cx,cz,kind){PARKS.push({cx,cz});const k=cx+','+cz;if(BLK[k])remo
  for(const[x,z]of[[-12,-12],[12,-12],[-12,12],[12,12]])lampP(cx+x,cz+z);
  for(let i=0;i<18;i++)bx(.25,.35,.25,ri([0xff6aa8,0xffd23f,0xffffff,0xa14bff]),cx+rr(-9,9),.3,cz+rr(-9,9),sc)}
 /* --- street life --- */
-function mkDump(x,z,alongZ){const g=new T.Group();bx(2.4,1.3,1.5,0x2f6a3a,0,.65,0,g);bx(2.5,.15,.2,0x1f4a28,0,1.3,.7,g);for(const sx of[-1,1])bx(.15,.3,.15,0x111111,sx*1.1,.15,.6,g);
- const lid=new T.Group();lid.position.set(0,1.32,-.75);bx(2.5,.12,1.55,0x24543a,0,.06,.78,lid);g.add(lid);g.position.set(x,0,z);g.rotation.y=alongZ?PI/2:0;sc.add(g);
+/* dumpster: the body is one vertex-coloured mesh that joins the static merge; only the hinged lid stays a separate object */
+let DUMPG=null;
+function mkDump(x,z,alongZ){if(!DUMPG)DUMPG=mergeGeos([[2.4,1.3,1.5,0,.65,0,0x2f6a3a],[2.5,.15,.2,0,1.3,.7,0x1f4a28],[.15,.3,.15,-1.1,.15,.6,0x111111],[.15,.3,.15,1.1,.15,.6,0x111111]].map(p=>({g:colGeo(new T.BoxGeometry(p[0],p[1],p[2]).translate(p[3],p[4],p[5]),p[6])})));
+ const body=new T.Mesh(DUMPG,PLAINM);body.position.set(x,0,z);body.rotation.y=alongZ?PI/2:0;body.castShadow=body.receiveShadow=true;sc.add(body);
+ const g=new T.Group();g.userData.dyn=1;const lid=new T.Group();lid.position.set(0,1.32,-.75);bx(2.5,.12,1.55,0x24543a,0,.06,.78,lid);g.add(lid);g.position.set(x,0,z);g.rotation.y=alongZ?PI/2:0;sc.add(g);
  const hw=alongZ?.8:1.25,hd=alongZ?1.25:.8;B.push({x1:x-hw,x2:x+hw,z1:z-hd,z2:z+hd,h:1.6});DUMP.push({x,z,g,lid,occ:0,alongZ,open:0})}
 function signal(x,z,grp){bx(.18,4.2,.18,0x333333,x,2.1,z,sc);bx(.5,1.2,.5,0x222222,x,4.4,z,sc);const r=new T.Mesh(geo(.3,.3,.1),nmat(0xff2222)),gm=new T.Mesh(geo(.3,.3,.1),nmat(0x22ff44));r.position.set(x,4.75,z+.28);gm.position.set(x,4.1,z+.28);sc.add(r,gm);SIGS.push({r,g:gm,grp,ph:-1})}
 function streetLife(){
@@ -109,12 +112,12 @@ function copsU(dt,stars,live){let seenAny=false,nearest=1e9;const night=Math.max
   if(e.see)seenAny=true;let tx=P.x,tz=P.z,sp=0;
   if(stars==0&&heat<.3){tx=e.x+(e.x-P.x);tz=e.z+(e.z-P.z);sp=5}
   else if(e.knows&&P.hide===e.knows){tx=e.knows.x;tz=e.knows.z;sp=5}
-  else if(e.ms=='chase'&&e.see){sp=4.5+stars*.5;if(d<6)sp=0}
+  else if(e.ms=='chase'&&e.see){sp=4.5+stars*.5;if(d<(arrestable()?1.2:6))sp=0}
   else if(e.ms=='search'){tx=e.sx;tz=e.sz;if(Math.hypot(tx-e.x,tz-e.z)<2.5){if((e.wt=(e.wt||0)-dt)<=0){e.wt=rr(2,4);e.sx=e.lx+rr(-14,14);e.sz=e.lz+rr(-14,14)}sp=1.8}else sp=3.6;if((e.srch-=dt)<=0)e.ms='idle'}
   if(P.hide&&e.ms=='search'){const h=P.hide,dd=Math.hypot(e.x-h.x,e.z-h.z);if(dd<3.4&&((e.knows===h)||((e.chk=(e.chk||0)-dt)<=0&&(e.chk=2)&&R()<.3))){exitDump();P.hp-=18;hit('cop');heat=Math.max(heat,2);msg('FOUND! They pulled you out','#ff4f4f');for(const c of cops)if(!c.dead&&dist(c,P)<30){c.ms='chase';c.lx=P.x;c.lz=P.z}}}
   if(sp>0&&!IN){const w=(e.see||Math.hypot(tx-e.x,tz-e.z)<9)?[tx,tz]:cpath(e,tx,tz,dt),dx=w[0]-e.x,dz=w[1]-e.z,l=Math.hypot(dx,dz)||1;e.x+=dx/l*sp*dt;e.z+=dz/l*sp*dt;e.ph+=dt*sp*1.8;e.h=Math.atan2(dx,dz)}
   push(e,.4);if(e.see)e.h=Math.atan2(P.x-e.x,P.z-e.z);e.g.rotation.y=e.h||0;e.g.position.set(e.x,0,e.z);const s=sp>0?sin(e.ph)*.8:0;e.g.l[0].rotation.x=s;e.g.l[1].rotation.x=-s;e.g.a[1].rotation.x=(e.see&&d<16)?-1.5:0;
-  if(live&&e.see&&d<16&&!((P.heli||P.plane)&&P.y>8)&&(e.cd-=dt)<=0){e.cd=rr(.8,1.6);tracer(e.x,e.z,P.x,P.z,0xff5555);snd(220,.1,'square',.03);if(R()<.4){P.hp-=P.car?3:6;shake=.25;hit('cop')}}}
+  if(live&&e.see&&d<16&&!(arrestable()&&d<10)&&!((P.heli||P.plane)&&P.y>8)&&(e.cd-=dt)<=0){e.cd=rr(.8,1.6);tracer(e.x,e.z,P.x,P.z,0xff5555);snd(220,.1,'square',.03);if(R()<.4){P.hp-=P.car?3:6;shake=.25;hit('cop')}}}
  for(let i=cops.length-1;i>=0;i--){const c=cops[i];if(c.dead&&c.dt>20||stars==0&&heat<.3&&dist(c,P)>45){sc.remove(c.g);cops.splice(i,1)}}
  if(stars>0){if(seenAny)unseen=0;else unseen+=dt}else unseen=0;
  evading=stars>0&&!seenAny&&cops.length>0&&unseen>1.5;if(evading&&!evMsg&&unseen>3){evMsg=1;msg('LOST THE COPS - stay hidden and keep your distance','#37e6ff')}if(seenAny)evMsg=0;
@@ -130,7 +133,10 @@ function addPalms(){const pl=(x,z,s)=>{if(bNear(x-1,z-1,x+1,z+1).some(b=>!b.air&
  for(const[cx,cz]of[[0,0],[40,0],[-40,0]])for(const sx of[-1,1])pl(cx+sx*12.6,cz+12.8,rr(1,1.2))}
 
 /* shadows are drawn once per frame (by the first scene render), not again by the GTAO normal pass */
-function renderFrame(){GU.uTime.value=performance.now()*.001;skyPlace();lightsU();envUpdate();reflRender();rd.shadowMap.autoUpdate=false;rd.shadowMap.needsUpdate=true;if(comp){gradeU();comp.render()}else rd.render(sc,cam)}
+/* world matrices are updated once per frame (three.js would redo all ~5000 objects in every render pass);
+   above ~50 fps the sun's shadow map is refreshed every other frame - the one-frame lag is invisible */
+sc.matrixWorldAutoUpdate=false;let SHF=0,LRF=0;
+function renderFrame(){const now=performance.now(),fdt=now-LRF;LRF=now;GU.uTime.value=now*.001;rd.info.autoReset=false;rd.info.reset();skyPlace();lightsU();sc.updateMatrixWorld();envUpdate();reflRender();rd.shadowMap.autoUpdate=false;rd.shadowMap.needsUpdate=(SHF^=1)||fdt>20;if(comp){gradeU();comp.render()}else rd.render(sc,cam);fpsU(fdt)}
 /* --- build everything --- */
 function removeBlock(k){const b=BLK[k];if(!b)return;for(const o of b.objs)sc.remove(o);for(const x of b.bs){const i=B.indexOf(x);if(i>=0)B.splice(i,1)}for(const l of b.ls){const i=ladders.indexOf(l);if(i>=0)ladders.splice(i,1)}delete BLK[k]}
 function buildWorld(){buildTerrain();buildSky();for(const pk in PADS)PADS[pk].material=PADM;

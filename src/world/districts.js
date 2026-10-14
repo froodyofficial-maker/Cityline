@@ -118,7 +118,7 @@ function beach(){for(let x=-380;x<AIRX[0]-2;x+=14){const pm=new T.Mesh(palmGeo()
 function onPier(x,z){return(Math.abs(x-PIER.x)<4.2&&z>PIER.z0-1&&z<PIER.z1)||(Math.abs(x-PIER.x)<14&&z>PIER.z1-22&&z<PIER.z1+2)}
 function ferrisU(dt){for(const f of FERRIS){f.wheel.rotation.z+=dt*.06;for(const p of f.pods)p.rotation.z=-f.wheel.rotation.z}}
 /* ---------- assemble ---------- */
-const SPECIAL={'160,120':mall,'240,120':dealership,'-40,200':chopShop,'240,200':portYard};
+const SPECIAL={'-40,120':courthouse,'-280,240':penitentiary,'160,120':mall,'240,120':dealership,'-40,200':chopShop,'240,200':portYard};
 function buildDistricts(){const t0=performance.now();let n=0;
  for(let cx=-360;cx<=360;cx+=40)for(let cz=-360;cz<=280;cz+=40){if(Math.abs(cx)<=80&&Math.abs(cz)<=80)continue;if(cx==80)continue;if(cx>=120&&cx<=360&&cz>=-80&&cz<=40)continue;
   const z=zoneOf(cx,cz),sp=SPECIAL[cx+','+cz];n++;if(sp)sp(cx,cz);else if(z=='EMBER HEIGHTS')heights(cx,cz);else if(z=='PALM GROVE')grove(cx,cz);else if(z=='FOUNDRY')foundry(cx,cz);else if(z=='PORT EMBER')port(cx,cz);else if(z=='EASTSIDE')eastside(cx,cz);else midtown(cx,cz)}
