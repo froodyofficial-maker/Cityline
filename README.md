@@ -6,9 +6,9 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 ## Play
 
-**Desktop app (Windows):** run `EmberCity-2.3.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
+**Desktop app (Windows):** run `EmberCity-2.4.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
 
-The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.3.0` does the same.
+The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.4.0` does the same.
 
 **Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
@@ -44,7 +44,7 @@ src/gfx/engine.js       procedural textures/materials, building facades, water, 
 src/gfx/pipeline.js     quality presets, post chain, dynamic lights
 src/world/              city layout + road network, districts.js (everything outside downtown), interiors,
                         map variants, navigation grids, sky + ambient life
-src/gameplay/           player, combat, police, shops, casino, day cycle
+src/gameplay/           player, combat, police, shops, casino, day cycle, Rosy, side jobs, empire, weather
 src/vehicles/air.js     helicopters + planes
 src/net/                optional peer-to-peer multiplayer
 src/story/engine.js     mission runner, cinematic camera, NPC actors, saves
@@ -90,6 +90,44 @@ Traffic and pedestrians spawn on the streets around you wherever you are, and ar
 | Palm Grove | At night, break into houses with newspapers piling up on the porch. Sometimes the owners are home. |
 | Everywhere | Rooftop ladders, dumpsters to hide in, and 24 hidden Ember Tokens ($250 each, $10,000 for all of them, remembered between sessions). |
 
+## Side jobs (J)
+
+Press **J** to open the jobs menu. Ride-share and delivery jobs keep coming until you quit. There are no side jobs during story missions.
+
+| Job | How it works |
+| --- | --- |
+| Ember Ride | Ride-share in whatever car you're driving. Pick up the fare and get them to their address. Arriving fast and without dents earns a bigger tip. |
+| Ember Eats | Collect an order from a restaurant and deliver it before the timer runs out, on foot or by car. |
+| Street races | Four routes, each with a chequered start gantry. Drive up, pay the entry fee and race three rivals through the checkpoints. First place wins the prize and second gets the entry fee back. |
+| Getaway driver | Park outside a store while a crew robs it. Then lose the cops and drop the crew at the hideout. The cut grows with your peak wanted level. |
+
+## Your empire (P)
+
+Press **P** for an overview of everything you own. It's saved separately for story mode and open world.
+
+- **Properties:** seven businesses have FOR SALE signs. Each one fills its till every in-game day, up to three days' worth. Walk up to it to collect.
+
+  | Property | Price | Earns per day | Perk |
+  | --- | --- | --- | --- |
+  | Surf Shack | $8,000 | $600 | |
+  | Paws & Claws | $12,000 | $800 | Rosy's gear at half price |
+  | Gas & Go | $15,000 | $1,000 | |
+  | Chop Shop | $30,000 | $2,000 | 25% more for chopped cars |
+  | The Furnace (nightclub) | $45,000 | $3,000 | |
+  | Pier 9 Shipping | $60,000 | $4,000 | Dock security ignores you |
+  | Ember Motors | $90,000 | $6,000 | Cars 30% off |
+
+- **Gang turf:** the city is split into 18 turfs, shown in colour on the map. Downtown is yours. The rest belong to Los Vipers, the Harbor Kings, the Foundry Boys and the Heights Syndicate, whose members hang out on street corners.
+  - **Warnings:** hang around their corner and they tell you to leave. Shoot near them and they open fire.
+  - **Gang war:** kill three of a gang's members on their turf to start one. Survive three waves and the turf is yours, plus $2,500. The cops stay out of gang wars.
+  - **Holding turf:** your crew then guards the corner and shoots at anyone hostile. Every turf you hold pays $400 street tax at midnight.
+  - **Counter-attacks:** while you're on your own turf, a rival gang sometimes tries to take it back. If you run or go down, they take it.
+  - **Protection money:** a business on gang turf pays that gang 40% of its income until you take the turf.
+
+## Weather
+
+The weather changes every few in-game hours between clear, cloudy, rain, storm and fog. Clouds roll in and the light dims. Rain wets the roads, which makes cars slower to turn and stop, and pedestrians put up umbrellas. Storms add lightning and thunder. Fog pulls in the view distance. Story missions keep their own weather.
+
 ## Street life
 
 - **Armed civilians:** about 1 in 10 pedestrians carries a gun. They fight back if you shoot near them, hit them, or kill someone close by.
@@ -108,6 +146,11 @@ Rosy is your golden retriever and goes everywhere with you.
 - **Petting:** when you stand still she sits down; press E to pet her (+10 HP, once every 20 s).
 - **Fighting:** she charges anyone fighting you (cops when you're wanted, armed civilians, revenge hunters, story enemies) and bites until they go down.
 - **Wanted level:** she barks when your wanted level goes up.
+- **Fetch:** press Q to throw her tennis ball. She chases it down and drops it at your feet.
+- **Tricks:** press H for her menu. She starts out knowing Sit. Coach Dana at the Bark Park teaches Shake, Spin, Roll Over, Play Dead and Backflip. Passers-by sometimes tip a good trick.
+- **Collars and outfits:** PAWS & CLAWS at the Bark Park sells collars (blue, pink, spiked, neon, gold) and outfits (bandana, sunglasses, party hat, raincoat, hero cape, golden crown). She wears them in the car too.
+- **Bark Park:** a fenced dog park in Midtown with an agility course and five other dogs. Stand around for a while and Rosy runs off to play with them.
+- **Saved:** her look, her tricks and her fetch count are remembered between sessions.
 - **Invulnerable:** nothing can hurt her.
 - **If you go down:** she lies down beside you and keeps watch until you're back on your feet.
 
@@ -157,6 +200,10 @@ There are eleven chapters, from *Homecoming* to *Ember Falls*. They are fully st
 | Left click / Right click | Shoot / scope |
 | F | Enter or exit a vehicle |
 | E | Interact |
+| J | Side jobs |
+| P | Empire: properties and turf |
+| H | Rosy menu |
+| Q | Throw Rosy's ball |
 | 1 to 4 | Weapons |
 | I | Inventory |
 | M | Map |

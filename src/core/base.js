@@ -37,6 +37,9 @@ anchor:["...ww...","..w..w..","...ww...","wwwwwwww","...ww...","w..ww..w",".w.ww
 tower:["...rr...","...cc...","..cccc..","..cccc..",".cccccc.",".cccccc.","cccccccc","cccccccc"],
 wheel:["..rrrr..",".r.rr.r.","r..rr..r","rrrrrrrr","r..rr..r",".r.rr.r.","..rrrr..","..w..w.."],
 fuel:[".ggggg..",".gwwwg.g",".gwwwg.g",".ggggg.g",".ggggg.g",".ggggg.g",".ggggg..","ggggggg."],
+paw:["..y..y..",".yy..yy.","........","y..yy..y","..yyyy..",".yyyyyy.",".yyyyyy.","..yyyy.."],
+flag:["wkwkwk..","kwkwkw..","wkwkwk..","kwkwkw..","d.......","d.......","d.......","d......."],
+crown:["........","y..y..y.","yy.y.yy.","yyyyyyy.","yryyyry.","yyyyyyy.","........","........"],
 club:["...kk...","..kkkk..","...kk...",".kkkkkk.","kkkkkkkk","kk.kk.kk","...kk...","..kkkk.."]};
 const SPR={},SU={};for(const k in SD){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');SD[k].forEach((r,y)=>[...r].forEach((ch,x)=>{if(PAL[ch]){g.fillStyle=PAL[ch];g.fillRect(x,y,1,1)}}));SPR[k]=c;SU[k]=c.toDataURL()}
 const si=(n,p)=>'<img class="px" width="'+p+'" height="'+p+'" src="'+(SU[n]||(typeof ICOU!=='undefined'&&ICOU[n]))+'">';

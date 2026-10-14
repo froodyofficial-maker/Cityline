@@ -25,7 +25,8 @@ function initGfx(){const q=CFG.gfx;BASEPR=Math.min(devicePixelRatio,q>=3?2:q>=2?
   if(q==1&&T.SMAAPass)comp.addPass(new T.SMAAPass(w*pr,h*pr));comp.setSize(w,h)}catch(e){comp=null;console.warn('post-processing unavailable',e)}}
  if(!comp){rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1}
  /* view distance per preset: on HIGH+ the skyline fades out far away, with no haze near the street */
- sc.fog.near=q>=2?300:160;sc.fog.far=q>=2?1100:q>=1?480:350;cam.far=q>=2?900:sc.fog.far+40;cam.updateProjectionMatrix()}
+ const fb=fogBase();sc.fog.near=fb[0];sc.fog.far=fb[1];cam.far=q>=2?900:sc.fog.far+40;cam.updateProjectionMatrix()}
+function fogBase(){const q=CFG.gfx;return[q>=2?300:160,q>=2?1100:q>=1?480:350]}
 /* dynamic resolution: keep the frame rate up by trading render resolution (50-100% of the preset) */
 let BASEPR=1;const DRS={s:1,ema:16,t:0};
 function drsU(ms){if(document.hidden||!(ms>0))return;DRS.ema+=(Math.min(ms,100)-DRS.ema)*.05;DRS.t+=ms;if(DRS.t<1500)return;DRS.t=0;

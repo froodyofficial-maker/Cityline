@@ -13,7 +13,7 @@ function seatGroup(type){const G0=CARG[type||0].c;if(!G0.boundingBox)G0.computeB
  const G=0xd9a24a,rx=-hw*.4,hd=new T.Group();hd.position.set(-hw-.08,hy-.06,hz+.2);hd.rotation.y=-.35;g.add(hd);bx(.32,.42,.5,G,rx,hy-.42,hz,g);bx(.26,.3,.5,G,-hw*.7,hy-.1,hz+.1,g);
  bx(.3,.28,.32,G,0,0,0,hd);bx(.18,.14,.22,0xecc684,0,-.06,.24,hd);bx(.08,.06,.04,0x161616,0,-.02,.36,hd);for(const s of[-1,1])bx(.06,.06,.02,0x161616,s*.08,.06,.165,hd);
  const e1=bx(.07,.24,.16,0xb07a34,-.16,.02,-.04,hd),e2=bx(.07,.24,.16,0xb07a34,.16,.02,-.04,hd);e1.rotation.z=.9;e2.rotation.z=-.5;bx(.08,.02,.12,0xff6a8a,-.02,-.15,.28,hd);
- g.traverse(o=>{if(o.isMesh)o.castShadow=false});g.userData.ears=[e1,e2];return g}
+ rosySeatLook(hd);g.traverse(o=>{if(o.isMesh)o.castShadow=false});g.userData.ears=[e1,e2];return g}
 function seatsU(){const c=P.car;if(SEAT&&SEAT.userData.ears){const t=performance.now()*.02,v=c?Math.min(1,Math.abs(c.v)/12):0;SEAT.userData.ears[0].rotation.z=.9+Math.sin(t)*.5*v;SEAT.userData.ears[1].rotation.z=-.5-Math.sin(t*1.3)*.4*v}if(c===SEATC)return;if(SEAT&&SEAT.parent)SEAT.parent.remove(SEAT);SEAT=null;SEATC=c;if(c&&c.g&&!c.sv){SEAT=seatGroup(c.type);c.g.add(SEAT)}}
 /* ---------- armed citizens ---------- */
 function provoke(x,z,r){for(const e of peds)if(e.arm&&!e.dead&&!e.hostile&&Math.hypot(e.x-x,e.z-z)<r){e.hostile=1;e.fl=0;e.cd=rr(.4,1)}}
@@ -29,7 +29,7 @@ function foeAI(e,dt){const d=dist(e,P);if(P.dead||IN||cut){e.g.a[1].rotation.x=0
 const FIRSTN=['MARCUS','ELENA','DESHAWN','PRIYA','TOMAS','KEIKO','RUBEN','AISHA','DMITRI','GRACE','OMAR','LUCIA','JAMAL','INGRID','HECTOR','MEI'],
  JOBS=['Bus driver','Nurse','Line cook','Night-shift security guard','Music teacher','Mechanic','Student','Florist','Taxi driver','Barista'],
  RELS=['brother','sister','son','daughter','father','mother','cousin','best friend'];let REV=null;
-function revengeRoll(e){if(REV||ST.act||CFG.mode==1||e.avenger||R()>=.1)return;REV={vx:e.x,vz:e.z,vn:ri(FIRSTN),age:18+(R()*50|0),job:ri(JOBS),rel:ri(RELS),an:ri(FIRSTN)};setTimeout(revengeStart,1500)}
+function revengeRoll(e){if(REV||ST.act||CFG.mode==1||e.avenger||e.gk||R()>=.1)return;REV={vx:e.x,vz:e.z,vn:ri(FIRSTN),age:18+(R()*50|0),job:ri(JOBS),rel:ri(RELS),an:ri(FIRSTN)};setTimeout(revengeStart,1500)}
 function revengeStart(){const R_=REV;if(!R_)return;if(P.dead||cut||IN||mode!='play'){setTimeout(revengeStart,3000);return}
  const q=rdPick(P.x,P.z,120,170),x=q.s.ax?q.s.c+8:q.u,z=q.s.ax?q.u:q.s.c+8;
  const a={g:person(ri(skins),'#2a2a30','#1a1a1e','#111',1),hp:6,dead:0,dt:0,fl:0,ph:0,sp:5,avenger:1,hostile:0,arm:1,x,z,h:0,cd:1.5,seg:q.s,ax:q.s.ax,p:q.s.c+8};a.tx=x;a.tz=z;a.g.position.set(x,0,z);peds.push(a);R_.a=a;

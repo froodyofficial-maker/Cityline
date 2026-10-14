@@ -75,7 +75,7 @@ const SKC={w:new T.Color(1,1,1),sunW:new T.Color(0xfff1dc),sunO:new T.Color(0xff
 function skyU(){const sh=-cos(tod*2*PI),day=Math.max(0,Math.min(1,sh*2.2+.4)),n=1-day,du=Math.max(0,1-Math.abs(sh)*4);tmp.copy(cN).lerp(cD,day).lerp(cO,du*.55);sc.background.copy(tmp);sc.fog.color.copy(tmp);
  skyX(day,sh,n,du);const env=!!sc.environment;
  if(IN){/* interiors: warm practical-light fill instead of open sky, no sky colour leaking through door gaps */hemi.intensity=(IN===CAS?.3:.42+.1*day)*LI;hemi.color.setHex(IN===CAS?0xffd2a8:0xffe8cc);hemi.groundColor.setHex(0x5a4c40);sc.background.setHex(IN===CAS?0x0c0610:0x15110d);envK(.22)}
- else{hemi.intensity=(.3+.3*day)*(env?.6:1)*LI;hemi.color.copy(tmp).lerp(SKC.w,.5);hemi.groundColor.setHex(0x5a5248).multiplyScalar(.4+.6*day);envK(.55+.25*day)}
+ else{hemi.intensity=(.3+.3*day)*(env?.6:1)*LI;hemi.color.copy(tmp).lerp(SKC.w,.5);hemi.groundColor.setHex(0x5a5248).multiplyScalar(.4+.6*day);envK((.55+.25*day)*(1-WEA.dim*.5))}
  if(sh>-.05){sun.color.copy(SKC.sunW).lerp(SKC.sunO,Math.min(1,du*1.15));sun.intensity=(.18+.82*smooth(-.05,.3,sh))*LI*(IN?.2:1.1)}else{sun.color.copy(SKC.moon);sun.intensity=.2*LI*(IN?.2:1)}
  for(const o of NEON)o.m.color.copy(o.b).multiplyScalar(.3+.7*n);for(const m of BM)m.emissive.setRGB(.95*n,.78*n,.45*n);GU.uNight.value=smooth(.3,.85,n);
  txt('clk',String(tod*24|0).padStart(2,'0')+':'+String((tod*24%1)*60|0).padStart(2,'0'));const ni=n>.6?'moon':'sun';if(ni!==lastN){lastN=ni;$('ci').innerHTML=si(ni,16)}}
@@ -96,8 +96,8 @@ function mmInit(){const g=MS.getContext('2d');g.fillStyle='#24401f';g.fillRect(0
  const ic=(o,n)=>g.drawImage(SPR[n],MX(o.x)-4,MX(o.z)-4);for(const p of PLACES)ic(p,p.icon);ic(bank,'coin');ic(casino,'seven');ic(apt,'house');ic({x:MAH.cx,z:MAH.cz},'house');for(const o of shops)ic(o,o.kind=='guns'?'pistol':'cup')}
 function mmDraw(){const cv=$('mm'),big=cv.classList.contains('big'),c=IN?IN.ret:P,S=big?MS.width:160;if(cv.width!==S){cv.width=cv.height=S;mg.imageSmoothingEnabled=false}mg.fillStyle='#14091f';mg.fillRect(0,0,S,S);mg.save();
  if(!big){mg.translate(80,80);mg.rotate(camYaw-PI);mg.scale(1.8,1.8);mg.translate(-MX(c.x),-MX(c.z))}
- mg.drawImage(MS,0,0);if(!IN){for(const e of peds)if(e.hostile&&!e.dead){if(e.avenger)mg.drawImage(SPR.skull,MX(e.x)-4,MX(e.z)-4);else{mg.fillStyle='#ff3b3b';mg.fillRect(MX(e.x)-1,MX(e.z)-1,3,3)}}mg.fillStyle='#ffc94a';mg.fillRect(MX(ROSY.x)-1,MX(ROSY.z)-1,3,3);mg.fillStyle='#fff';for(const e of peds)if(!e.dead)mg.fillRect(MX(e.x),MX(e.z),1,1);mg.fillStyle='#f33';for(const e of cops)if(!e.dead)mg.fillRect(MX(e.x)-1,MX(e.z)-1,3,3);mg.fillStyle='#ff0';for(const q of cars)if(!q.ai)mg.fillRect(MX(q.x)-1,MX(q.z)-2,3,4);for(const q of helis.concat(planes))if(!q.crashed)mg.drawImage(SPR.heli,MX(q.x)-4,MX(q.z)-4);mg.fillStyle='#37e6ff';for(const r of MP.remote.values())mg.fillRect(MX(r.x)-2,MX(r.z)-2,4,4)}
- mg.restore();mg.save();mg.translate(big?MX(c.x):80,big?MX(c.z):80);if(big)mg.rotate(PI-P.h);mg.fillStyle='#ff4fa3';mg.strokeStyle='#fff';mg.lineWidth=1;mg.beginPath();mg.moveTo(0,-5);mg.lineTo(4,4);mg.lineTo(-4,4);mg.closePath();mg.fill();mg.stroke();mg.restore();storyMM(big,c)}
+ mg.drawImage(MS,0,0);turfMM(big);if(!IN){for(const e of peds)if(e.hostile&&!e.dead){if(e.avenger)mg.drawImage(SPR.skull,MX(e.x)-4,MX(e.z)-4);else{mg.fillStyle='#ff3b3b';mg.fillRect(MX(e.x)-1,MX(e.z)-1,3,3)}}mg.fillStyle='#ffc94a';mg.fillRect(MX(ROSY.x)-1,MX(ROSY.z)-1,3,3);mg.fillStyle='#fff';for(const e of peds)if(!e.dead)mg.fillRect(MX(e.x),MX(e.z),1,1);mg.fillStyle='#f33';for(const e of cops)if(!e.dead)mg.fillRect(MX(e.x)-1,MX(e.z)-1,3,3);mg.fillStyle='#ff0';for(const q of cars)if(!q.ai)mg.fillRect(MX(q.x)-1,MX(q.z)-2,3,4);for(const q of helis.concat(planes))if(!q.crashed)mg.drawImage(SPR.heli,MX(q.x)-4,MX(q.z)-4);mg.fillStyle='#37e6ff';for(const r of MP.remote.values())mg.fillRect(MX(r.x)-2,MX(r.z)-2,4,4)}
+ mg.restore();mg.save();mg.translate(big?MX(c.x):80,big?MX(c.z):80);if(big)mg.rotate(PI-P.h);mg.fillStyle='#ff4fa3';mg.strokeStyle='#fff';mg.lineWidth=1;mg.beginPath();mg.moveTo(0,-5);mg.lineTo(4,4);mg.lineTo(-4,4);mg.closePath();mg.fill();mg.stroke();mg.restore();storyMM(big,c);sideMM(big,c)}
 /* ---- update ---- */
 const ease=(a,b,k)=>a+(b-a)*k;
 function update(dt){
@@ -113,8 +113,8 @@ function update(dt){
    if(zoom<.1||scoped)P.h=camYaw;if(cw=='sniper'?K.mDown:K.M)shoot();K.mDown=0;P.jr=K.spDown||K.Space;K.spDown=0;push(P,.5);footY(dt);P.ph=(P.ph||0)+dt*sp*1.6;P.g.l[0].rotation.x=sin(P.ph)*.8*!!sp;P.g.l[1].rotation.x=-sin(P.ph)*.8*!!sp;
    P.g.a[0].rotation.x=-sin(P.ph)*.7*!!sp;P.g.a[1].rotation.x=shT>.08?-1.5:sin(P.ph)*.7*!!sp;P.g.position.set(P.x,P.y||0,P.z);P.g.rotation.y=P.h;emoteU()}
   else if(P.car){const c=P.car,fw=(K.KeyW|0)-(K.KeyS|0),st=(K.KeyA|0)-(K.KeyD|0);
-   if(fw>0)c.v+=14*dt;else if(fw<0)c.v+=(c.v>0?-26:-10)*dt;if(K.Space)c.v*=1-3*dt;c.v*=1-.35*dt;c.v=Math.max(-9,Math.min(26,c.v));
-   c.h+=st*dt*1.9*Math.max(-1,Math.min(1,c.v/6));if(performance.now()-mvT>1500){let d=c.h-camYaw;d=Math.atan2(sin(d),cos(d));camYaw+=d*Math.min(1,dt*2.5)}P.x=c.x;P.z=c.z;P.h=c.h;if(K.M&&cw!='sniper')shoot()}
+   if(fw>0)c.v+=14*dt;else if(fw<0)c.v+=(c.v>0?-26*wxGrip():-10)*dt;if(K.Space)c.v*=1-3*dt;c.v*=1-.35*dt;c.v=Math.max(-9,Math.min(26,c.v));
+   c.h+=st*dt*1.9*wxGrip()*Math.max(-1,Math.min(1,c.v/6));if(performance.now()-mvT>1500){let d=c.h-camYaw;d=Math.atan2(sin(d),cos(d));camYaw+=d*Math.min(1,dt*2.5)}P.x=c.x;P.z=c.z;P.h=c.h;if(K.M&&cw!='sniper')shoot()}
   if(P.hp<100&&heat<=0)P.hp=Math.min(100,P.hp+dt*.8);
   if(P.hp<=0)wasted()}
  /* cars */
@@ -126,12 +126,12 @@ function update(dt){
   if(Math.abs(c.v)>3)for(const e of peds.concat(cops,ENM.filter(q=>!q.isVeh)))if(!e.dead&&Math.hypot(e.x-c.x,e.z-c.z)<1.9){kill(e,sin(c.h),cos(c.h),1,c===P.car);c.v*=.96;if(c===P.car)shake=.4}
   if(c.ai&&c.v>4&&!P.car&&!P.dead&&(P.y||0)<1.2&&dist(c,P)<1.8){P.hp-=30;hit('car');P.x+=sin(c.h)*3;P.z+=cos(c.h)*3;shake=.6}}
  /* peds */
- for(const e of peds){if(e.dead){if((e.dt+=dt)>30){e.dead=2}continue}if(e.hostile){foeAI(e,dt);continue}if(e.avenger)continue;
+ for(const e of peds){if(e.dead){if((e.dt+=dt)>30){e.dead=2}continue}if(e.hostile){foeAI(e,dt);continue}if(e.avenger||e.idle)continue;
   let sp=e.sp,dx,dz;if(e.fl>0){e.fl-=dt;dx=e.fx;dz=e.fz;sp=7}else{dx=e.tx-e.x;dz=e.tz-e.z;const l=Math.hypot(dx,dz);if(l<.6){newT(e);continue}dx/=l;dz/=l}
   e.x+=dx*sp*dt;e.z+=dz*sp*dt;push(e,.4);e.ph+=dt*sp*2.2;e.g.rotation.y=Math.atan2(dx,dz);e.g.position.set(e.x,0,e.z);pedLod(e);
   const s=sin(e.ph)*.8;e.g.l[0].rotation.x=s;e.g.l[1].rotation.x=-s;e.g.a[0].rotation.x=-s*.8;e.g.a[1].rotation.x=s*.8;if(e.fl>0)e.g.a[0].rotation.x=e.g.a[1].rotation.x=-2.5}
- for(let i=peds.length-1;i>=0;i--)if(peds[i].dead==2){sc.remove(peds[i].g);peds.splice(i,1);mkPed()}
- for(const e of peds)if(!e.dead&&!e.hostile&&!e.avenger&&Math.abs(e.x-P.x)+Math.abs(e.z-P.z)>260)pedPlace(e)
+ for(let i=peds.length-1;i>=0;i--)if(peds[i].dead==2){sc.remove(peds[i].g);const gk=peds[i].gk;peds.splice(i,1);if(!gk)mkPed()}
+ for(const e of peds)if(!e.dead&&!e.hostile&&!e.avenger&&!e.idle&&Math.abs(e.x-P.x)+Math.abs(e.z-P.z)>260)pedPlace(e)
  /* cops */
  const stars=Math.min(5,Math.floor(heat));
  if(stars>0&&!P.dead&&!copsOff&&!IN&&unseen<8&&cops.filter(c=>!c.dead).length<stars*2)mkCop();

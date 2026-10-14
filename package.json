@@ -1,6 +1,6 @@
 {
   "name": "ember-city",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Ember City: an open-world crime game with a full story mode, built on three.js",
   "private": true,
   "type": "module",
