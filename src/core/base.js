@@ -31,6 +31,12 @@ heli:["dddddddd","...d....","..rrrr..",".rrrrrr.","rrbbrrr.","rrrrrrrd","..d..d.
 spade:["...kk...","..kkkk..",".kkkkkk.","kkkkkkkk","kkkkkkkk",".kk..kk.","...kk...","..kkkk.."],
 hrt:[".rr..rr.","rrrrrrrr","rrrrrrrr","rrrrrrrr",".rrrrrr.","..rrrr..","...rr...","........"],
 dmd:["...rr...","..rrrr..",".rrrrrr.","rrrrrrrr",".rrrrrr.","..rrrr..","...rr...","........"],
+car:["........","..bbbb..",".bccccb.","bbbbbbbb","bbbbbbbb","bkbbbbkb",".k....k.","........"],
+wrench:["......dd",".....d.d","....dddd","...ddd..","..ddd...",".ddd....","ddd.....","dd......"],
+anchor:["...ww...","..w..w..","...ww...","wwwwwwww","...ww...","w..ww..w",".w.ww.w.","..wwww.."],
+tower:["...rr...","...cc...","..cccc..","..cccc..",".cccccc.",".cccccc.","cccccccc","cccccccc"],
+wheel:["..rrrr..",".r.rr.r.","r..rr..r","rrrrrrrr","r..rr..r",".r.rr.r.","..rrrr..","..w..w.."],
+fuel:[".ggggg..",".gwwwg.g",".gwwwg.g",".ggggg.g",".ggggg.g",".ggggg.g",".ggggg..","ggggggg."],
 club:["...kk...","..kkkk..","...kk...",".kkkkkk.","kkkkkkkk","kk.kk.kk","...kk...","..kkkk.."]};
 const SPR={},SU={};for(const k in SD){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');SD[k].forEach((r,y)=>[...r].forEach((ch,x)=>{if(PAL[ch]){g.fillStyle=PAL[ch];g.fillRect(x,y,1,1)}}));SPR[k]=c;SU[k]=c.toDataURL()}
 const si=(n,p)=>'<img class="px" width="'+p+'" height="'+p+'" src="'+(SU[n]||(typeof ICOU!=='undefined'&&ICOU[n]))+'">';

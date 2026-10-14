@@ -76,6 +76,30 @@ A name card shows when you cross into a new district. The minimap covers the who
 
 Traffic and pedestrians spawn on the streets around you wherever you are, and are recycled as you move. Police chase you anywhere on the map using a city-wide pathfinding grid.
 
+## Things to do outside downtown
+
+| Place | What you can do |
+| --- | --- |
+| Ember Mall (Eastside) | Walk in. Buy outfits at THREADS, guns at EMBER ARMS, and eat at the food court. Rob the LUXE jewellery counter. |
+| Ember Motors (Eastside) | Buy a sedan, sports coupe or SUV. It's parked out front. |
+| Chop Shop (Foundry) | Drive a car in and sell it. Clean cars pay more, and nobody buys a car while you're wanted. |
+| Pier 9 yard (Port Ember) | Steal three smuggled crates (cash and loot). Grabbing one alerts dock security. The harbour crane has a ladder up to its beam. |
+| Ember Tower (Heights) | Take the elevator to the observation roof, or crack the NOVA vault: $22k–38k and five stars. |
+| Ember Pier & Beach | Ride the Ferris wheel ($20), or eat at the surf shack, ice-cream stand and taco hut. |
+| Gas stations | Buy snacks, or rob the counter (R). |
+| Palm Grove | At night, break into houses with newspapers piling up on the porch. Sometimes the owners are home. |
+| Everywhere | Rooftop ladders, dumpsters to hide in, and 24 hidden Ember Tokens ($250 each, $10,000 for all of them, remembered between sessions). |
+
+## Rosy
+
+Rosy is your golden retriever and goes everywhere with you.
+- **Following:** she trots at your side, rides along in any vehicle and follows you into buildings.
+- **Waiting:** she waits at the bottom of ladders and the tower elevator.
+- **Petting:** when you stand still she sits down; press E to pet her (+10 HP, once every 20 s).
+- **Wanted level:** she barks when your wanted level goes up.
+- **Invulnerable:** nothing can hurt her.
+- **If you go down:** she lies down beside you and keeps watch until you're back on your feet.
+
 ## Graphics
 
 Graphics quality is set from the Open World setup screen. It has four levels: Low, Medium, High and Ultra. High and Ultra use:

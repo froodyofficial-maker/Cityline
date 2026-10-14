@@ -95,6 +95,7 @@ function doAct(a){const[k,id]=a.split(':'),no=()=>msg('Not enough cash','#ff6a6a
  else if(k=='od'){const t=IT[id];if(cash<t.p+5)return no();cash-=t.p+5;addInv(id,1);dS.orders++;doorstep();msg(t.n+' DELIVERED TO YOUR DOORSTEP - ready to eat (I)','#2bf0ff');pcPanel()}
  else if(k=='oe'){const t=IT[id];if(cash<t.p+5)return no();cash-=t.p+5;dS.orders++;addInv(id,1);doorstep();useItem(id);pcPanel()}
  else if(k=='oa'){const w=WP[id];if(cash<w.pp+5)return no();cash-=w.pp+5;ammo[id]+=w.pk;lastHot='';doorstep();msg(w.n+' AMMO DELIVERED TO YOUR DOORSTEP','#2bf0ff');pcPanel()}
+ else if(placesAct(k,id)){}
  else if(k=='sell'){if(!inv[id])return;inv[id]--;cash+=IT[id].v;msg('SOLD '+IT[id].n+' +$'+IT[id].v,'#ffd23f');pcPanel()}}
 $('md').onclick=e=>{const b=e.target.closest('[data-a]');if(b)doAct(b.dataset.a)};
 function openCas(){document.exitPointerLock&&document.exitPointerLock();mode='cas';casStart=cash;cb();$('cas').style.display='flex';for(const k in K)K[k]=0}
@@ -107,22 +108,24 @@ function xKeyModal(e){if(e.code=='Escape'&&mode=='cas')closeCas();else if(e.code
 /* ---- interaction ---- */
 function act(k){if(P.dead||mode!='play'||cut)return;if(storyAct(k))return;if(P.hide){if(k=='e')exitDump();return}
  if(k=='f'){if(P.tank)exitTank();else if(P.plane)exitPlane();else if(P.heli)exitHeli();else if(P.car){const c=P.car;P.x=c.x+cos(c.h)*2.4;P.z=c.z-sin(c.h)*2.4;P.car=null;P.g.visible=true;c.v*=.5}else if(!IN){const pl=nearPlane(),hl=nearHeli(),tk=nearTank();if(tk)enterTank(tk);else if(pl)enterPlane(pl);else if(hl)enterHeli(hl);else if(!P.roof){const c=nearCar();if(c){if(c.ai)heat+=.6;c.ai=0;c.v=0;P.car=c;P.g.visible=false}}}return}
- if(P.car||P.heli||P.plane||P.tank)return;if(P.roof){if(k=='e'&&dist(P,P.roof.ex)<3)climb(P.roof,0);return}if(k=='r'){if(IN&&IN.reg&&dist(P,IN.reg)<3)robReg();return}if(k!='e')return;
- if(IN){const o=nearItem();if(o)return takeItem(o);if(dist(P,IN.exit)<3.5)return leaveInt();const gm_=IN.games&&IN.games.find(g=>dist(P,g)<2.6);if(gm_)return openGame(gm_);
+ if(P.car&&k=='e'&&!IN){const q=poiNear(1);if(q)return q.e()}
+ if(P.car||P.heli||P.plane||P.tank)return;if(P.roof){if(k=='e'&&dist(P,P.roof.ex)<3)(P.roof.elev?elevator(P.roof,0):climb(P.roof,0));return}
+ if(!IN){const q=poiNear(0);if(q){if(k=='e'&&q.e)return q.e();if(k=='r'&&q.rob)return q.rob()}}if(k=='r'){if(IN&&IN.reg&&dist(P,IN.reg)<3)robReg();return}if(k!='e')return;
+ if(IN){const o=nearItem();if(o)return takeItem(o);if(dist(P,IN.exit)<3.5)return leaveInt();if(IN.pois){const q=IN.pois.find(p=>dist(P,p)<p.r);if(q)return q.e()}const gm_=IN.games&&IN.games.find(g=>dist(P,g)<2.6);if(gm_)return openGame(gm_);
   if(IN.home){if(dist(P,bed)<3.5)sleep();else if(dist(P,pcM)<3.2)pcPanel();else if(dist(P,fridgeM)<3.2){if(fridge)msg('Fridge is empty today');else{fridge=1;hunger=Math.min(100,hunger+25);msg('Leftovers. HUNGER +25','#43ff7a')}}}
   else if(dist(P,IN.buy)<3.2)shopPanel(IN);return}
  {const gi=nearItem();if(gi)return takeItem(gi)}
  {const dp=nearDump();if(dp)return enterDump(dp)}
  {const lad=ladders.find(l=>dist(P,l)<2.8);if(lad)return climb(lad,1)}
- if(dist(P,bank)<3.5&&bank.cd<=0)robBank();else if(dist(P,casino)<3.5)enterCasino();else if(dist(P,apt)<3.5)enterApt();else{const o=shops.find(o=>dist(P,o)<3.5);if(o)enterStore(o.st)}}
-function ptxt(){{const s_=storyPrompt();if(s_)return s_}if(P.hide)return'E - Leave dumpster'+(evading?' (cops are searching)':'');if(P.car)return'F - exit car';if(P.tank)return'WASD drive - LMB fire shell - F exit tank';if(P.plane)return planePrompt();if(P.heli)return P.y-groundH(P.x,P.z)>2.5?'LMB / B - DROP BOMB   SPACE UP - SHIFT DOWN':'F - Exit helicopter';if(!IN&&nearDump())return'E - Hide in dumpster';if(!IN&&nearTank())return'F - Drive allied tank';if(!IN&&nearHeli())return'F - Fly helicopter';if(!IN&&nearPlane())return'F - Board airplane';if(P.roof)return dist(P,P.roof.ex)<3?'E - Climb down':performance.now()-P.roofT<7000?(own.sniper?'ROOFTOP: hold RMB to scope, snipe away':'ROOFTOP: buy a sniper at the gun shop'):'';
- if(IN){const o=nearItem();if(o)return'E - TAKE '+iname(o.t)+' (STEAL)';if(dist(P,IN.exit)<3.5)return'E - Leave';{const g_=IN.games&&IN.games.find(g=>dist(P,g)<2.6);if(g_)return'E - Play '+g_.name}
+ if(dist(P,bank)<3.5&&bank.cd<=0)robBank();else if(dist(P,casino)<3.5)enterCasino();else if(dist(P,apt)<3.5)enterApt();else{const o=shops.find(o=>dist(P,o)<3.5);if(o)enterStore(o.st);else if(nearRosy())petRosy()}}
+function ptxt(){{const s_=storyPrompt();if(s_)return s_}if(P.hide)return'E - Leave dumpster'+(evading?' (cops are searching)':'');if(P.car){const q=!IN&&poiNear(1);return q?q.txt():'F - exit car'}if(P.tank)return'WASD drive - LMB fire shell - F exit tank';if(P.plane)return planePrompt();if(P.heli)return P.y-groundH(P.x,P.z)>2.5?'LMB / B - DROP BOMB   SPACE UP - SHIFT DOWN':'F - Exit helicopter';if(!IN&&nearDump())return'E - Hide in dumpster';if(!IN&&nearTank())return'F - Drive allied tank';if(!IN&&nearHeli())return'F - Fly helicopter';if(!IN&&nearPlane())return'F - Board airplane';if(P.roof)return dist(P,P.roof.ex)<3?(P.roof.elev?'E - Elevator down':'E - Climb down'):performance.now()-P.roofT<7000?(own.sniper?'ROOFTOP: hold RMB to scope, snipe away':'ROOFTOP: buy a sniper at the gun shop'):'';
+ if(IN){const o=nearItem();if(o)return'E - TAKE '+iname(o.t)+' (STEAL)';if(dist(P,IN.exit)<3.5)return'E - Leave';if(IN.pois){const q=IN.pois.find(p=>dist(P,p)<p.r);if(q)return q.txt()}{const g_=IN.games&&IN.games.find(g=>dist(P,g)<2.6);if(g_)return'E - Play '+g_.name}
   if(IN.home)return dist(P,bed)<3.5?'E - Sleep (ends the day)':dist(P,pcM)<3.2?'E - Order online (food / ammo / sell)':dist(P,fridgeM)<3.2?'E - Raid fridge':'';
   if(dist(P,IN.reg)<3)return'R - ROB REGISTER'+(IN.cash>0?' ($'+IN.cash+')':' (empty)');return dist(P,IN.buy)<3.2?'E - Shop':''}
- {const gi=nearItem();if(gi)return'E - TAKE '+iname(gi.t)+' (STEAL)'}if(ladders.find(l=>dist(P,l)<2.8))return'E - Climb to rooftop (sniper nest)';if(dist(P,bank)<3.5)return bank.cd>0?'Bank locked down ('+Math.ceil(bank.cd)+'s)':'E - ROB THE BANK';if(dist(P,casino)<3.5)return'E - Enter casino';if(dist(P,apt)<3.5)return'E - Enter your apartment';
- const o=shops.find(o=>dist(P,o)<3.5);return o?'E - Enter '+o.name:nearCar()?'F - enter car':''}
+ {const gi=nearItem();if(gi)return'E - TAKE '+iname(gi.t)+' (STEAL)'}{const q=poiNear(0);if(q){const t=q.txt();if(t)return t}}if(ladders.find(l=>dist(P,l)<2.8))return'E - Climb to rooftop (sniper nest)';if(dist(P,bank)<3.5)return bank.cd>0?'Bank locked down ('+Math.ceil(bank.cd)+'s)':'E - ROB THE BANK';if(dist(P,casino)<3.5)return'E - Enter casino';if(dist(P,apt)<3.5)return'E - Enter your apartment';
+ const o=shops.find(o=>dist(P,o)<3.5);return o?'E - Enter '+o.name:nearCar()?'F - enter car':nearRosy()?'E - Pet Rosy':''}
 /* ---- per-frame systems ---- */
-function xUpdate(dt){const live=!cut&&!P.dead;storyU(dt);storyWorldU();bpUpdate(dt);heliU(dt);bombU(dt);planeU(dt);tankU(dt);emoBub();mpU(dt);weatherU(dt);worldU(dt);cfgU(dt);warU(dt);
+function xUpdate(dt){const live=!cut&&!P.dead;placesU(dt);rosyU(dt);storyU(dt);storyWorldU();bpUpdate(dt);heliU(dt);bombU(dt);planeU(dt);tankU(dt);emoBub();mpU(dt);weatherU(dt);worldU(dt);cfgU(dt);warU(dt);
  if(live&&CFG.hunger){hunger=Math.max(0,hunger-dt*100/420);if(hunger<=0){P.hp-=dt*1.5;if(!P.sr||performance.now()-P.sr>4000){P.sr=performance.now();msg('STARVING - order food from your PC at home','#ffb02b');hit('hunger')}}else if(hunger<20&&!P.hw){P.hw=1;msg('You are getting hungry','#ffb02b');setTimeout(()=>P.hw=0,30000)}}
  for(let i=pend.length-1;i>=0;i--){pend[i].t-=dt;if(pend[i].t<=0)deliver(pend.splice(i,1)[0])}
  if(eodReq&&live){if(CFG.mode==1||ST.on)eodReq=0;else endDay(eodReq)}

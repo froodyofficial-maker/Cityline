@@ -96,7 +96,7 @@ function worldU(dt){ferrisU(dt);zoneU(dt);if(WATER){wtT+=dt;WATERM.map.offset.y+
 const nearDump=()=>DUMP.find(d=>!d.occ&&Math.hypot(d.x-P.x,d.z-P.z)<2.7),inBush=(x,z)=>HIDE.some(h=>(h.x-x)*(h.x-x)+(h.z-z)*(h.z-z)<h.r*h.r);
 function enterDump(d){if(P.hide||(P.y||0)>1.2)return;P.hide=d;d.occ=1;P.x=d.x;P.z=d.z;P.g.visible=false;P.crouch=0;let any=0;for(const c of cops)if(!c.dead&&c.see&&dist(c,P)<32){c.knows=d;c.ms='chase';any=1}msg(any?'THEY SAW YOU HIDE...':'HIDING - stay quiet until the heat dies down','#37e6ff');snd(160,.15,'square',.04)}
 function exitDump(){const d=P.hide;if(!d)return;P.hide=null;d.occ=0;P.g.visible=true;P.x=d.x+(d.alongZ?2:0);P.z=d.z+(d.alongZ?0:2);push(P,.5);for(const c of cops)if(c.knows===d)c.knows=null}
-function los(ax,az,bx_,bz){const dx=bx_-ax,dz=bz-az;for(const b of bNear(Math.min(ax,bx_),Math.min(az,bz),Math.max(ax,bx_),Math.max(az,bz))){if(b.h<3||b.h<(P.y||0)-.5)continue;let t0=0,t1=1;
+function los(ax,az,bx_,bz){const dx=bx_-ax,dz=bz-az;for(const b of bNear(Math.min(ax,bx_),Math.min(az,bz),Math.max(ax,bx_),Math.max(az,bz))){if(b.over||b.h<3||b.h<(P.y||0)-.5)continue;let t0=0,t1=1;
   if(Math.abs(dx)<1e-6){if(ax<b.x1||ax>b.x2)continue}else{let a=(b.x1-ax)/dx,c=(b.x2-ax)/dx;if(a>c){const t=a;a=c;c=t}t0=Math.max(t0,a);t1=Math.min(t1,c)}
   if(Math.abs(dz)<1e-6){if(az<b.z1||az>b.z2)continue}else{let a=(b.z1-az)/dz,c=(b.z2-az)/dz;if(a>c){const t=a;a=c;c=t}t0=Math.max(t0,a);t1=Math.min(t1,c)}
   if(t0<=t1&&t0<1&&t1>0)return false}return true}
@@ -135,5 +135,5 @@ function renderFrame(){GU.uTime.value=performance.now()*.001;skyPlace();lightsU(
 function removeBlock(k){const b=BLK[k];if(!b)return;for(const o of b.objs)sc.remove(o);for(const x of b.bs){const i=B.indexOf(x);if(i>=0)B.splice(i,1)}for(const l of b.ls){const i=ladders.indexOf(l);if(i>=0)ladders.splice(i,1)}delete BLK[k]}
 function buildWorld(){buildTerrain();buildSky();for(const pk in PADS)PADS[pk].material=PADM;
  for(const z of CC){const k='80,'+z;removeBlock(k);if(PADS[k])sc.remove(PADS[k])}
- buildRiver();mkPark(0,-40,0);mkPark(-80,-40,1);mkPark(40,80,2);buildDistricts();streetLife();buildCityGrid();buildWorldGrid()}
+ buildRiver();mkPark(0,-40,0);mkPark(-80,-40,1);mkPark(40,80,2);buildDistricts();buildPlaces();streetLife();buildCityGrid();buildWorldGrid()}
 buildWorld();

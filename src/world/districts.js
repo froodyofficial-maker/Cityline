@@ -28,10 +28,10 @@ function boxCar(x,z,ry){const g=new T.Group();g.userData.stat=1;const c=ri([0xd0
 function skyscraper(cx,cz,k){const col=ri(DPAL.tall),nc=ri(NC),nh=parseInt(nc.slice(1),16),w=rr(15,21),d=rr(15,21),h=rr(42,92)*k;WK=R()*5|0;
  const h1=h*rr(.55,.7);wall(w,h1,d,col,cx,cz);WK=(WK+1+(R()*3|0))%5;wall(w*.72,h-h1,d*.72,ri(DPAL.tall),cx,cz,h1);
  nRing(w*.72+.3,d*.72+.3,nh,cx,h+.25,cz);if(R()<.6){cy(.25,10,0x666a70,cx,h+5,cz,6);nb(.7,.7,.7,0xff2222,cx,h+10.3,cz)}else bx(w*.4,3,d*.4,0x3a3f48,cx,h+1.5,cz,sc);
- shopBase(cx,cz,w,d);if(R()<.7){const s=nsign(ri(CORP),nc,cx,h1-3.2,cz+d/2+.08,8)}foot(cx,cz,w,d,h)}
+ shopBase(cx,cz,w,d);if(R()<.7)nsign(ri(CORP),nc,cx,h1-3.2,cz+d/2+.08,8);foot(cx,cz,w,d,h1);foot(cx,cz,w*.72,d*.72,h)}
 function emberTower(cx,cz){const c=0x34405a;WK=1;wall(24,64,24,c,cx,cz);WK=1;wall(18,52,18,c,cx,cz,64);WK=1;wall(12,40,12,c,cx,cz,116);
  for(const[s,y]of[[24.4,64],[18.4,116],[12.4,156]])nRing(s,s,0xff6a2b,cx,y+.3,cz);cy(.7,34,0xd0d4da,cx,173,cz,8);nb(1.4,1.4,1.4,0xff2222,cx,190.8,cz);
- shopBase(cx,cz,24,24);nsign('EMBER TOWER','#ff6a2b',cx,6,cz+12.2,14);for(const sx of[-1,1])nb(.4,60,.4,0xff6a2b,cx+sx*12.1,32,cz+12.1);foot(cx,cz,24,24,156)}
+ shopBase(cx,cz,24,24);nsign('EMBER TOWER','#ff6a2b',cx,6,cz+12.2,14);for(const sx of[-1,1])nb(.4,60,.4,0xff6a2b,cx+sx*12.1,32,cz+12.1);foot(cx,cz,24,24,64);foot(cx,cz,18,18,116);foot(cx,cz,12,12,156);towerPlaces(cx,cz)}
 function plaza(cx,cz){dPad(cx,cz);cy(3.4,.6,0xd8d8d8,cx,.35,cz,20);cy(2.9,.4,0x2b8fff,cx,.62,cz,20);cy(.5,3,0xd8d8d8,cx,1.6,cz,10);nb(.6,.3,.6,0x37e6ff,cx,3.2,cz);solid(cx,cz,7,7,.9);
  for(const[x,z]of[[-9,-9],[9,-9],[-9,9],[9,9]]){bx(3.2,.7,3.2,0x8a8f96,cx+x,.35,cz+z,sc);tree(cx+x,cz+z,1.2)}for(const[x,z,r]of[[0,-6,0],[0,6,PI],[-6,0,PI/2],[6,0,-PI/2]])bench(cx+x,cz+z,r);
  if(R()<.5){bx(.6,4,.6,0x2a2c30,cx+11,2,cz-2,sc);nsign(ri(CORP),ri(NC),cx+11,4.6,cz-2,4).rotation.y=PI/2}}
@@ -49,6 +49,7 @@ function house(lx,lz,face){/* lot is 12x12; front faces the outer road, back fen
  foot(hx,hz,w,d,h+2);solid(gx,hz+face*.6,4.2,5.6,3.1);
  const bz=lz-face*6;bx(12,.9,.1,0xf4f1ea,lx,.45,bz,sc);B.push({x1:lx-6,x2:lx+6,z1:bz-.1,z2:bz+.1,h:.9});
  const mx=lx+(gs>0?-5.2:5.2);bx(.1,1.1,.1,0x555555,mx,.55,lz+face*5.6,sc);bx(.5,.4,.32,ri([0x2b6fd0,0x333333,0xc0392b]),mx,1.2,lz+face*5.6,sc);
+ if(R()<.22){for(let i=0;i<3;i++)bx(.35,.12,.25,0xf2f0ea,hx+rr(-.6,.6),.12+i*.12,fz+face*1.1,sc);const h={x:hx,z:fz+face*1.5,f:face,day:-1};BRK.push(h);poi({x:h.x,z:h.z,r:2.4,txt:()=>night()?'E - Break in (newspapers piling up - nobody home?)':'Newspapers piling up... come back after dark',e:()=>breakIn(h)})}
  if(R()<.75)tree(lx-gs*4.4,lz+face*4.3,rr(.75,1.05));bush(hx-w/2+.4,fz+face*.9,rr(.55,.8));bush(hx+w/2-.4,fz+face*.9,rr(.55,.8))}
 function park(cx,cz){dPad(cx,cz,1);mkPark(cx,cz,R()*3|0)}
 function grove(cx,cz){const r=R();if(r<.08)return park(cx,cz);if(r<.13)return gasStation(cx,cz);dPad(cx,cz);
@@ -77,25 +78,25 @@ function ship(x,z,len){const hc=ri([0x7a1f1f,0x1f3a6a,0x2a2a30,0x1f5a3a]);bx(len
  bx(2,7,2,0x2a2a30,x+len/2-4,16,z,sc);for(let i=0;i<Math.floor((len-16)/6.4);i++){const h=1+(R()*3|0);for(let k=0;k<h;k++)rib(6.1,2.6,12,ri(DPAL.box),x-len/2+5+i*6.4,5.9+k*2.62,z)}solid(x,z,len,15,8)}
 function quay(){const x0=AIRX[0],x1=400,z0=COAST,z1=COAST+34;const q=new T.Mesh(new T.PlaneGeometry(x1-x0,z1-z0),PADM);q.rotation.x=-PI/2;q.position.set((x0+x1)/2,.05,(z0+z1)/2);q.receiveShadow=true;sc.add(q);
  bx(x1-x0,3,1,0x6a6e74,(x0+x1)/2,-1.2,z1+.5,sc);nb(x1-x0,.05,.3,0xffc94a,(x0+x1)/2,.09,z1-1.2);for(let x=x0+6;x<x1;x+=12){cy(.35,.6,0x2a2a2e,x,.35,z1-.6,8);solid(x,z1-.6,.7,.7,.6)}
- for(let x=150;x<x1-20;x+=70)crane(x);ship(190,COAST+66,84);ship(310,COAST+70,96)}
+ for(let x=150;x<x1-20;x+=70)crane(x);craneLadder(150);ship(190,COAST+66,84);ship(310,COAST+70,96)}
 function port(cx,cz){dPad(cx,cz);if(R()<.7)stacks(cx,cz);else warehouse(cx,cz,rr(22,25),rr(18,22),rr(8,11))}
 /* ---------- EASTSIDE ---------- */
 function apartments(cx,cz){const col=ri(DPAL.house),w=rr(16,22),d=rr(12,16),h=3*(4+(R()*6|0));WK=R()<.5?3:1;wall(w,h,d,col,cx,cz);shopBase(cx,cz,w,d);
  for(let y=6;y<h-1;y+=3)for(const sz of[-1,1]){bx(w*.8,.18,1.3,0xd8d4cc,cx,y,cz+sz*(d/2+.65),sc);bx(w*.8,.9,.06,0x6a7078,cx,y+.5,cz+sz*(d/2+1.28),sc)}
- nsign(ri(SHOPS),ri(NC),cx,4.3,cz+d/2+.1,6);foot(cx,cz,w,d+2.6,h);if(R()<.5)bx(w*.3,2,d*.3,0x8a8f96,cx,h+1,cz,sc)}
+ nsign(ri(SHOPS),ri(NC),cx,4.3,cz+d/2+.1,6);foot(cx,cz,w,d+2.6,h);if(R()<.4)mkRoof(cx,cz,w,d,h,parseInt(ri(NC).slice(1),16));else if(R()<.5)bx(w*.3,2,d*.3,0x8a8f96,cx,h+1,cz,sc)}
 function parking(cx,cz,n){const p=new T.Mesh(new T.PlaneGeometry(27,27),roadMat());p.rotation.x=-PI/2;p.position.set(cx,.075,cz);p.receiveShadow=true;sc.add(p);
  for(let i=0;i<9;i++)for(const z of[-8,8])bx(.12,.02,5,0xffffff,cx-12+i*3,.09,cz+z,sc);for(let i=0;i<n;i++){const s=R()*16|0;boxCar(cx-10.5+(s%8)*3,cz+(s<8?-8:8),R()<.5?0:PI)}}
 function mall(cx,cz){dPad(cx,cz);WK=0;wall(26,9,18,0xe8e0d0,cx,cz-4);bx(26.4,.5,3,0xff2f6d,cx,6,cz+5.2,sc);nsign('EMBER MALL','#ff2f6d',cx,7.6,cz+5.1,12);for(const x of[-8,0,8])bx(4,3.2,.1,0x2a3a48,x+cx,1.7,cz+5.06,sc);foot(cx,cz-4,26,18,9);
- for(let i=0;i<4;i++)boxCar(cx-10+i*6.5,cz+10.5,PI/2)}
-function eastside(cx,cz){const r=R();if(r<.08)return park(cx,cz);if(r<.14&&!eastside.mall){eastside.mall=1;return mall(cx,cz)}dPad(cx,cz);if(r<.3)return parking(cx,cz,6+(R()*8|0));apartments(cx,cz)}
+ for(let i=0;i<4;i++)if(i!=1&&i!=2)boxCar(cx-10+i*6.5,cz+10.5,PI/2);buildMall(cx,cz)}
+function eastside(cx,cz){const r=R();if(r<.08)return park(cx,cz);dPad(cx,cz);if(r<.3)return parking(cx,cz,6+(R()*8|0));apartments(cx,cz)}
 /* ---------- MIDTOWN ---------- */
 function gasStation(cx,cz){dPad(cx,cz);bx(16,.6,10,0xf2f2f2,cx,5.3,cz+2,sc);nb(16.2,.25,10.2,0x43ff7a,cx,5,cz+2);for(const[x,z]of[[-7,-2.5],[7,-2.5],[-7,6.5],[7,6.5]])bx(.4,5,.4,0xdddddd,cx+x,2.5,cz+z,sc);
  for(const x of[-4,0,4]){bx(.9,1.6,.6,0xd0302a,cx+x,.8,cz+2,sc);nb(.6,.4,.05,0x43ff7a,cx+x,1.3,cz+2.32);solid(cx+x,cz+2,1,.7,1.6)}
- WK=0;wall(10,4,6,0xe8e4d8,cx,cz-9);nsign('GAS','#43ff7a',cx,3.4,cz-5.9,4);foot(cx,cz-9,10,6,4);bx(.4,7,.4,0x333333,cx+12,3.5,cz+11,sc);nb(2.4,1.6,.2,0x43ff7a,cx+12,7,cz+11)}
+ WK=0;wall(10,4,6,0xe8e4d8,cx,cz-9);nsign('GAS','#43ff7a',cx,3.4,cz-5.9,4);foot(cx,cz-9,10,6,4);gasPlaces(cx,cz);bx(.4,7,.4,0x333333,cx+12,3.5,cz+11,sc);nb(2.4,1.6,.2,0x43ff7a,cx+12,7,cz+11)}
 function shopRow(cx,cz){dPad(cx,cz);for(const sz of[-1,1])for(let i=0;i<3;i++){const x=cx-8.5+i*8.5,z=cz+sz*6,h=rr(4.5,8);WK=R()*5|0;wall(8,h,9,ri(PAL2),x,z);shopBase(x,z,8,9);
   const s=nsign(ri(SHOPS),ri(NC),x,3.9,z+sz*4.6,5.5);if(sz<0)s.rotation.y=PI;bx(7.4,.25,1.4,parseInt(ri(NC).slice(1),16),x,3.1,z+sz*5.1,sc);foot(x,z,8,9,h)}}
 function midtown(cx,cz){const r=R();if(r<.1)return park(cx,cz);if(r<.22)return gasStation(cx,cz);if(r<.5)return shopRow(cx,cz);if(r<.62){dPad(cx,cz);return parking(cx,cz,8+(R()*6|0))}
- dPad(cx,cz);tower(cx,cz,ri([0,1,3,4,6,7,8,9]))}
+ dPad(cx,cz);tower(cx,cz,ri([0,1,2,3,4,5,6,7,8,9]))}
 /* ---------- EMBER BEACH & the pier ---------- */
 function umbrella(x,z){const c=ri([0xff2f6d,0xffc94a,0x2bf0ff,0x43ff7a,0xff6a2b]);bx(.08,2.4,.08,0xeeeeee,x,1.2,z,sc);const m=new T.Mesh(new T.ConeGeometry(1.5,.6,10),mat(c));m.position.set(x,2.5,z);m.castShadow=true;sc.add(m);
  const t=bx(1,.03,2,ri([0xffffff,0x2b6fd0,0xff2f6d,0xffc94a]),x+rr(-1.5,1.5),.06,z+1.2,sc);t.rotation.y=rr(-.4,.4)}
@@ -117,9 +118,11 @@ function beach(){for(let x=-380;x<AIRX[0]-2;x+=14){const pm=new T.Mesh(palmGeo()
 function onPier(x,z){return(Math.abs(x-PIER.x)<4.2&&z>PIER.z0-1&&z<PIER.z1)||(Math.abs(x-PIER.x)<14&&z>PIER.z1-22&&z<PIER.z1+2)}
 function ferrisU(dt){for(const f of FERRIS){f.wheel.rotation.z+=dt*.06;for(const p of f.pods)p.rotation.z=-f.wheel.rotation.z}}
 /* ---------- assemble ---------- */
+const SPECIAL={'160,120':mall,'240,120':dealership,'-40,200':chopShop,'240,200':portYard};
 function buildDistricts(){const t0=performance.now();let n=0;
  for(let cx=-360;cx<=360;cx+=40)for(let cz=-360;cz<=280;cz+=40){if(Math.abs(cx)<=80&&Math.abs(cz)<=80)continue;if(cx==80)continue;if(cx>=120&&cx<=360&&cz>=-80&&cz<=40)continue;
-  const z=zoneOf(cx,cz);n++;if(z=='EMBER HEIGHTS')heights(cx,cz);else if(z=='PALM GROVE')grove(cx,cz);else if(z=='FOUNDRY')foundry(cx,cz);else if(z=='PORT EMBER')port(cx,cz);else if(z=='EASTSIDE')eastside(cx,cz);else midtown(cx,cz)}
+  const z=zoneOf(cx,cz),sp=SPECIAL[cx+','+cz];n++;if(sp)sp(cx,cz);else if(z=='EMBER HEIGHTS')heights(cx,cz);else if(z=='PALM GROVE')grove(cx,cz);else if(z=='FOUNDRY')foundry(cx,cz);else if(z=='PORT EMBER')port(cx,cz);else if(z=='EASTSIDE')eastside(cx,cz);else midtown(cx,cz)}
+  for(let cx=-360;cx<=360;cx+=40)for(let cz=-360;cz<=280;cz+=40){const z=zoneOf(cx,cz);if(PADS[cx+','+cz]&&!PARKS.some(p=>p.cx==cx&&p.cz==cz)&&z!='PALM GROVE'&&!SPECIAL[cx+','+cz]&&R()<.6&&!(Math.abs(cx)<=80&&Math.abs(cz)<=80)){const dx=cx+13,dz=cz+(R()<.5?-1:1)*rr(4,9);if(!bNear(dx-1.5,dz-1.5,dx+1.5,dz+1.5).some(b=>dx+1>b.x1&&dx-1<b.x2&&dz+1.5>b.z1&&dz-1.5<b.z2))mkDump(dx,dz,1)}}
  beach();quay();console.log('districts: '+n+' blocks in '+(performance.now()-t0|0)+'ms')}
 /* district name card when the player crosses into a new part of the city */
 let ZN='',ZNT=0;

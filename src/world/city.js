@@ -117,9 +117,9 @@ let BG=null,BGN=-1,BQS=1;const BGC=16;
 function bgBuild(){BG=new Map();BGN=B.length;for(const b of B){const i0=Math.floor(b.x1/BGC),i1=Math.floor(b.x2/BGC),j0=Math.floor(b.z1/BGC),j1=Math.floor(b.z2/BGC);for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const k=i*4096+j;let a=BG.get(k);if(!a)BG.set(k,a=[]);a.push(b)}}}
 function bNear(x1,z1,x2,z2){if(BGN!==B.length)bgBuild();const out=[],q=++BQS,i0=Math.floor(x1/BGC),i1=Math.floor(x2/BGC),j0=Math.floor(z1/BGC),j1=Math.floor(z2/BGC);
  for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const a=BG.get(i*4096+j);if(a)for(const b of a)if(b._q!==q){b._q=q;out.push(b)}}return out}
-function push(o,r){let hit=0;for(const b of IN?IB:bNear(o.x-r,o.z-r,o.x+r,o.z+r))if(!b.air&&!(o.y>b.h)&&o.x>b.x1-r&&o.x<b.x2+r&&o.z>b.z1-r&&o.z<b.z2+r){const d=[o.x-(b.x1-r),b.x2+r-o.x,o.z-(b.z1-r),b.z2+r-o.z],m=Math.min(...d);
+function push(o,r){let hit=0;for(const b of IN?IB:bNear(o.x-r,o.z-r,o.x+r,o.z+r))if(!b.air&&!b.over&&!(o.y>b.h)&&o.x>b.x1-r&&o.x<b.x2+r&&o.z>b.z1-r&&o.z<b.z2+r){const d=[o.x-(b.x1-r),b.x2+r-o.x,o.z-(b.z1-r),b.z2+r-o.z],m=Math.min(...d);
  if(m==d[0])o.x=b.x1-r;else if(m==d[1])o.x=b.x2+r;else if(m==d[2])o.z=b.z1-r;else o.z=b.z2+r;hit=1}
- if(!IN){o.x=Math.max(WB.x0,Math.min(WB.x1,o.x));o.z=Math.max(WB.z0,Math.min(WB.z1+60,o.z))}return hit}
+ if(!IN){o.x=Math.max(WB.x0,Math.min(WB.x1,o.x));o.z=Math.max(WB.z0,Math.min(onPier(o.x,o.z)?PIER.z1:WB.z1+60,o.z))}return hit}
 /* ---- apartment interior ---- */
 const OX=2300,OZ=2300;/* interiors live far outside the map */let aexit,bed;
 function iw(x,z,w,d){bx(w,3.5,d,0xe8e0d4,OX+x,1.75,OZ+z,sc);IB.push({x1:OX+x-w/2,x2:OX+x+w/2,z1:OZ+z-d/2,z2:OZ+z+d/2})}

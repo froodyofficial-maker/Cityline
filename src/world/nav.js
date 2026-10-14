@@ -9,9 +9,9 @@ function gbfs(sx,sz,tx,tz,G0){const G=G0||GG,cell=(x,z)=>[Math.max(0,Math.min(G.
 let CG=null;
 function buildCityGrid(){const res=1.5,x0=-122,z0=-122,w=Math.ceil(246/res),h=Math.ceil(246/res),occ=new Uint8Array(w*h),R2=.9;
  const mark=b=>{const i0=Math.max(0,((b.x1-R2-x0)/res)|0),i1=Math.min(w-1,((b.x2+R2-x0)/res)|0),j0=Math.max(0,((b.z1-R2-z0)/res)|0),j1=Math.min(h-1,((b.z2+R2-z0)/res)|0);for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)occ[j*w+i]=1};
- for(const b of B)if(!b.air)mark(b);CG={x0,z0,res,w,h,occ}}
+ for(const b of B)if(!b.air&&!b.over)mark(b);CG={x0,z0,res,w,h,occ}}
 let WG=null;
 function buildWorldGrid(){const res=2.5,x0=WB.x0-8,z0=WB.z0-8,w=Math.ceil((WB.x1-x0+8)/res),h=Math.ceil((WB.z1+40-z0)/res),occ=new Uint8Array(w*h),R2=.9;
- for(const b of B){if(b.air)continue;const i0=Math.max(0,((b.x1-R2-x0)/res)|0),i1=Math.min(w-1,((b.x2+R2-x0)/res)|0),j0=Math.max(0,((b.z1-R2-z0)/res)|0),j1=Math.min(h-1,((b.z2+R2-z0)/res)|0);for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)occ[j*w+i]=1}WG={x0,z0,res,w,h,occ}}
+ for(const b of B){if(b.air||b.over)continue;const i0=Math.max(0,((b.x1-R2-x0)/res)|0),i1=Math.min(w-1,((b.x2+R2-x0)/res)|0),j0=Math.max(0,((b.z1-R2-z0)/res)|0),j1=Math.min(h-1,((b.z2+R2-z0)/res)|0);for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)occ[j*w+i]=1}WG={x0,z0,res,w,h,occ}}
 const inCG=(x,z)=>x>-120&&x<120&&z>-120&&z<120;
 function cpath(e,tx,tz,dt){if((e.ct=(e.ct||0)-dt)<=0||!e.cpath||!e.cpath.length){e.ct=.6;const G=inCG(e.x,e.z)&&inCG(tx,tz)?CG:WG;e.cpath=G?(gbfs(e.x,e.z,tx,tz,G)||[]):[]}while(e.cpath.length&&Math.hypot(e.cpath[0][0]-e.x,e.cpath[0][1]-e.z)<1.2)e.cpath.shift();return e.cpath.length?e.cpath[0]:[tx,tz]}

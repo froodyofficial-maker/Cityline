@@ -36,7 +36,7 @@ function winScreen(){mode='eod';document.exitPointerLock&&document.exitPointerLo
 function gameOver(){mode='eod';document.exitPointerLock&&document.exitPointerLock();$('eodp').innerHTML='<h2>GAME OVER</h2><div class="er"><span>DAYS SURVIVED</span><b>'+(day-1)+'</b></div><div class="er"><span>CASH</span><b>$'+cash+'</b></div><div class="er"><span>CIVILIANS KILLED</span><b>'+kills+'</b></div><div class="er"><span>COPS KILLED TODAY</span><b>'+dS.cops+'</b></div><button id="eodgo">BACK TO MENU</button>';
  $('eod').style.display='flex';$('eodgo').onclick=()=>location.reload();snd(120,1,'sawtooth',.1)}
 /* ---- jumping ---- */
-function walkH(x,z){if(onPier(x,z))return .5;if(inWater(x,z))return -.4;let g=Math.max(0,terrH(x,z));for(const b of bNear(x,z,x,z))if(!b.air&&b.h>2&&x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
+function walkH(x,z){if(onPier(x,z))return .5;if(inWater(x,z))return -.4;let g=Math.max(0,terrH(x,z));for(const b of bNear(x,z,x,z))if(!b.air&&b.h>2&&!(b.over&&(P.y||0)<b.h-1.5)&&x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
 function footY(dt){P.g.scale.y=P.crouch?.76:1;const gy=IN?0:walkH(P.x,P.z);P.y=P.y||0;P.vy=P.vy||0;
  if(CFG.god){P.vy=(K.Space?12:0)-(K.KeyC?12:0);P.y=Math.max(gy,P.y+P.vy*dt);P.roof=null;P.gr=P.y<=gy+.02;return}
  if(P.y<=gy+.02&&P.vy<=0){P.y=gy;P.vy=0;P.gr=1;if(P.jr&&CFG.jump>0){P.vy=Math.sqrt(2*22*CFG.jump);P.gr=0;snd(420,.1,'sine',.03)}}
