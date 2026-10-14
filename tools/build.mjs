@@ -29,7 +29,7 @@ for(const f of fontRefs)css=css.split('url(../'+f+')').join('url(data:font/woff2
 // 4. assemble the page from index.html
 const icon='data:image/svg+xml;base64,'+(await rd('assets/icon.svg',null)).toString('base64');
 const safe=s=>s.replace(/<\/script/gi,'<\\/script');
-let html=await rd('index.html');
+let html=(await rd('index.html')).replace(/\r\n/g,'\n');/* Windows checkouts may use CRLF */
 const swap=(from,to)=>{if(!html.includes(from))throw new Error('build: index.html is missing '+from);html=html.replace(from,()=>to)};
 swap('<head>\n','<head>\n<script>window.__EMBER_BUNDLE__=1</script>\n');
 swap('<link rel="icon" href="assets/icon.svg" type="image/svg+xml">','<link rel="icon" href="'+icon+'" type="image/svg+xml">');
