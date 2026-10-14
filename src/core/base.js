@@ -1,4 +1,4 @@
-const $=i=>document.getElementById(i),R=Math.random,T=THREE,PI=Math.PI,rr=(a,b)=>a+R()*(b-a),ri=a=>a[R()*a.length|0],sin=Math.sin,cos=Math.cos;
+const $C={},$=i=>{let e=$C[i];if(!e||!e.isConnected)e=$C[i]=document.getElementById(i);return e},txt=(i,v)=>{const e=$(i);v=String(v);if(e&&e._t!==v){e._t=v;e.textContent=v}},R=Math.random,T=THREE,PI=Math.PI,rr=(a,b)=>a+R()*(b-a),ri=a=>a[R()*a.length|0],sin=Math.sin,cos=Math.cos;
 const PAL={r:'#e8222c',g:'#3ec24a',y:'#ffd23f',o:'#ff8a2b',k:'#1a1020',w:'#fff',b:'#2b8fff',c:'#2bf0ff',n:'#8a5a2b',d:'#555'};
 const SD={cherry:["....ggg.","...g..g.","..g...g.",".rrr.rrr","rwrrrwrr","rrrrrrrr",".rrr.rrr","..r...r."],
 lemon:["..yyyy..",".yyyyyy.","yywyyyyy","yyyyyyyy","yyyyyyyy",".yyyyyy.","..yyyy..","...gg..."],
@@ -33,9 +33,13 @@ hrt:[".rr..rr.","rrrrrrrr","rrrrrrrr","rrrrrrrr",".rrrrrr.","..rrrr..","...rr...
 dmd:["...rr...","..rrrr..",".rrrrrr.","rrrrrrrr",".rrrrrr.","..rrrr..","...rr...","........"],
 club:["...kk...","..kkkk..","...kk...",".kkkkkk.","kkkkkkkk","kk.kk.kk","...kk...","..kkkk.."]};
 const SPR={},SU={};for(const k in SD){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');SD[k].forEach((r,y)=>[...r].forEach((ch,x)=>{if(PAL[ch]){g.fillStyle=PAL[ch];g.fillRect(x,y,1,1)}}));SPR[k]=c;SU[k]=c.toDataURL()}
-const si=(n,p)=>'<img class="px" width="'+p+'" height="'+p+'" src="'+((typeof ICOU!=='undefined'&&ICOU[n])||SU[n])+'">';
+const si=(n,p)=>'<img class="px" width="'+p+'" height="'+p+'" src="'+(SU[n]||(typeof ICOU!=='undefined'&&ICOU[n]))+'">';
 document.querySelectorAll('i[data-s]').forEach(e=>e.innerHTML=si(e.dataset.s,22));
-let comp=null,gradeP=null,bloomP=null;const rd=new T.WebGLRenderer({canvas:$('c'),antialias:true});rd.setPixelRatio(Math.min(devicePixelRatio,2));rd.shadowMap.enabled=true;
+/* starting graphics quality: the saved choice, else a guess from the device (phones LOW, 4-core/4GB machines MEDIUM, else HIGH) */
+const QDEF=(()=>{let q;try{q=JSON.parse(localStorage.getItem('embercity_cfg')||'{}').gfx}catch(e){}if(q!==undefined&&q!==null)return +q;
+ const mob=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||(window.matchMedia&&matchMedia('(pointer:coarse)').matches);return mob?0:(navigator.hardwareConcurrency||4)<=4||(navigator.deviceMemory||8)<=4?1:2})();
+/* MEDIUM+ anti-alias inside the post chain (SMAA / MSAA), so the default framebuffer only needs it on LOW */
+let comp=null,gradeP=null,bloomP=null;const rd=new T.WebGLRenderer({canvas:$('c'),antialias:QDEF===0,powerPreference:'high-performance',stencil:false});rd.setPixelRatio(Math.min(devicePixelRatio,2));rd.shadowMap.enabled=true;
 const sc=new T.Scene(),SKY=0xf7b27b;sc.background=new T.Color(SKY);sc.fog=new T.Fog(SKY,60,200);
 const cam=new T.PerspectiveCamera(60,1,.1,400);
 function rs(){rd.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();if(comp)comp.setSize(innerWidth,innerHeight)}addEventListener('resize',rs);rs();

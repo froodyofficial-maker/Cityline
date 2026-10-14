@@ -130,7 +130,7 @@ function xUpdate(dt){const live=!cut&&!P.dead;storyU(dt);storyWorldU();bpUpdate(
  scoped=cw=='sniper'&&K.R&&live&&!P.car&&!P.heli&&!P.plane&&!IN?1:0;const tf=scoped?18:(CIN&&cut)?CIN.fov:60;if(Math.abs(cam.fov-tf)>.3){cam.fov+=(tf-cam.fov)*Math.min(1,dt*10);cam.updateProjectionMatrix()}
  $('scope').style.opacity=scoped?1:0;$('xh').style.opacity=((zoom<.1||scoped)&&!P.car&&live)?1:0;
  $('lk').style.display=(!locked()&&!lockFail&&live)?'block':'none';hurt=Math.max(0,hurt-dt*1.6);$('hurt').style.opacity=Math.min(1,hurt*.8+(P.hp<30&&live?.25+.2*sin(performance.now()/180):0))}
-function hudU(dt,stars){hudX();$('stars').classList.toggle('blink',!!evading);dispCash+=(cash-dispCash)*Math.min(1,dt*8);$('cash').textContent=Math.round(dispCash);$('k').textContent=kills;$('cpk').textContent=dS.cops;$('dy').textContent='DAY '+day+' ';
+function hudU(dt,stars){hudX();$('stars').classList.toggle('blink',!!evading);dispCash+=(cash-dispCash)*Math.min(1,dt*8);txt('cash',Math.round(dispCash));txt('k',kills);txt('cpk',dS.cops);txt('dy','DAY '+day+' ');
  $('hpb').style.width=Math.max(0,P.hp)+'%';$('hpb').style.setProperty('--c',P.hp<30?'#ff3b3b':'#4ade80');$('hgb').style.width=hunger+'%';$('hgb').style.setProperty('--c',hunger<20?'#ff3b3b':'#ffb02b');
  if(stars!==lastS){lastS=stars;$('stars').innerHTML=[0,1,2,3,4].map(i=>si(i<stars?'star':'star0',24)).join('')}
  const hk=cw+'|'+WK2.map(k=>own[k]?ammo[k]:'-').join(',');if(hk!==lastHot){lastHot=hk;$('hot').innerHTML=WK2.map((k,i)=>'<div class="sl'+(k==cw?' on':'')+(own[k]?'':' off')+'">'+si(k,32)+'<b>'+(i+1)+'</b><u>'+(own[k]?ammo[k]:'--')+'</u></div>').join('')}}

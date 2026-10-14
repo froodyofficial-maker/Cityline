@@ -29,7 +29,7 @@ npm run check        # syntax-check every game source and the combined script
 ```
 index.html              page shell: menus, HUD, story UI
 css/ui.css              all UI styling
-assets/                 icon + self-hosted fonts (Inter, Oswald; SIL OFL)
+assets/                 icon + self-hosted pixel font (Press Start 2P; SIL OFL)
 vendor/three/           three.js r160 + the post-processing addons used
 src/boot.js             ES-module bootstrap: loads three.js, then the game scripts
 src/manifest.js         load order of the game scripts
@@ -57,6 +57,14 @@ Graphics quality is set from the Open World setup screen. It has four levels: Lo
 - GTAO ambient occlusion, an exponential height-fog pass with sun in-scattering, and bloom
 - ACES grading with god rays, MSAA and soft shadows
 - interiors that switch to warm practical lighting and close off the sky
+
+## Performance
+
+- **Automatic starting quality:** on first launch the game picks Low on phones, Medium on 4-core or 4 GB machines, and High otherwise.
+- **Adaptive resolution:** render resolution drops (to as low as 50%) when the frame rate falls, and recovers when there's headroom.
+- **Anti-aliasing:** handled once, inside the post-processing chain, and the browser is asked for the high-performance GPU.
+- **Throttled extras:** water reflections refresh every other frame on High, and the reflection capture refreshes every 5–12 seconds.
+- **No UI blur:** the HUD has no backdrop blur, and its text is rewritten only when it changes.
 
 ## Story mode
 
@@ -88,4 +96,4 @@ There are eleven chapters, from *Homecoming* to *Ember Falls*. They are fully st
 ## Credits
 
 - three.js: MIT, © three.js authors. See `vendor/three/LICENSE`.
-- Inter and Oswald fonts: SIL Open Font License 1.1. See `assets/fonts/`.
+- Press Start 2P font: SIL Open Font License 1.1. See `assets/fonts/`.

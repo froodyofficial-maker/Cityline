@@ -67,7 +67,7 @@ function npcAnim(a,dt,talk){const g=a.g;if(!g)return;let mv=0;a.ph+=dt;
  g.rotation.set(rx,a.h,0);g.position.set(a.x,yo+(!mv&&!rx?sin(t*1.9)*.008:0),a.z);if(g.hd&&g.hd[0].rotation){const hb=talk?sin(t*4.1)*.05:0;g.hd[0].rotation.x=g.hd[1].rotation.x=hdx+hb}}
 /* ---------- cinematic engine ---------- */
 function cinPlay(shots,done,instant){CIN={shots,i:-1,st:0,li:0,lt:0,done,tm:0,ev:{},fov:50};if(instant){cinEnd(1);return}
- for(const k in K)K[k]=0;heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;$('sir').style.opacity=0;document.body.classList.add('cin');objSet('');SAYQ.length=0;subShow();cut={t:0,dur:1e9,fn:cinFn,lines:[],done:()=>cinEnd(0)};document.body.classList.add('on');$('pr').textContent='';$('lk').style.display='none';cinShot(0)}
+ for(const k in K)K[k]=0;heat=0;for(const c of cops)sc.remove(c.g);cops.length=0;$('sir').style.opacity=0;document.body.classList.add('cin');objSet('');SAYQ.length=0;subShow();cut={t:0,dur:1e9,fn:cinFn,lines:[],done:()=>cinEnd(0)};document.body.classList.add('on');txt('pr','');$('lk').style.display='none';cinShot(0)}
 function snapA(a){if(!a.to)return;const t=a.path&&a.path.length?a.path[a.path.length-1]:a.to;a.x=t[0];a.z=t[1];a.to=null;a.path=null;if(a.toH!==undefined&&a.toH!==null)a.h=a.toH}
 function cinShot(i){const C=CIN;C.i=i;C.st=0;C.li=0;C.lt=0;C.evf={};const s=C.shots[i];if(!s)return;s._oc=undefined;if(i>0&&!s.keep){for(const n in NPC)snapA(NPC[n]);snapA(PN)}if(s.tod!==undefined)tod=s.tod;if(s.on)s.on();if(s.fade!==undefined)fadeTo(s.fade,s.fs);if(s.title)titleCard(s.title[0],s.title[1],s.title[2]);
  s._d=s.d||((s.l||[]).reduce((a,l)=>a+lineDur(l),0)+(s.pad||.4));C.fov=s.fov||50;if(s.sfx)s.sfx()}

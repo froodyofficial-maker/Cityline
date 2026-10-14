@@ -79,7 +79,7 @@ const colGeo=(g,c)=>{const n=g.attributes.position.count,a=new Float32Array(n*3)
 /* ---------- people: vertex-coloured merged limbs (one shared material) ---------- */
 const PSM=STD({vertexColors:true,roughness:.78}),VBC={};
 /* HIGH+ quality: bevelled rounded boxes for the larger body parts (small face details stay crisp) */
-function hqChars(){if(hqChars.v===undefined){let q=2;try{const c=JSON.parse(localStorage.getItem('embercity_cfg')||'{}');if(c.gfx!==undefined)q=+c.gfx}catch(e){}hqChars.v=q>=2}return hqChars.v}
+function hqChars(){return QDEF>=2}
 function pbox(w,h,d){const m=Math.min(w,h,d);return T.RoundedBoxGeometry&&hqChars()&&m>=.1?new T.RoundedBoxGeometry(w,h,d,1,m*.22):new T.BoxGeometry(w,h,d)}
 function vbox(key,parts){if(VBC[key])return VBC[key];return VBC[key]=mergeGeos(parts.map(p=>({g:colGeo(pbox(p[0],p[1],p[2]).translate(p[3],p[4],p[5]),p[6])})))}
 const hx=c=>'#'+new T.Color(c).getHexString();
@@ -177,7 +177,7 @@ const WU={uEnv:{value:null},uRefl:{value:null},uNrm:{value:WNRM},uHasEnv:{value:
 function waterMat(round){const u=Object.assign({},WU,{uTM:{value:new T.Matrix4()},uRound:{value:round?1:0},uHasRefl:{value:0},uRefl:{value:null}});return new T.ShaderMaterial({uniforms:u,vertexShader:WVS,fragmentShader:WFS})}
 /* ---------- planar reflection for the river (HIGH/ULTRA) ---------- */
 const RF={rt:null,cam:new T.PerspectiveCamera(),on:0,s:.4,pl:new T.Plane(),cp:new T.Vector4(),q:new T.Vector4(),v:new T.Vector3(),t:new T.Vector3(),l:new T.Vector3(),rm:new T.Matrix4(),n:new T.Vector3(0,1,0),wp:new T.Vector3()};
-function reflRender(){if(!RF.on||!WATER||IN)return;const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
+function reflRender(){if(!RF.on||!WATER||IN)return;if(CFG.gfx<3&&(RF.k=(RF.k||0)+1)%2)return;/* HIGH: refresh the reflection every other frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
  if(Math.abs(cp.x-80)>230||cp.y<RF.wp.y+.2){u.uHasRefl.value=0;return}RF.pm=RF.pm||new T.Matrix4();RF.fr=RF.fr||new T.Frustum();cam.updateMatrixWorld();RF.pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);RF.fr.setFromProjectionMatrix(RF.pm);RF.bb=RF.bb||new T.Box3(new T.Vector3(70.4,-.6,-350),new T.Vector3(89.6,-.4,350));if(!RF.fr.intersectsBox(RF.bb)){u.uHasRefl.value=0;return}
  const w=Math.round(innerWidth*RF.s*rd.getPixelRatio()),h=Math.round(innerHeight*RF.s*rd.getPixelRatio());if(RF.rt.width!==w||RF.rt.height!==h)RF.rt.setSize(w,h);
  const n=RF.n,v=RF.v.subVectors(RF.wp,cp);v.reflect(n).negate();v.add(RF.wp);RF.rm.extractRotation(cam.matrixWorld);RF.l.set(0,0,-1).applyMatrix4(RF.rm).add(cp);
@@ -189,8 +189,8 @@ function reflRender(){if(!RF.on||!WATER||IN)return;const M=WATER,u=M.material.un
  u.uRefl.value=RF.rt.texture;u.uHasRefl.value=1}
 /* ---------- environment (IBL) capture ---------- */
 const ENV={cube:null,cc:null,pm:null,rt:null,t:-1e9,tod:-1,res:0};
-function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,600,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9}
-function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?2500:CFG.gfx>=2?4000:9000;if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.008&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;
+function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,350,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9}
+function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?5000:CFG.gfx>=2?8000:12000;if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.015&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;
  const c=ENV.cc,src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(DOME)DOME.position.copy(c.position);if(GLOWS)GLOWS.visible=false;
  WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME)DOME.position.copy(cam.position);
  const old=ENV.rt;ENV.rt=ENV.pm.fromCubemap(ENV.cube.texture);sc.environment=ENV.rt.texture;if(old)old.dispose();WU.uEnv.value=ENV.cube.texture;WU.uHasEnv.value=1}

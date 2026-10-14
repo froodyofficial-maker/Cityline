@@ -18,20 +18,25 @@ void main(){vec2 c=vUv-.5;float ca=dot(c,c)*.004;vec3 col=vec3(texture2D(tDiffus
  if(uRay>.001){vec2 dl=(vUv-uSun)*(.9/28.);vec2 tc=vUv;float il=0.,dc=1.;for(int i=0;i<28;i++){tc-=dl;vec3 s=texture2D(tDiffuse,clamp(tc,0.,1.)).rgb;il+=max(dot(s,vec3(.3,.59,.11))-1.,0.)*dc;dc*=.94;}col+=uRayCol*il*uRay*.06;}
  col=aces(col*uExpo);float l=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(l),col,sat);
  col+=(vec3(-.012,.004,.022)*(1.-l)+vec3(.022,.008,-.016)*l)*uWarm;col*=1.-vig*dot(c,c)*1.9;col+=(rnd(vUv*1000.+time)-.5)*.012;gl_FragColor=vec4(max(col,0.),1.);}`;
-function initGfx(){const q=CFG.gfx;rd.setPixelRatio(Math.min(devicePixelRatio,q>=3?2:q>=2?1.5:1.25));rd.shadowMap.enabled=true;rd.shadowMap.type=q>=1?T.PCFSoftShadowMap:T.PCFShadowMap;
- const ms=q>=3?4096:q>=2?3072:q>=1?2048:1024;sun.shadow.mapSize.set(ms,ms);{const s=sun.shadow.camera,e=q>=3?80:q>=2?66:50;s.left=s.bottom=-e;s.right=s.top=e;s.near=1;s.far=260;s.updateProjectionMatrix()}
+function initGfx(){const q=CFG.gfx;BASEPR=Math.min(devicePixelRatio,q>=3?2:q>=2?1.5:1.25);DRS.s=1;rd.setPixelRatio(BASEPR);rd.shadowMap.enabled=true;rd.shadowMap.type=q>=1?T.PCFSoftShadowMap:T.PCFShadowMap;
+ const ms=q>=3?3072:q>=2?2048:q>=1?1536:1024;sun.shadow.mapSize.set(ms,ms);{const s=sun.shadow.camera,e=q>=3?80:q>=2?66:50;s.left=s.bottom=-e;s.right=s.top=e;s.near=1;s.far=260;s.updateProjectionMatrix()}
  if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}sun.shadow.bias=-.00025;sun.shadow.normalBias=.035;
  envSetup(q>=3?256:q>=2?128:q>=1?64:0);RF.on=q>=2&&!!WATER;RF.s=q>=3?.5:.33;if(RF.on&&!RF.rt)RF.rt=new T.WebGLRenderTarget(16,16,{type:T.HalfFloatType});
  if(comp&&comp.dispose)comp.dispose();comp=null;gtaoP=fogP=outP=bloomP=gradeP=null;rd.toneMapping=T.NoToneMapping;
  if(q>=1&&T.EffectComposer){try{const w=innerWidth,h=innerHeight,pr=rd.getPixelRatio(),rt=new T.WebGLRenderTarget(w*pr,h*pr,{type:T.HalfFloatType,samples:q>=2?4:0});
   comp=new T.EffectComposer(rd,rt);comp.addPass(new T.RenderPass(sc,cam));
-  if(q>=2&&T.GTAOPass){gtaoP=new T.GTAOPass(sc,cam,w,h);gtaoP.updateGtaoMaterial({radius:1.1,distanceExponent:1.5,thickness:2,distanceFallOff:1,scale:1.15,samples:q>=3?16:10});gtaoP.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:q>=3?8:5,radiusExponent:1,rings:2,samples:q>=3?16:8});comp.addPass(gtaoP);
+  if(q>=2&&T.GTAOPass){gtaoP=new T.GTAOPass(sc,cam,w,h);gtaoP.updateGtaoMaterial({radius:1.1,distanceExponent:1.5,thickness:2,distanceFallOff:1,scale:1.15,samples:q>=3?16:8});gtaoP.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:q>=3?8:5,radiusExponent:1,rings:2,samples:q>=3?12:6});comp.addPass(gtaoP);
    fogP=new T.ShaderPass({uniforms:{tDiffuse:{value:null},tDepth:{value:gtaoP.depthTexture},uInvProj:{value:new T.Matrix4()},uCamW:{value:new T.Matrix4()},uCam:{value:new T.Vector3()},uFogCol:{value:new T.Color()},uSunDir:{value:new T.Vector3(0,1,0)},uSunCol:{value:new T.Color()},uA:{value:.008},uB:{value:.04}},vertexShader:QUAD_VS,fragmentShader:FOG_FS});comp.addPass(fogP)}
   bloomP=new T.UnrealBloomPass(new T.Vector2(w/(q>=3?1:2),h/(q>=3?1:2)),.5,.5,.9);comp.addPass(bloomP);
   gradeP=new T.ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0},sat:{value:1.08},vig:{value:.38},uSun:{value:new T.Vector2(.5,.5)},uRay:{value:0},uRayCol:{value:new T.Color(1,.9,.7)},uExpo:{value:.95},uWarm:{value:1}},vertexShader:QUAD_VS,fragmentShader:GRADE_FS});comp.addPass(gradeP);
   outP=new T.OutputPass();comp.addPass(outP);if(q==1&&T.SMAAPass)comp.addPass(new T.SMAAPass(w*pr,h*pr));comp.setSize(w,h)}catch(e){comp=null;console.warn('post-processing unavailable',e)}}
  if(!comp){rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1}
  sc.fog.near=fogP?240:75;sc.fog.far=fogP?600:q>=2?340:260}
+/* dynamic resolution: keep the frame rate up by trading render resolution (50-100% of the preset) */
+let BASEPR=1;const DRS={s:1,ema:16,t:0};
+function drsU(ms){if(document.hidden||!(ms>0))return;DRS.ema+=(Math.min(ms,100)-DRS.ema)*.05;DRS.t+=ms;if(DRS.t<1500)return;DRS.t=0;
+ let s=DRS.s;if(DRS.ema>21)s=Math.max(.5,s-.1);else if(DRS.ema<14.5&&s<1)s=Math.min(1,s+.05);
+ if(s!==DRS.s){DRS.s=s;const p=BASEPR*s;rd.setPixelRatio(p);if(comp)comp.setPixelRatio(p);rs()}}
 function gradeU(){if(!gradeP)return;const u=gradeP.uniforms,day=Math.max(0,Math.min(1,-cos(tod*2*PI)*2.2+.4)),n=1-day,du=Math.max(0,1-Math.abs(-cos(tod*2*PI))*4);u.time.value=performance.now()*.001;
  if(bloomP){bloomP.strength=IN?.22:.3+.55*n;bloomP.threshold=IN?1.6:1.05-.45*n;bloomP.radius=.42+.22*n}u.uExpo.value=IN?.8:.95+.1*n;
  const d=SKYU.uSunDir.value;GSV.copy(cam.position).addScaledVector(d,300).project(cam);const vis=GSV.z<1&&d.y>-.02&&!IN?Math.max(0,1-Math.max(Math.abs(GSV.x),Math.abs(GSV.y))*.6):0;
