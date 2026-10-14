@@ -32,7 +32,7 @@ function shoot(){if(shT>0)return;shT=.2;snd(320,.12,'sawtooth',.06);const all=pe
  if(hit&&--hit.hp<=0)kill(hit,ax,az,0,1);else if(hit){part(hit.x,1,hit.z,0,3,0,.12,BL[1],5);heat+=.02}}
 /* ---- cutscenes ---- */
 const fly=(a,b,la,lb,p)=>{const k=p*p*(3-2*p);cam.position.set(a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k);cam.lookAt(la[0]+(lb[0]-la[0])*k,la[1]+(lb[1]-la[1])*k,la[2]+(lb[2]-la[2])*k)};
-function cutscene(dur,fn,lines,done){cut={t:0,dur,fn,lines,done};$('w').parentNode.classList.add('on');$('pr').textContent=''}
+function cutscene(dur,fn,lines,done){cut={t:0,dur,fn,lines,done};$('w').parentNode.classList.add('on');txt('pr','')}
 function intro(){cutscene(10,p=>fly([70,60,70],[P.x-sin(camYaw)*7.7,5.1,P.z-cos(camYaw)*7.7],[0,10,0],[P.x,1.2,P.z],p),
  [[0,'WELCOME TO EMBER CITY.'],[3,'Broke. Armed. Nothing left to lose.'],[6.5,'This town owes you. Time to collect.']])}
 function robBank(){bank.cd=70;const bz=bank.z,bxx=bank.x;
@@ -44,7 +44,7 @@ function respawn(){P.dead=0;P.hp=100;P.x=4;P.z=14;P.g.rotation.x=0;P.g.position.
 /* ---- casino ---- */
 const SY=['cherry','lemon','bell','diamond','seven'],showR=a=>$('rl').innerHTML=a.map(i=>si(SY[i],64)).join(''),W=[30,28,20,12,10],PAY=[3,4,6,12,30];let bet=100,busy=0;
 const wp=()=>{let r=R()*100;for(let i=0;i<5;i++){if((r-=W[i])<0)return i}return 0};
-const cb=()=>{$('cb').textContent=cash;$('cash').textContent=cash};
+const cb=()=>{$('cb').textContent=cash;txt('cash',cash)};
 document.querySelectorAll('.bt').forEach(b=>b.onclick=()=>{bet=+b.dataset.b;document.querySelectorAll('.bt').forEach(x=>x.classList.toggle('sel',x==b))});
 function res(t,c){$('res').textContent=t;$('res').style.color=c}
 $('sp0').onclick=()=>{if(busy)return;if(cash<bet)return res('Not enough cash!','#f55');cash-=bet;cb();busy=1;res('','#fff');let n=0;
@@ -73,7 +73,7 @@ function skyU(){const sh=-cos(tod*2*PI),day=Math.max(0,Math.min(1,sh*2.2+.4)),n=
  else{hemi.intensity=(.3+.3*day)*(env?.6:1)*LI;hemi.color.copy(tmp).lerp(SKC.w,.5);hemi.groundColor.setHex(0x5a5248).multiplyScalar(.4+.6*day);envK(.55+.25*day)}
  if(sh>-.05){sun.color.copy(SKC.sunW).lerp(SKC.sunO,Math.min(1,du*1.15));sun.intensity=(.18+.82*smooth(-.05,.3,sh))*LI*(IN?.2:1.1)}else{sun.color.copy(SKC.moon);sun.intensity=.2*LI*(IN?.2:1)}
  for(const o of NEON)o.m.color.copy(o.b).multiplyScalar(.3+.7*n);for(const m of BM)m.emissive.setRGB(.95*n,.78*n,.45*n);GU.uNight.value=smooth(.3,.85,n);
- $('clk').textContent=String(tod*24|0).padStart(2,'0')+':'+String((tod*24%1)*60|0).padStart(2,'0');const ni=n>.6?'moon':'sun';if(ni!==lastN){lastN=ni;$('ci').innerHTML=si(ni,16)}}
+ txt('clk',String(tod*24|0).padStart(2,'0')+':'+String((tod*24%1)*60|0).padStart(2,'0'));const ni=n>.6?'moon':'sun';if(ni!==lastN){lastN=ni;$('ci').innerHTML=si(ni,16)}}
 function sunPlace(){const sa=tod*2*PI,dy=-cos(sa),dx=sin(sa),d=SKC.v;if(dy>-.05)d.set(dx,Math.max(dy,.1),.45);else d.set(-dx,Math.max(-dy,.15),-.45);d.normalize();const c=IN?cam.position:(P.car||P.heli||P.plane||P);
  const ts=sun.shadow.camera.right*2/sun.shadow.mapSize.x,tx=Math.round(c.x/ts)*ts,tz=Math.round(c.z/ts)*ts;sun.target.position.set(tx,0,tz);sun.position.set(tx+d.x*100,d.y*100,tz+d.z*100)}
 const MS=document.createElement('canvas');MS.width=320;MS.height=160;const mg=$('mm').getContext('2d'),mq=160/240,MX=v=>Math.round((v+120)*mq);
@@ -128,7 +128,7 @@ function update(dt){
  MK.forEach(m=>m.position.y=.2+sin(performance.now()/300)*.1);
  /* hud */
  const pr=ptxt();
- if(live)$('pr').textContent=pr;
+ if(live)txt('pr',pr);
  hudU(dt,stars);
  if(!cut)$('sir').style.opacity=stars?1:0;
  /* camera */
