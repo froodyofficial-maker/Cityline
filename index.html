@@ -22,7 +22,8 @@
   <nav class="mnu">
    <button class="mb" id="go"><em>01</em>Story Mode</button>
    <button class="mb" id="ow"><em>02</em>Open World</button>
-   <button class="mb" id="ctl"><em>03</em>Controls</button>
+   <button class="mb" id="mpb"><em>03</em>Multiplayer</button>
+   <button class="mb" id="ctl"><em>04</em>Controls</button>
   </nav>
   <div id="cp">
    <div><kbd>W A S D</kbd>Move</div><div><kbd>Shift</kbd>Sprint</div><div><kbd>Mouse</kbd>Look (click to lock)</div><div><kbd>Click</kbd>Shoot · <kbd>RMB</kbd> Scope</div>
@@ -31,14 +32,14 @@
   </div>
   <div id="hint">Press <kbd>Enter</kbd></div>
  </div>
- <div class="hfoot">EMBER CITY · v2.1</div>
+ <div class="hfoot">EMBER CITY · v2.5</div>
 </div>
 
 <div id="w"><canvas id="c"></canvas></div>
 <div id="sir"></div><div class="bar" id="b1"></div><div class="bar" id="b2"></div>
 
 <div class="h" id="st">
- <div class="chip tchip"><i id="ci"></i><span id="dy">DAY 1</span><span id="clk"></span></div>
+ <div class="chip tchip"><i id="ci"></i><span id="dy">DAY 1</span><span id="clk"></span><span id="wxl"></span></div>
  <div id="stars"></div>
  <div class="row money"><span class="cur">$</span><span id="cash">500</span></div>
  <div class="row small"><i data-s="skull"></i><span id="k">0</span><i data-s="badge"></i><span id="cpk">0</span>/<span id="cpl">10</span></div>
@@ -55,7 +56,12 @@
  <div><kbd>R</kbd>Rob register · <kbd>I</kbd> Inventory</div>
  <div><kbd>F</kbd>Vehicles · <kbd>M</kbd> Map · <kbd>T</kbd> Skip time</div>
  <div>Ladders lead to rooftop sniper nests</div>
- <div>Rosy sits when you stop: <kbd>E</kbd> to pet her</div>
+ <div>Rosy sits when you stop: <kbd>E</kbd> to pet her - she fights anyone fighting you</div>
+ <div><kbd>H</kbd>Rosy menu (tricks, collars, outfits) · <kbd>Q</kbd> Throw her ball</div>
+ <div><kbd>J</kbd>Side jobs · <kbd>P</kbd> Empire: properties &amp; gang turf</div>
+ <div><kbd>N</kbd>Multiplayer (host / join with a code) · <kbd>Y</kbd> or <kbd>Enter</kbd> Chat</div>
+ <div>At 1-2 stars cops try to cuff you: run, or face the judge</div>
+ <div><kbd>F3</kbd> FPS counter</div>
  <div>Map icons mark the mall, dealer, chop shop, docks, tower, Ferris wheel and gas stations</div>
  <div>Helicopter: <kbd>F</kbd> fly · <kbd>LMB</kbd>/<kbd>B</kbd> bomb</div>
  <div class="lg"><span class=dot style=background:#ffd23f></span>Bank <span class=dot style=background:#c050ff></span>Casino <span class=dot style=background:#2bf0ff></span>Home <span class=dot style=background:#ffb02b></span>Stores</div>
@@ -72,7 +78,7 @@
 <div class="h" id="war"><span id="wa">0</span><div class="bar2"><div id="wab"></div></div><b id="wt">0:00</b><div class="bar2"><div id="web"></div></div><span id="we">0</span></div>
 <div class="h" id="mpl"></div>
 <div id="tags"></div>
-<div class="h" id="chat" style="display:none"><input id="chi" maxlength="80" placeholder="Say something… (Enter)"></div>
+<div id="clog"></div><div class="h" id="chat" style="display:none"><input id="chi" maxlength="80" placeholder="Say something… (Enter)"></div>
 <div class="h" id="hid">HIDING<small>Press E to leave</small></div>
 <div class="h" id="hel"></div><div class="h" id="emo"></div><div class="h" id="emw"></div>
 <div id="fx"></div><div id="fade"></div><div id="obj"></div><div id="sbar"></div><div id="csub"></div>

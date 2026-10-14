@@ -164,7 +164,7 @@ function allyU(dt){if(!ST.act||cut)return;for(const a of ST.act.al){if(a.hidden)
   if(!a.inCar){if(!a.to)push(a,.4);npcAnim(a,dt,0)}}}
 function allyNear(a){return a.inCar?(P.car===a.inCar):Math.hypot(P.x-a.x,P.z-a.z)<9}
 /* ---------- mission runtime ---------- */
-function stStart(i,retry){const D=MIS[i];if(!D)return;stClean();ST.m=i;const seen=retry&&ST.act0&&ST.act0.i==i?ST.act0.seen:{};
+function stStart(i,retry){const D=MIS[i];if(!D)return;stClean();freeRoamPause();ST.m=i;const seen=retry&&ST.act0&&ST.act0.i==i?ST.act0.seen:{};
  ST.act={D,i,s:-1,t:0,seen,ents:[],v:{},al:[],fl:{},timer:0,snap:{cash,own:Object.assign({},own),ammo:Object.assign({},ammo)}};ST.act0=ST.act;smkSet(null);heat=0;
  if(P.car){const c=P.car;P.car=null;P.x=c.x+cos(c.h)*2.4;P.z=c.z-sin(c.h)*2.4;c.v=0}if(IN&&!D.keepIn)IN=0;P.hp=100;P.crouch=0;if(D.pre)D.pre();
  copsOff=0;dS.cops=0;if(D.tod0!==undefined&&Math.abs(((tod-D.tod0+1.5)%1)-.5)>.04){fadeTo(1,0);tod=D.tod0;skyU();setTimeout(()=>fadeTo(0,1.4),60)}if(!retry&&!D.noTitle)titleCard(D.t,D.ch,4.2);stNext()}
@@ -223,7 +223,7 @@ function storyCredits(){mode='eod';document.exitPointerLock&&document.exitPointe
 let RAIN=null;function setRain(on){if(on&&!RAIN){const n=2600,g=new T.BufferGeometry(),a=new Float32Array(n*6);for(let i=0;i<n;i++){const x=rr(-40,40),y=rr(0,36),z=rr(-40,40);a.set([x,y,z,x-.08,y-.9,z],i*6)}g.setAttribute('position',new T.BufferAttribute(a,3));
   RAIN=new T.LineSegments(g,new T.LineBasicMaterial({color:0x9ab4d0,transparent:true,opacity:.45,depthWrite:false}));RAIN.frustumCulled=false;sc.add(RAIN);if(ROADMAT){ROADMAT.userData.r0=ROADMAT.roughness;ROADMAT.roughness=.42}SKYU.uCover.value=.18}
  else if(!on&&RAIN){sc.remove(RAIN);RAIN=null;if(ROADMAT&&ROADMAT.userData.r0)ROADMAT.roughness=ROADMAT.userData.r0;SKYU.uCover.value=.55}}
-function rainU(dt){if(!RAIN)return;const a=RAIN.geometry.attributes.position.array;for(let i=0;i<a.length;i+=6){let y=a[i+1]-dt*34;if(y<0)y+=36;a[i+1]=y;a[i+4]=y-.9}RAIN.geometry.attributes.position.needsUpdate=true;RAIN.position.set(cam.position.x,cam.position.y-16,cam.position.z);if(R()<.002&&!cut){$('fx').style.background='#cfe0ff';$('fx').style.opacity=.35;setTimeout(()=>$('fx').style.opacity=0,90);setTimeout(()=>snd(40,2.2,'sawtooth',.06),700)}}
+function rainU(dt){if(!RAIN)return;const a=RAIN.geometry.attributes.position.array;for(let i=0;i<a.length;i+=6){let y=a[i+1]-dt*34;if(y<0)y+=36;a[i+1]=y;a[i+4]=y-.9}RAIN.geometry.attributes.position.needsUpdate=true;RAIN.position.set(cam.position.x,cam.position.y-16,cam.position.z);if(ST.act&&!IN&&R()<.002&&!cut){$('fx').style.background='#cfe0ff';$('fx').style.opacity=.35;setTimeout(()=>$('fx').style.opacity=0,90);setTimeout(()=>snd(40,2.2,'sawtooth',.06),700)}}
 /* ---------- per-frame ---------- */
 function storyLocks(){const h=!ST.on||!!ST.flags.heli,p=!ST.on||!!ST.flags.plane;for(const q of helis){q.locked=!h;q.g.visible=h||P.heli===q}for(const q of planes){if(q.story)continue;q.locked=!p;q.g.visible=p||P.plane===q}}
 function storyU(dt){storyLocks();if(!ST.on)return;sayU(dt);beaconU();pkU();thugU(dt);rainU(dt);

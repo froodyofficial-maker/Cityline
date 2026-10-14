@@ -37,6 +37,9 @@ anchor:["...ww...","..w..w..","...ww...","wwwwwwww","...ww...","w..ww..w",".w.ww
 tower:["...rr...","...cc...","..cccc..","..cccc..",".cccccc.",".cccccc.","cccccccc","cccccccc"],
 wheel:["..rrrr..",".r.rr.r.","r..rr..r","rrrrrrrr","r..rr..r",".r.rr.r.","..rrrr..","..w..w.."],
 fuel:[".ggggg..",".gwwwg.g",".gwwwg.g",".ggggg.g",".ggggg.g",".ggggg.g",".ggggg..","ggggggg."],
+paw:["..y..y..",".yy..yy.","........","y..yy..y","..yyyy..",".yyyyyy.",".yyyyyy.","..yyyy.."],
+flag:["wkwkwk..","kwkwkw..","wkwkwk..","kwkwkw..","d.......","d.......","d.......","d......."],
+crown:["........","y..y..y.","yy.y.yy.","yyyyyyy.","yryyyry.","yyyyyyy.","........","........"],
 club:["...kk...","..kkkk..","...kk...",".kkkkkk.","kkkkkkkk","kk.kk.kk","...kk...","..kkkk.."]};
 const SPR={},SU={};for(const k in SD){const c=document.createElement('canvas');c.width=c.height=8;const g=c.getContext('2d');SD[k].forEach((r,y)=>[...r].forEach((ch,x)=>{if(PAL[ch]){g.fillStyle=PAL[ch];g.fillRect(x,y,1,1)}}));SPR[k]=c;SU[k]=c.toDataURL()}
 const si=(n,p)=>'<img class="px" width="'+p+'" height="'+p+'" src="'+(SU[n]||(typeof ICOU!=='undefined'&&ICOU[n]))+'">';
@@ -47,7 +50,7 @@ const QDEF=(()=>{let q;try{q=JSON.parse(localStorage.getItem('embercity_cfg')||'
 /* MEDIUM+ anti-alias inside the post chain (SMAA / MSAA), so the default framebuffer only needs it on LOW */
 let comp=null,gradeP=null,bloomP=null;const rd=new T.WebGLRenderer({canvas:$('c'),antialias:QDEF===0,powerPreference:'high-performance',stencil:false});rd.setPixelRatio(Math.min(devicePixelRatio,2));rd.shadowMap.enabled=true;
 const sc=new T.Scene(),SKY=0xf7b27b;sc.background=new T.Color(SKY);sc.fog=new T.Fog(SKY,60,200);
-const cam=new T.PerspectiveCamera(60,1,.1,400);
+const cam=new T.PerspectiveCamera(60,1,.25,400);
 function rs(){rd.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();if(comp){comp.setSize(innerWidth,innerHeight);if(comp.onResize)comp.onResize()}}addEventListener('resize',rs);rs();
 const hemi=new T.HemisphereLight(0xffe2c4,0x4a5a6a,.9);sc.add(hemi);
 const sun=new T.DirectionalLight(0xfff0d0,.9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
