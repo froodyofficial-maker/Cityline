@@ -20,11 +20,42 @@ npm start            # serves the project at http://localhost:8080
 
 `npm start` needs only Node 18 or newer. It has no dependencies. Any static file server works too, so the repo can be hosted on GitHub Pages as is. Opening `index.html` from disk won't work, because browsers block ES modules on `file://`. Use the dist file for that.
 
+## OFFAL (horror game)
+
+The repo also holds **OFFAL**, a separate first-person horror game. You work the night shift at the Hollow Pines Meatworks, a slaughterhouse that goes down further than the plans say.
+
+**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse.
+
+**The loop:** every floor is generated fresh. Follow the buzzing flies to the dead workers and hold **E** to cut the brass ID tags out of them, which is slow and loud. Carry the tags back to the freight lift, feed them to the panel and pull the lever while the gate grinds shut. Each floor down is darker and bigger, needs more tags, and the Foreman gets faster. From B5 there are two of him. Die and you start again at B1. Your deepest floor, the tags you've cut and every shift you've worked go on your time card.
+
+**The Foreman** hunts by sound and by light:
+- Running, cutting and a gasping breath all carry. Crouching is nearly silent.
+- Shining your torch in his face gives you away.
+- If you hear the hook dragging, he's patrolling. If it goes quiet, he's running.
+- Hide in lockers. If he comes close, hold **Space** to hold your breath. If he watched you climb in, he will open it.
+- He searches where he lost you and checks the lockers nearby.
+- One hit from the hook leaves you bleeding. The second one ends the shift.
+
+Everything is procedural: textures, models and gore are painted and built in code, and all sound is synthesised with Web Audio, positional and with HRTF. The scene renders at low resolution through a grading pass that keeps only blood saturated, with dithering, grain and a vignette that closes in as he gets close.
+
+| Key | Action |
+| --- | --- |
+| W A S D | Move |
+| Shift | Run (loud) |
+| C / Ctrl | Crouch (quiet) |
+| F | Torch on/off (the battery drains) |
+| E | Use: cut, take, hide, feed the lift, pull the lever |
+| Space | Hold your breath (in a locker) |
+| Esc | Pause |
+
+Source is in `offal/` (ES modules on the vendored three.js). `npm run build:offal` writes `dist/offal.html`.
+
 ## Build
 
 ```bash
 npm install          # one dev dependency: esbuild
 npm run build        # -> dist/ember-city.html (three.js, game, CSS, fonts and icon inlined)
+npm run build:offal  # -> dist/offal.html (the horror game, same idea)
 npm run check        # syntax-check every game source and the combined script
 npm run desktop      # run the desktop app (Electron)
 npm run desktop:win  # build desktop/release/EmberCity-<version>-portable.exe and a zip

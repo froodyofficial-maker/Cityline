@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OFFAL</title>
+<meta name="description" content="OFFAL: a first-person horror game. Night shift at the Hollow Pines Meatworks.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="offal.css">
+<script type="importmap">{"imports":{"three":"../vendor/three/build/three.module.min.js"}}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="10"/></filter>
+  <filter id="rough-sm"><feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter>
+</svg>
+
+<canvas id="view"></canvas>
+<canvas id="blood"></canvas>
+<div id="slits"></div>
+<div id="fade"></div>
+
+<!-- content warning: also the click that unlocks audio -->
+<section id="warn" class="screen on">
+  <div class="warn-box">
+    <p class="warn-h">CONTENT WARNING</p>
+    <p id="warnText" class="type"></p>
+    <p class="warn-go blink">[ click to clock in ]</p>
+  </div>
+</section>
+
+<section id="menu" class="screen">
+  <div class="menu-col">
+    <div class="title-wrap">
+      <h1 class="title" data-text="OFFAL">OFFAL</h1>
+      <div id="drips" class="drips"></div>
+    </div>
+    <p class="sub">HOLLOW PINES MEATWORKS &middot; NIGHT SHIFT</p>
+    <nav class="menu-nav">
+      <button data-act="start">Clock in</button>
+      <button data-act="howto">Orientation</button>
+      <button data-act="settings">Settings</button>
+    </nav>
+    <p class="menu-foot">headphones. lights off. <span id="mobileNote"></span></p>
+  </div>
+  <aside class="timecard" id="timecard"></aside>
+</section>
+
+<section id="howto" class="screen panel-screen">
+  <div class="panel paper">
+    <h2>NEW HIRE ORIENTATION</h2>
+    <ol class="rules">
+      <li>Every worker on the line swallowed their <b>brass ID tag</b>. The freight lift only goes down when you <b>feed it tags</b>.</li>
+      <li>Find the bodies. <b>Follow the flies.</b> Hold <kbd>E</kbd> to cut the tag out. It is slow and it is <b>loud</b>.</li>
+      <li>Bring the tags back to the lift, feed the panel, pull the lever, and go <b>deeper</b>. There is no bottom.</li>
+      <li><b>The Foreman</b> is still on shift. He hunts by <b>sound</b> and by <b>light</b>. Don't run unless you have to. Never shine your torch in his face.</li>
+      <li>Hide in lockers with <kbd>E</kbd>. If he comes close, hold <kbd>SPACE</kbd> to hold your breath. If he watched you climb in, it will not help.</li>
+      <li>If you hear the hook dragging, it's patrolling. If it goes quiet, it's running.</li>
+    </ol>
+    <table class="keys">
+      <tr><td><kbd>W A S D</kbd></td><td>move</td><td><kbd>SHIFT</kbd></td><td>run (loud)</td></tr>
+      <tr><td><kbd>C</kbd> / <kbd>CTRL</kbd></td><td>crouch (quiet)</td><td><kbd>F</kbd></td><td>torch</td></tr>
+      <tr><td><kbd>E</kbd></td><td>use / cut / hide</td><td><kbd>SPACE</kbd></td><td>hold breath</td></tr>
+      <tr><td><kbd>ESC</kbd></td><td>pause</td><td></td><td></td></tr>
+    </table>
+    <button class="back" data-act="back">Back</button>
+  </div>
+</section>
+
+<section id="settings" class="screen panel-screen">
+  <div class="panel paper">
+    <h2>SETTINGS</h2>
+    <label>Mouse sensitivity <input type="range" id="sens" min="0.3" max="3" step="0.05"></label>
+    <label>Volume <input type="range" id="vol" min="0" max="1" step="0.01"></label>
+    <label>Brightness <input type="range" id="gamma" min="0.6" max="1.8" step="0.02"></label>
+    <label>Picture
+      <select id="pix">
+        <option value="200">Crunchy (200p)</option>
+        <option value="300">Grim (300p)</option>
+        <option value="450">Clear (450p)</option>
+      </select>
+    </label>
+    <label class="check">Screen shake <input type="checkbox" id="shake"></label>
+    <button class="back" data-act="back">Back</button>
+  </div>
+</section>
+
+<section id="hud" class="screen">
+  <div id="floorLabel" class="hud-tl"></div>
+  <div class="hud-bl"><div id="tags" class="tags"></div><div id="tagText" class="hud-small"></div></div>
+  <div class="hud-br"><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
+  <div id="dot"></div>
+  <div id="prompt"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="ring-bg"/><circle id="ring" cx="20" cy="20" r="16" class="ring"/></svg><span id="promptText"></span></div>
+  <div id="breath"><div id="breathFill"></div><span>HOLD YOUR BREATH</span></div>
+  <div id="msg"></div>
+  <div id="pa"></div>
+</section>
+
+<section id="card" class="screen">
+  <div class="card-in">
+    <div id="cardB" class="card-b"></div>
+    <div id="cardName" class="card-name"></div>
+    <p id="cardQuote" class="card-q"></p>
+  </div>
+</section>
+
+<section id="pause" class="screen panel-screen">
+  <div class="panel dark">
+    <h2 class="red">SHIFT PAUSED</h2>
+    <p class="dim">He is not paused. He is waiting.</p>
+    <nav class="menu-nav">
+      <button data-act="resume">Back to work</button>
+      <button data-act="settings">Settings</button>
+      <button data-act="quit">Walk off the job</button>
+    </nav>
+  </div>
+</section>
+
+<section id="death" class="screen">
+  <div class="death-in">
+    <h1 id="deathTitle" class="death-title"></h1>
+    <p id="deathCause" class="death-cause"></p>
+    <div id="deathStats" class="death-stats"></div>
+    <nav class="menu-nav row">
+      <button data-act="start">Clock in again</button>
+      <button data-act="menu">Leave</button>
+    </nav>
+  </div>
+</section>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
