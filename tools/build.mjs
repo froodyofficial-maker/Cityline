@@ -41,3 +41,7 @@ swap('<script type="module" src="src/boot.js"></script>',
 await mkdir(join(root,'dist'),{recursive:true});
 await writeFile(join(root,'dist/ember-city.html'),html);
 console.log(`dist/ember-city.html  ${(Buffer.byteLength(html)/1048576).toFixed(2)} MB  (${Date.now()-t0} ms)`);
+// 5. the trailer: the same file, flagged to play the in-engine trailer instead of the menu
+const trailer=html.replace('<script>window.__EMBER_BUNDLE__=1</script>','<script>window.__EMBER_BUNDLE__=1;window.__EMBER_TRAILER__=1</script>').replace(/<title>[^<]*<\/title>/,'<title>Ember City - Official Trailer</title>');
+await writeFile(join(root,'dist/ember-city-trailer.html'),trailer);
+console.log(`dist/ember-city-trailer.html  ${(Buffer.byteLength(trailer)/1048576).toFixed(2)} MB`);

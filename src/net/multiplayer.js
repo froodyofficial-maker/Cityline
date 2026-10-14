@@ -42,4 +42,4 @@ function mpDog(q,pr,dt){const on=pr.rv&&typeof pr.rx=='number'&&q.vs=='f';if(!on
  if(!q.dog){q.dog=mkDog(0xd9a24a,0xecc684,0xb07a34);q.dog.x=pr.rx;q.dog.z=pr.rz;q.dog.h=pr.rh||0}const D=q.dog;if(D.ck!==pr.rc){D.ck=pr.rc;dogCollar(D,COLLARS[pr.rc]?pr.rc:'red')}
  const k=1-Math.exp(-dt*8),px=D.x,pz=D.z;D.x+=(pr.rx-D.x)*k;D.z+=(pr.rz-D.z)*k;let dh=(pr.rh||0)-D.h;dh=Math.atan2(sin(dh),cos(dh));D.h+=dh*k;const sp=Math.hypot(D.x-px,D.z-pz)/Math.max(dt,.001);
  D.ph+=dt*Math.min(sp,12)*2.6;const s=Math.sin(D.ph)*Math.min(.9,sp*.13);D.legs[0].rotation.x=D.legs[3].rotation.x=s;D.legs[1].rotation.x=D.legs[2].rotation.x=-s;D.tail.rotation.y=Math.sin(performance.now()*.008)*.45;
- D.g.visible=Math.hypot(D.x-P.x,D.z-P.z)<160;D.g.position.set(D.x,Math.max(0,terrH(D.x,D.z)),D.z);D.g.rotation.y=D.h}
+ D.g.visible=Math.hypot(D.x-P.x,D.z-P.z)<160;D.g.position.set(D.x,onPier(D.x,D.z)?.5:Math.max(0,terrH(D.x,D.z)),D.z);D.g.rotation.y=D.h}
