@@ -10,7 +10,7 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.5.0` does the same.
 
-**Trailer:** open `dist/ember-city-trailer.html` and click PLAY TRAILER. It's an 80-second cinematic trailer rendered live in the game engine, with real gameplay, title cards and a synthesized score. Space pauses and Esc skips to the end card. In the source tree, `index.html?trailer` plays the same trailer.
+**Trailer:** open `dist/ember-city-trailer.html` and click PLAY TRAILER. It's a 90-second cinematic trailer rendered live in the game engine and focused on the open world. It has three acts (the city, freedom, violence), anamorphic letterboxing, a colour grade for each act, slow-motion gore and a dark synthesized score. It contains strong violence. Space pauses and Esc skips to the end card. In the source tree, `index.html?trailer` plays the same trailer.
 
 **Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
