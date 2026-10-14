@@ -1,0 +1,36 @@
+/* ---- vector icon set (HUD, menus, shops, casino). Minimap keeps tiny raster sprites. ---- */
+const ICO=(()=>{const W='#f4f1ec',G='#ffc94a',E='#ff6a2b',R='#ff3b4f',D='#2a2530',S='#c9ced6';
+ const sv=b=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'+b+'</svg>';
+ const star=f=>sv('<path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="'+f+'" stroke="'+(f=='none'?'rgba(255,255,255,.35)':'#7a4a00')+'" stroke-width="1.2" stroke-linejoin="round"/>');
+ return{star:star(G),star0:star('none'),
+ sun:sv('<circle cx="12" cy="12" r="4.5" fill="'+G+'"/><g stroke="'+G+'" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g>'),
+ moon:sv('<path d="M15 3a9 9 0 1 0 6 15A7.5 7.5 0 0 1 15 3z" fill="#cfe0ff"/>'),
+ coin:sv('<circle cx="12" cy="12" r="9" fill="'+G+'"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#b07a00" stroke-width="1.4"/><text x="12" y="16" font-size="10" font-family="Arial" font-weight="700" text-anchor="middle" fill="#7a4a00">$</text>'),
+ heart:sv('<path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z" fill="'+R+'"/>'),
+ burger:sv('<path d="M4 10a8 5.5 0 0 1 16 0z" fill="#ffad3b"/><rect x="3.5" y="11" width="17" height="2.2" rx="1" fill="#5bd16a"/><rect x="3.5" y="13.6" width="17" height="2.6" rx="1.2" fill="#7a3b1e"/><path d="M4 17h16a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z" fill="#ffad3b"/>'),
+ skull:sv('<path d="M12 3a8 8 0 0 0-5 14.2V20h10v-2.8A8 8 0 0 0 12 3z" fill="'+W+'"/><circle cx="9" cy="11.5" r="2" fill="'+D+'"/><circle cx="15" cy="11.5" r="2" fill="'+D+'"/><path d="M10 20v-2M12 20v-2M14 20v-2" stroke="'+D+'" stroke-width="1"/>'),
+ badge:sv('<path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5z" fill="#3a7bff"/><path d="M12 7l1.5 3 3.3.4-2.4 2.3.6 3.3L12 14.5 9 16l.6-3.3-2.4-2.3 3.3-.4z" fill="'+G+'"/>'),
+ pistol:sv('<path d="M3 8h16v3H11l-1 2v5H6v-5l-2-2z" fill="'+S+'"/><rect x="18" y="8" width="3" height="2" fill="'+S+'"/>'),
+ shotgun:sv('<path d="M2 10h17v2.4H11l-2 4H5l1.4-4H2z" fill="#a36b3a"/><rect x="12" y="8.2" width="10" height="2" rx=".6" fill="'+S+'"/>'),
+ smg:sv('<path d="M3 8h15v4h-5v6h-3v-6H6l-1 3H3z" fill="'+S+'"/><rect x="17" y="9" width="5" height="1.6" fill="'+S+'"/><rect x="10" y="12" width="2" height="5" fill="#6b7480"/>'),
+ sniper:sv('<path d="M1 11h18v2H9l-2 4H3l2-4H1z" fill="#56704d"/><rect x="7" y="7" width="7" height="2.6" rx="1.3" fill="#2a3a2a"/><rect x="18" y="11.3" width="5" height="1.4" fill="'+S+'"/>'),
+ ammo:sv('<g fill="'+G+'"><path d="M5 9a2 2 0 0 1 4 0v11H5zM10 9a2 2 0 0 1 4 0v11h-4zM15 9a2 2 0 0 1 4 0v11h-4z"/></g><g fill="#b07a00"><rect x="5" y="17" width="4" height="3"/><rect x="10" y="17" width="4" height="3"/><rect x="15" y="17" width="4" height="3"/></g>'),
+ heli:sv('<rect x="2" y="4" width="20" height="1.6" rx=".8" fill="'+S+'"/><rect x="11" y="5" width="2" height="3" fill="'+S+'"/><path d="M5 9h9a4 4 0 0 1 0 8H8a3 3 0 0 1-3-3z" fill="'+R+'"/><path d="M15 12h7v2h-7z" fill="'+R+'"/><path d="M6 19h11" stroke="'+S+'" stroke-width="1.5"/>'),
+ cup:sv('<path d="M5 8h11v6a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z" fill="'+W+'"/><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2" fill="none" stroke="'+W+'" stroke-width="1.8"/><path d="M8 3c0 2 2 2 2 4M12 3c0 2 2 2 2 4" stroke="#bbb" stroke-width="1.3" fill="none"/>'),
+ ramen:sv('<path d="M3 11h18a9 7 0 0 1-18 0z" fill="'+W+'"/><path d="M3 11h18" stroke="'+E+'" stroke-width="2"/><path d="M15 3l-4 8M18 4l-5 7" stroke="#c9a06a" stroke-width="1.3"/>'),
+ medkit:sv('<rect x="3" y="6" width="18" height="14" rx="3" fill="'+W+'"/><path d="M10 9h4v3h3v4h-3v3h-4v-3H7v-4h3z" fill="'+R+'"/><rect x="9" y="3" width="6" height="3" rx="1" fill="none" stroke="'+W+'" stroke-width="1.5"/>'),
+ watch:sv('<rect x="8" y="2" width="8" height="20" rx="2" fill="#7a5a2a"/><circle cx="12" cy="12" r="6" fill="'+G+'"/><circle cx="12" cy="12" r="4.4" fill="#fff8e0"/><path d="M12 9v3l2 1" stroke="'+D+'" stroke-width="1.2" fill="none"/>'),
+ console:sv('<rect x="2" y="7" width="20" height="11" rx="5.5" fill="#3a3f4a"/><path d="M7 10v5M4.5 12.5h5" stroke="'+W+'" stroke-width="1.6"/><circle cx="16" cy="11" r="1.3" fill="'+R+'"/><circle cx="18.5" cy="13.5" r="1.3" fill="#5bd16a"/>'),
+ perfume:sv('<rect x="10" y="3" width="4" height="3" fill="'+G+'"/><rect x="5" y="7" width="14" height="14" rx="4" fill="#5aa8ff"/><rect x="7.5" y="9.5" width="3" height="8" rx="1.5" fill="rgba(255,255,255,.5)"/>'),
+ bag:sv('<path d="M8 4h8l-2 4h-4z" fill="#a36b3a"/><path d="M6 9h12l2 11H4z" fill="#3fb85a"/><text x="12" y="18" font-size="8" font-family="Arial" font-weight="700" text-anchor="middle" fill="#0d3b18">$</text>'),
+ house:sv('<path d="M12 3l9 8h-2.5v9h-13v-9H3z" fill="#5fd8ff"/><rect x="10" y="14" width="4" height="6" fill="#0b4a5a"/>'),
+ cherry:sv('<path d="M8 15c2-6 4-9 9-12M15 15c0-4 1-8 2-12" stroke="#3a9a3a" stroke-width="1.6" fill="none"/><circle cx="8" cy="17" r="4" fill="'+R+'"/><circle cx="15.5" cy="17.5" r="4" fill="#d81f37"/>'),
+ lemon:sv('<ellipse cx="12" cy="13" rx="8.5" ry="6.5" fill="#ffe24a"/><ellipse cx="9" cy="11" rx="2.5" ry="1.4" fill="#fff6a8"/>'),
+ bell:sv('<path d="M12 3a6 6 0 0 1 6 6v5l2 3H4l2-3V9a6 6 0 0 1 6-6z" fill="'+G+'"/><circle cx="12" cy="19.5" r="2" fill="#b07a00"/>'),
+ diamond:sv('<path d="M6 4h12l4 6-10 11L2 10z" fill="#5fe0ff"/><path d="M2 10h20M8 4l4 6 4-6M12 10v11" stroke="#1a8ab0" stroke-width="1" fill="none"/>'),
+ seven:sv('<path d="M5 4h14v3l-7 14H8l6.5-13H5z" fill="'+R+'" stroke="#7a0010" stroke-width="1"/>'),
+ spade:sv('<path d="M12 3c4 5 8 7 8 11a4 4 0 0 1-7 2.5L14 21h-4l1-4.5A4 4 0 0 1 4 14c0-4 4-6 8-11z" fill="#111"/>'),
+ hrt:sv('<path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z" fill="#d0202a"/>'),
+ dmd:sv('<path d="M12 2l8 10-8 10-8-10z" fill="#d0202a"/>'),
+ club:sv('<circle cx="12" cy="7.5" r="4" fill="#111"/><circle cx="7.5" cy="13.5" r="4" fill="#111"/><circle cx="16.5" cy="13.5" r="4" fill="#111"/><path d="M11 13h2l1 8h-4z" fill="#111"/>')}})();
+const ICOU={};for(const k in ICO)ICOU[k]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(ICO[k]);
