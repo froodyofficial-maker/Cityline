@@ -22,7 +22,7 @@ const POOLG=new T.PlaneGeometry(16,16),POOLM=new T.MeshBasicMaterial({map:cvs2(6
 const BEAMG=new T.PlaneGeometry(3.6,9),BEAMM=new T.MeshBasicMaterial({map:cvs2(16,64,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(255,245,190,.9)');gr.addColorStop(1,'rgba(255,245,190,0)');g.fillStyle=gr;g.fillRect(0,0,w,h)}),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
 const ground=new T.Mesh(new T.PlaneGeometry(700,700),mat(0x5b8a4a));ground.rotation.x=-PI/2;ground.receiveShadow=true;sc.add(ground);
 function roadMesh(a,c,u0,u1){const L=u1-u0;if(L<1)return;const g=new T.PlaneGeometry(a?12:L,a?L:12),uv=g.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);if(a)uv.setXY(i,u,v*L/24);else uv.setXY(i,v,u*L/24)}
- const m=new T.Mesh(g,roadMat());m.rotation.x=-PI/2;m.position.set(a?c:(u0+u1)/2,.02+(a?.004:0),a?(u0+u1)/2:c);m.receiveShadow=true;sc.add(m)}
+ const m=new T.Mesh(g,roadMat());m.rotation.x=-PI/2;m.position.set(a?c:(u0+u1)/2,a?.045:.03,a?(u0+u1)/2:c);m.receiveShadow=true;sc.add(m)}
 for(const s of ROADS){if(s.skip){roadMesh(s.ax,s.c,s.a,s.skip[0]);roadMesh(s.ax,s.c,s.skip[1],s.b)}else roadMesh(s.ax,s.c,s.a,s.b)}
 const wt=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,64,64);x.fillStyle='#4a5a78';
  for(let i=0;i<2;i++)for(let j=0;j<2;j++)x.fillRect(6+i*32,8+j*32,20,18);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.magFilter=T.NearestFilter;return t})();

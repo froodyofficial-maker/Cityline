@@ -79,8 +79,13 @@ function skyU(){const sh=-cos(tod*2*PI),day=Math.max(0,Math.min(1,sh*2.2+.4)),n=
  if(sh>-.05){sun.color.copy(SKC.sunW).lerp(SKC.sunO,Math.min(1,du*1.15));sun.intensity=(.18+.82*smooth(-.05,.3,sh))*LI*(IN?.2:1.1)}else{sun.color.copy(SKC.moon);sun.intensity=.2*LI*(IN?.2:1)}
  for(const o of NEON)o.m.color.copy(o.b).multiplyScalar(.3+.7*n);for(const m of BM)m.emissive.setRGB(.95*n,.78*n,.45*n);GU.uNight.value=smooth(.3,.85,n);
  txt('clk',String(tod*24|0).padStart(2,'0')+':'+String((tod*24%1)*60|0).padStart(2,'0'));const ni=n>.6?'moon':'sun';if(ni!==lastN){lastN=ni;$('ci').innerHTML=si(ni,16)}}
-function sunPlace(){const sa=tod*2*PI,dy=-cos(sa),dx=sin(sa),d=SKC.v;if(dy>-.05)d.set(dx,Math.max(dy,.1),.45);else d.set(-dx,Math.max(-dy,.15),-.45);d.normalize();const c=IN?cam.position:(P.car||P.heli||P.plane||P);
- const ts=sun.shadow.camera.right*2/sun.shadow.mapSize.x,tx=Math.round(c.x/ts)*ts,tz=Math.round(c.z/ts)*ts;sun.target.position.set(tx,0,tz);sun.position.set(tx+d.x*100,d.y*100,tz+d.z*100)}
+/* the shadow camera is snapped to whole shadow-map texels in light space and the sun angle is stepped in 1-degree increments,
+   so shadow edges stay put instead of crawling and shimmering while you move */
+const SUNR=new T.Vector3(),SUNU=new T.Vector3(),SUNY=new T.Vector3(0,1,0);
+function sunPlace(){const sa=Math.round(tod*360)/360*2*PI,dy=-cos(sa),dx=sin(sa),d=SKC.v;if(dy>-.05)d.set(dx,Math.max(dy,.1),.45);else d.set(-dx,Math.max(-dy,.15),-.45);d.normalize();const c=IN?cam.position:(P.car||P.heli||P.plane||P);
+ const ts=sun.shadow.camera.right*2/sun.shadow.mapSize.x;SUNR.crossVectors(SUNY,d).normalize();SUNU.crossVectors(d,SUNR);
+ const a=Math.round((c.x*SUNR.x+c.z*SUNR.z)/ts)*ts,b=Math.round((c.x*SUNU.x+c.z*SUNU.z)/ts)*ts,w=c.x*d.x+c.z*d.z;
+ const tx=SUNR.x*a+SUNU.x*b+d.x*w,ty=SUNR.y*a+SUNU.y*b+d.y*w,tz=SUNR.z*a+SUNU.z*b+d.z*w;sun.target.position.set(tx,ty,tz);sun.position.set(tx+d.x*100,ty+d.y*100,tz+d.z*100)}
 /* the minimap canvas covers the whole world (-420..420 m) at 2/3 px per metre; the full-screen map shows it 1:1 */
 const MS=document.createElement('canvas');MS.width=MS.height=560;const mg=$('mm').getContext('2d'),mq=160/240,MX=v=>Math.round((v+420)*mq);
 function mmInit(){const g=MS.getContext('2d');g.fillStyle='#24401f';g.fillRect(0,0,MS.width,MS.height);g.fillStyle='#2f5a2f';g.fillRect(MX(WB.x0),MX(WB.z0),MX(WB.x1)-MX(WB.x0),MX(COAST)-MX(WB.z0));g.fillStyle='#3a3d44';

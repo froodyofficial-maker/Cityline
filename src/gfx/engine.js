@@ -1,7 +1,7 @@
 /* ================= v8: GRAPHICS OVERHAUL — PBR materials, procedural facades, cars, people, sky, water, post ================= */
 const GQ0=(()=>{try{const v=JSON.parse(localStorage.getItem('embercity_cfg')||'{}').gfx;return v===undefined?2:+v}catch(e){return 2}})(),LOWM=GQ0==0;
 const GU={uNight:{value:0},uTime:{value:0},uWet:{value:0}};
-const ANI=Math.min(8,rd.capabilities.getMaxAnisotropy());
+const ANI=Math.min(4,rd.capabilities.getMaxAnisotropy());
 const ph=(i,j,s)=>{const v=Math.sin(i*127.1+j*311.7+(s||0)*74.7)*43758.5453;return v-Math.floor(v)};
 const clamp01=v=>v<0?0:v>1?1:v,smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
 /* shared tileable noise field (256x256, fbm) — every procedural texture samples it */
@@ -21,9 +21,9 @@ function painter(W,H){const A=document.createElement('canvas'),M=document.create
   if(ro!=null){m.fillStyle='rgb(0,'+(ro*255|0)+','+((me||0)*255|0)+')';m.fillRect(x,y,w,h)}if(em){e.fillStyle='rgb('+(em[0]*255|0)+','+(em[1]*255|0)+',0)';e.fillRect(x,y,w,h)}
   if(hv!=null)for(let j=Math.max(0,y);j<Math.min(H,y+h);j++)hg.fill(hv,j*W+Math.max(0,x),j*W+Math.min(W,x+w))};
  const grime=(amt,streak,seed)=>{const im=a.getImageData(0,0,W,H),d=im.data,rm=m.getImageData(0,0,W,H),r2=rm.data;
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4,n=nz(x*.9+seed,y*.9),s=streak?Math.max(0,nz(x*3.1+seed*2,y*.12)-.55)*streak:0,k=1-amt*.5+amt*n-s;d[i]*=k;d[i+1]*=k;d[i+2]*=k;r2[i+1]=Math.min(255,r2[i+1]*(.9+.25*n))}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4,bx4=x&~3,by4=y&~3,n=nz(bx4*.9+seed,by4*.9),s=streak?Math.max(0,nz(bx4*3.1+seed*2,by4*.12)-.55)*streak:0,k=1-amt*.5+amt*n-s;d[i]*=k;d[i+1]*=k;d[i+2]*=k;r2[i+1]=Math.min(255,r2[i+1]*(.9+.25*n))}
   a.putImageData(im,0,0);m.putImageData(rm,0,0)};
- const done=(str)=>{const mk=c=>{const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=ANI;return t};return{map:mk(A),rm:mk(M),mask:mk(E),nrm:nrmTex(hg,W,H,str||3)}};
+ const done=(str)=>{const mk=c=>{const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=ANI;return t};return{map:mk(A),rm:mk(M),mask:mk(E),nrm:nrmTex(hg,W,H,(str||3)*.5)}};
  return{R,a,m,e,hg,grime,done}}
 const GL=['#2a4252','#2d4656','#2f4a5c','#283e4d','#33505f','#26394a'];
 function facadeStyle(st){const W=512,P=painter(W,W),R=P.R,cell=(f)=>{for(let fl=0;fl<2;fl++)for(let bx_=0;bx_<2;bx_++)f(bx_*256,(1-fl)*256,fl,bx_)};
@@ -51,7 +51,7 @@ const PLAINM=STD({vertexColors:true,roughness:.8,metalness:.02}),NEONM=new T.Mes
 function facadeHook(s){s.uniforms.uNight=GU.uNight;s.uniforms.uTime=GU.uTime;
  s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nattribute float aSeed;varying float vSeed;varying float vWY;').replace('#include <begin_vertex>','#include <begin_vertex>\nvSeed=aSeed+((abs(normal.x)>.99||abs(normal.z)>.99)?floor(dot(normal,vec3(17.,0.,47.))+.5):0.);vWY=(modelMatrix*vec4(transformed,1.)).y;');
  s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nuniform float uNight;uniform float uTime;varying float vSeed;varying float vWY;float fh(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}')
- .replace('#include <emissivemap_fragment>','vec4 wm=texture2D(emissiveMap,vEmissiveMapUv);vec2 cl=floor(vEmissiveMapUv*2.);float sd=floor(vSeed+.5);float wr1=fh(cl+sd*.713),wr2=fh(cl*1.7+sd*.31+3.);float lit=max(step(.52,wr1)*wm.r,wm.g);vec3 tn=mix(vec3(1.,.72,.4),vec3(.7,.85,1.),step(.78,wr2));tn=mix(tn,vec3(1.,.38,.72),step(.965,wr2));float wfl=1.-step(.988,wr1)*step(.5,fract(uTime*2.3+wr2*7.));totalEmissiveRadiance=tn*lit*uNight*(.35+.55*wr2)*wfl*.85;')
+ .replace('#include <emissivemap_fragment>','vec4 wm=texture2D(emissiveMap,vEmissiveMapUv);vec2 cl=floor(vEmissiveMapUv*2.);float sd=floor(vSeed+.5);float wr1=fh(cl+sd*.713),wr2=fh(cl*1.7+sd*.31+3.);float lit=max(step(.52,wr1)*wm.r,wm.g);vec3 tn=mix(vec3(1.,.72,.4),vec3(.7,.85,1.),step(.78,wr2));tn=mix(tn,vec3(1.,.38,.72),step(.965,wr2));totalEmissiveRadiance=tn*lit*uNight*(.35+.55*wr2)*.85;')
  .replace('#include <aomap_fragment>','#include <aomap_fragment>\nfloat gao=mix(.5,1.,smoothstep(0.,4.,vWY));reflectedLight.indirectDiffuse*=gao;reflectedLight.directDiffuse*=mix(.7,1.,smoothstep(0.,3.,vWY));reflectedLight.indirectSpecular*=gao;')}
 const FMC={},FMS=[];
 /* one material per facade style; the wall colour lives in the geometry's vertex colours, so a whole district merges into a handful of draw calls */
@@ -151,7 +151,7 @@ void main(){vec3 d=normalize(vD);float h=d.y;vec3 col=mix(uHor,uTop,pow(clamp(h,
  col+=uSunCol*(pow(sd,7.)*.32+pow(sd,80.)*.55)*day;
  col=mix(col,uSunCol*1.5+.45,smoothstep(.99955,.99985,sd)*day);
  float md=max(dot(d,uMoonDir),0.);col+=vec3(.5,.58,.78)*pow(md,28.)*.16*uNight;col=mix(col,vec3(.93,.95,1.),smoothstep(.99925,.9996,md)*uNight);
- if(h>0.){vec3 sp=d*230.;vec3 c=floor(sp);float s=h1(c);vec3 f=fract(sp)-.5;float st=step(.9962,s)*smoothstep(.5,0.,length(f)*2.)*(.65+.35*sin(uTime*2.3+s*97.));col+=vec3(st)*uNight*smoothstep(0.,.22,h)*1.6;
+ if(h>0.){vec3 sp=d*230.;vec3 c=floor(sp);float s=h1(c);vec3 f=fract(sp)-.5;float st=step(.9962,s)*smoothstep(.5,0.,length(f)*2.)*(.65+.35*fract(s*97.));col+=vec3(st)*uNight*smoothstep(0.,.22,h)*1.6;
   vec2 cp=d.xz/(h+.12)*1.5+vec2(uTime*.005,uTime*.002);float cn=fbm(cp*1.3);float dn=smoothstep(uCover,uCover+.3,cn);
   float lit=clamp(dot(normalize(vec3(d.x,0.,d.z)+1e-4),normalize(vec3(uSunDir.x,0.,uSunDir.z)+1e-4))*.5+.5,0.,1.);
   vec3 cc=mix(uCloud*.58,uCloud*1.06,lit)*(1.-.35*smoothstep(.55,.95,cn))+uSunCol*pow(sd,5.)*.55*day;
@@ -184,7 +184,7 @@ const WU={uEnv:{value:null},uRefl:{value:null},uNrm:{value:WNRM},uHasEnv:{value:
 function waterMat(round){const u=Object.assign({},WU,{uTM:{value:new T.Matrix4()},uRound:{value:round?1:0},uHasRefl:{value:0},uRefl:{value:null}});return new T.ShaderMaterial({uniforms:u,vertexShader:WVS,fragmentShader:WFS})}
 /* ---------- planar reflection for the river (HIGH/ULTRA) ---------- */
 const RF={rt:null,cam:new T.PerspectiveCamera(),on:0,s:.4,pl:new T.Plane(),cp:new T.Vector4(),q:new T.Vector4(),v:new T.Vector3(),t:new T.Vector3(),l:new T.Vector3(),rm:new T.Matrix4(),n:new T.Vector3(0,1,0),wp:new T.Vector3()};
-function reflRender(){if(!RF.on||!WATER||IN)return;if((RF.k=(RF.k||0)+1)%2)return;/* refresh the reflection every other frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
+function reflRender(){if(!RF.on||!WATER||IN)return;if(CFG.gfx<3&&(RF.k=(RF.k||0)+1)%2)return;/* HIGH refreshes the reflection every other frame, ULTRA every frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
  if(cp.y<RF.wp.y+.2){u.uHasRefl.value=0;return}RF.pm=RF.pm||new T.Matrix4();RF.fr=RF.fr||new T.Frustum();cam.updateMatrixWorld();RF.pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);RF.fr.setFromProjectionMatrix(RF.pm);RF.bb=RF.bb||new T.Box3(new T.Vector3(70.4,-.6,-480),new T.Vector3(89.6,-.4,COAST+40));RF.bo=RF.bo||new T.Box3(new T.Vector3(-1400,-.6,COAST+26),new T.Vector3(1400,-.4,2200));if(!RF.fr.intersectsBox(RF.bb)&&!RF.fr.intersectsBox(RF.bo)){u.uHasRefl.value=0;return}
  const w=Math.round(innerWidth*RF.s*rd.getPixelRatio()),h=Math.round(innerHeight*RF.s*rd.getPixelRatio());if(RF.rt.width!==w||RF.rt.height!==h)RF.rt.setSize(w,h);
  const n=RF.n,v=RF.v.subVectors(RF.wp,cp);v.reflect(n).negate();v.add(RF.wp);RF.rm.extractRotation(cam.matrixWorld);RF.l.set(0,0,-1).applyMatrix4(RF.rm).add(cp);
@@ -196,10 +196,17 @@ function reflRender(){if(!RF.on||!WATER||IN)return;if((RF.k=(RF.k||0)+1)%2)retur
  u.uRefl.value=RF.rt.texture;u.uHasRefl.value=1}
 /* ---------- environment (IBL) capture ---------- */
 const ENV={cube:null,cc:null,pm:null,rt:null,t:-1e9,tod:-1,res:0};
-function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,350,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9}
-function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?5000:CFG.gfx>=2?8000:12000;if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.015&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;
- const c=ENV.cc,src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(OCEAN)OCEAN.visible=false;if(DOME)DOME.position.copy(c.position);if(GLOWS)GLOWS.visible=false;
- c.updateMatrixWorld();if(DOME)DOME.updateMatrixWorld();WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(OCEAN)OCEAN.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME){DOME.position.copy(cam.position);DOME.updateMatrixWorld()}
+function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,350,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9;ENV.f=-1}
+/* the reflection cube is re-captured one face per frame (six frames per refresh) so the refresh never causes a hitch */
+function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?5000:CFG.gfx>=2?8000:12000,c=ENV.cc;
+ if(ENV.f==null||ENV.f<0){if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.015&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;ENV.f=0;
+  const src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);c.updateMatrixWorld();if(c.coordinateSystem!==rd.coordinateSystem){c.coordinateSystem=rd.coordinateSystem;c.updateCoordinateSystem()}}
+ /* an indoor/outdoor switch restarts the capture at once */
+ if(ENV.in!==IN){ENV.f=-1;ENV.t=-1e9;return}
+ const f=ENV.f,su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(OCEAN)OCEAN.visible=false;if(DOME){DOME.position.copy(c.position);DOME.updateMatrixWorld()}if(GLOWS)GLOWS.visible=false;
+ const ot=rd.getRenderTarget(),gm=ENV.cube.texture.generateMipmaps,ue=WU.uEnv.value;WU.uEnv.value=null;ENV.cube.texture.generateMipmaps=f==5&&gm;rd.setRenderTarget(ENV.cube,f);rd.render(sc,c.children[f]);ENV.cube.texture.generateMipmaps=gm;rd.setRenderTarget(ot);WU.uEnv.value=ue;
+ rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(OCEAN)OCEAN.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME){DOME.position.copy(cam.position);DOME.updateMatrixWorld()}
+ if(++ENV.f<6)return;ENV.f=-1;
  const old=ENV.rt;ENV.rt=ENV.pm.fromCubemap(ENV.cube.texture);sc.environment=ENV.rt.texture;if(old)old.dispose();WU.uEnv.value=ENV.cube.texture;WU.uHasEnv.value=1}
 /* ---------- static batching: merge thousands of static meshes into a few chunked draw calls ---------- */
 let MERGED=0;
@@ -220,22 +227,22 @@ function mergeStatic(){if(MERGED)return;MERGED=1;const t0=performance.now();cons
  catch(e){console.log('merge failed',e);for(const m of made)sc.remove(m)}}
 const NEONB=new Map();
 /* ---------- ground surfaces: asphalt w/ baked markings + puddles, paving, grass ---------- */
-function surfTex(W,H,fn,str){const A=document.createElement('canvas'),M=document.createElement('canvas');A.width=M.width=W;A.height=M.height=H;const a=A.getContext('2d'),m=M.getContext('2d'),ia=a.createImageData(W,H),im=m.createImageData(W,H),hg=new Float32Array(W*H),o={};
- for(let y=0;y<H;y++)for(let x=0;x<W;x++){fn(x,y,o);const i=(y*W+x)*4;ia.data[i]=o.r;ia.data[i+1]=o.g;ia.data[i+2]=o.b;ia.data[i+3]=255;im.data[i]=0;im.data[i+1]=o.ro*255;im.data[i+2]=(o.me||0)*255;im.data[i+3]=255;hg[y*W+x]=o.h}
- a.putImageData(ia,0,0);m.putImageData(im,0,0);const mk=c=>{const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=ANI;return t};return{map:mk(A),rm:mk(M),nrm:nrmTex(hg,W,H,str),a,A}}
-const ASPH=surfTex(256,512,(x,y,o)=>{const n=nz(x*1.6,y*1.6),s=nz(x*7+90,y*7+31),wet=smooth(.66,.74,nz(x*.45+200,y*.45+60)),tr=Math.max(0,1-Math.abs(((x+64)%128)-64)/14)*.5;
- let v=40+n*18+(s>.64?14:0)-(s<.28?9:0)-tr*7;v*=1-wet*.3;o.r=v;o.g=v;o.b=v*1.04+2;o.ro=Math.max(.3,.9-wet*.55-tr*.06);o.h=s*.5+n*.5-wet*.3;
+/* blk>1 paints in square pixel blocks (chunky up close, smooth with distance thanks to mipmaps); the height field is softened so lighting stays smooth */
+function surfTex(W,H,fn,str,blk){blk=blk||1;const A=document.createElement('canvas'),M=document.createElement('canvas');A.width=M.width=W;A.height=M.height=H;const a=A.getContext('2d'),m=M.getContext('2d'),ia=a.createImageData(W,H),im=m.createImageData(W,H),hg=new Float32Array(W*H),o={};
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){fn(x-x%blk,y-y%blk,o);const i=(y*W+x)*4;ia.data[i]=o.r;ia.data[i+1]=o.g;ia.data[i+2]=o.b;ia.data[i+3]=255;im.data[i]=0;im.data[i+1]=o.ro*255;im.data[i+2]=(o.me||0)*255;im.data[i+3]=255;hg[y*W+x]=o.h}
+ a.putImageData(ia,0,0);m.putImageData(im,0,0);const mk=c=>{const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=ANI;return t},map=mk(A);if(blk>1)map.magFilter=T.NearestFilter;return{map,rm:mk(M),nrm:nrmTex(blk>1?blurH(hg,W,H,blk>>1):hg,W,H,str),a,A}}
+function blurH(H,w,h,r){let s=H;for(let pass=0;pass<2;pass++){const d=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let t=0;for(let k=-r;k<=r;k++)t+=pass?s[((y+k+h)%h)*w+x]:s[y*w+(x+k+w)%w];d[y*w+x]=t/(2*r+1)}s=d}return s}
+const ASPH=surfTex(256,512,(x,y,o)=>{const n=nz(x*1.2,y*1.2),s=nz(x*3+90,y*3+31),tr=Math.max(0,1-Math.abs(((x+64)%128)-64)/14)*.5;
+ const v=44+n*14+(s>.66?7:0)-(s<.3?5:0)-tr*6;o.r=v;o.g=v;o.b=v*1.04+2;o.ro=.86-tr*.06;o.h=s*.4+n*.6;
  const ln=(c,w)=>Math.abs(x-c)<w,worn=nz(x*5+7,y*3)>.3;
- if((ln(123,2.6)||ln(133,2.6))&&worn){o.r=224;o.g=186;o.b=64;o.ro=.5;o.h=.95}else if((ln(11,2.4)||ln(245,2.4))&&worn&&(y%96)<80){o.r=o.g=o.b=222;o.ro=.5;o.h=.95}},2.2);
-(()=>{const g=ASPH.a;g.strokeStyle='rgba(10,10,12,.55)';for(let k=0;k<14;k++){g.lineWidth=rr(.6,1.6);g.beginPath();let x=rr(20,236),y=rr(0,512);g.moveTo(x,y);for(let j=0;j<8;j++){x+=rr(-9,9);y+=rr(-14,14);g.lineTo(x,y)}g.stroke()}
- for(let k=0;k<5;k++){g.fillStyle='rgba(15,15,18,.35)';g.beginPath();g.ellipse(rr(30,226),rr(0,512),rr(6,22),rr(4,14),rr(0,3),0,7);g.fill()}ASPH.map.needsUpdate=true})();
-let ROADMAT=null;function roadMat(){if(ROADMAT)return ROADMAT;ROADMAT=STD({color:0xffffff,map:ASPH.map,roughnessMap:LOWM?null:ASPH.rm,normalMap:LOWM?null:ASPH.nrm,roughness:1,metalness:0,envMapIntensity:.75});if(ROADMAT.normalScale)ROADMAT.normalScale.set(.45,.45);ROADM.push(ROADMAT);return ROADMAT}
-const PAVT=surfTex(256,256,(x,y,o)=>{const px=x%64,py=y%64,gr=px<3||py<3,id=((x/64)|0)+((y/64)|0)*4,n=nz(x*2,y*2),tone=ph(id,1,2)*16-8,st=nz(x*.7+40,y*.7)>.7?-14:0,gum=ph(x>>2,y>>2,8)>.997?-40:0;
- const v=gr?78:128+tone+n*14+st+gum;o.r=v;o.g=v-3;o.b=v-9;o.ro=gr?.95:.82-n*.1;o.h=gr?0:.8+n*.2},2.5);
+ if((ln(123,2.6)||ln(133,2.6))&&worn){o.r=224;o.g=186;o.b=64;o.ro=.5;o.h=.95}else if((ln(11,2.4)||ln(245,2.4))&&worn&&(y%96)<80){o.r=o.g=o.b=222;o.ro=.5;o.h=.95}},1,4);
+let ROADMAT=null;function roadMat(){if(ROADMAT)return ROADMAT;ROADMAT=STD({color:0xffffff,map:ASPH.map,roughnessMap:LOWM?null:ASPH.rm,normalMap:LOWM?null:ASPH.nrm,roughness:1,metalness:0,envMapIntensity:.75});if(ROADMAT.normalScale)ROADMAT.normalScale.set(.3,.3);ROADM.push(ROADMAT);return ROADMAT}
+const PAVT=surfTex(256,256,(x,y,o)=>{const px=x%64,py=y%64,gr=px<3||py<3,id=((x/64)|0)+((y/64)|0)*4,n=nz(x*2,y*2),tone=ph(id,1,2)*16-8,st=nz(x*.7+40,y*.7)>.7?-10:0;
+ const v=gr?100:128+tone+n*12+st;o.r=v;o.g=v-3;o.b=v-9;o.ro=gr?.95:.82-n*.1;o.h=gr?.2:.8+n*.2},1.2,4);
 const PADM=STD({color:0xffffff,map:PAVT.map,roughnessMap:LOWM?null:PAVT.rm,normalMap:LOWM?null:PAVT.nrm,roughness:1});PAVT.map.repeat.set(14,14);
-const GRT=surfTex(256,256,(x,y,o)=>{const n=nz(x*2,y*2),b=nz(x*9+70,y*2.2+11),v=.72+n*.25+(b>.62?.12:0)-(b<.3?.08:0);o.r=v*200;o.g=v*230;o.b=v*170;o.ro=.95;o.h=b},1.6);
+const GRT=surfTex(256,256,(x,y,o)=>{const n=nz(x*2,y*2),b=nz(x*9+70,y*2.2+11),v=.72+n*.25+(b>.62?.12:0)-(b<.3?.08:0);o.r=v*200;o.g=v*230;o.b=v*170;o.ro=.95;o.h=b},.9,4);
 const GRASSM=STD({color:0x6fb455,map:GRT.map,normalMap:LOWM?null:GRT.nrm,roughness:.95});GRT.map.repeat.set(10,10);
-const GRASSD=(()=>{const t=surfTex(256,256,(x,y,o)=>{const n=nz(x*1.5,y*1.5),b=nz(x*8+13,y*8+77),v=.8+n*.2+(b>.66?.1:0)-(b<.26?.09:0);o.r=o.g=o.b=v*255;o.ro=.95;o.h=b},1).map;t.repeat.set(170,170);return t})();
+const GRASSD=(()=>{const t=surfTex(256,256,(x,y,o)=>{const n=nz(x*1.5,y*1.5),b=nz(x*8+13,y*8+77),v=.8+n*.2+(b>.66?.1:0)-(b<.26?.09:0);o.r=o.g=o.b=v*255;o.ro=.95;o.h=b},1,4).map;t.repeat.set(170,170);return t})();
 function curbs(){for(const k in PADS){const p=PADS[k];if(!p.parent)continue;const[cx,cz]=k.split(',').map(Number);for(const s of[-1,1]){bx(28.2,.16,.32,0xc9c5bc,cx,.08,cz+s*13.95,sc);bx(.32,.16,28.2,0xc9c5bc,cx+s*13.95,.08,cz,sc)}}}
 const LPG=new T.CylinderGeometry(.08,.12,5,7);
 

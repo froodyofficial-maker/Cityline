@@ -19,7 +19,7 @@ const CORP=['NOVA','HELIX','KAITO','ORBIT','LUMEN','APEX','VANTA','CORAL','AURA'
 const RIBM=STD({vertexColors:true,roughness:.6,metalness:.35,map:cvs2(64,64,(g,w,h)=>{g.fillStyle='#fff';g.fillRect(0,0,w,h);for(let x=0;x<w;x+=4){g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x,0,1,h);g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x+2,0,1,h)}})});
 function rib(w,h,d,c,x,y,z,ry){const g=colGeo(new T.BoxGeometry(w,h,d),c),uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*Math.max(1,Math.round(Math.max(w,d)/2)),uv.getY(i));const m=new T.Mesh(g,RIBM);m.position.set(x,y,z);if(ry)m.rotation.y=ry;m.castShadow=m.receiveShadow=true;sc.add(m);return m}
 function dPad(cx,cz,grass){const k=cx+','+cz,p=bx(28,.06,28,0xb9b4aa,cx,.03,cz,sc);p.castShadow=false;p.receiveShadow=true;p.material=grass?GRASSM:PADM;PADS[k]=p;return p}
-function gplane(x,z,w,d,y){const m=new T.Mesh(new T.PlaneGeometry(w,d),GRASSM);m.rotation.x=-PI/2;m.position.set(x,y||.07,z);m.receiveShadow=true;sc.add(m)}
+function gplane(x,z,w,d,y){const m=new T.Mesh(new T.PlaneGeometry(w,d),GRASSM);m.rotation.x=-PI/2;m.position.set(x,y||.1,z);m.receiveShadow=true;sc.add(m)}
 function nRing(w,d,c,x,y,z){for(const s of[-1,1]){nb(w,.35,.3,c,x,y,z+s*d/2);nb(.3,.35,d,c,x+s*w/2,y,z)}}
 const solid=(cx,cz,w,d,h)=>B.push({x1:cx-w/2,x2:cx+w/2,z1:cz-d/2,z2:cz+d/2,h});
 function boxCar(x,z,ry){const g=new T.Group();g.userData.stat=1;const c=ri([0xd03030,0x2a6fd0,0xe0b020,0x30a060,0xeeeeee,0x333333,0x8a3aa8,0x9aa0a8]);
@@ -42,8 +42,8 @@ function house(lx,lz,face){/* lot is 12x12; front faces the outer road, back fen
  const col=ri(DPAL.house),rc=ri(DPAL.roof),two=R()<.42,w=rr(6.6,7.6),d=rr(6.4,7.2),h=two?6.1:3.3,gs=R()<.5?-1:1,span=w+4.4,hx=lx-gs*(span/2-w/2),gx=lx+gs*(span/2-2.2),hz=lz-face*1.2,fz=hz+face*d/2;
  gplane(lx,lz,12,12);bx(w,h,d,col,hx,h/2+.06,hz,sc);gRoof(w,d,two?2.4:2.1,rc,hx,h+.06,hz);
  bx(4.2,2.9,5.6,col,gx,1.5,hz+face*.6,sc);bx(4.4,.3,5.8,rc,gx,3.05,hz+face*.6,sc);bx(3.4,2.3,.08,0xd8d8d8,gx,1.2,hz+face*3.42,sc);
- const dw=new T.Mesh(new T.PlaneGeometry(3.6,3.8),mat(0xb8b4ac));dw.rotation.x=-PI/2;dw.position.set(gx,.09,lz+face*4.1);dw.receiveShadow=true;sc.add(dw);
- const pw=new T.Mesh(new T.PlaneGeometry(1.2,3.7),mat(0xc8c0b0));pw.rotation.x=-PI/2;pw.position.set(hx,.09,lz+face*4.15);sc.add(pw);
+ const dw=new T.Mesh(new T.PlaneGeometry(3.6,3.8),mat(0xb8b4ac));dw.rotation.x=-PI/2;dw.position.set(gx,.13,lz+face*4.1);dw.receiveShadow=true;sc.add(dw);
+ const pw=new T.Mesh(new T.PlaneGeometry(1.2,3.7),mat(0xc8c0b0));pw.rotation.x=-PI/2;pw.position.set(hx,.135,lz+face*4.15);sc.add(pw);
  bx(1.1,2.1,.1,ri([0x6a3a2a,0x2a4a6a,0x8a2a2a,0x2a5a3a]),hx,1.1,fz+face*.05,sc);for(const sx of[-1,1]){const wx=hx+sx*(w/4+.3);bx(1.4,1.1,.08,0x2a3a48,wx,1.7,fz+face*.05,sc);nb(1.2,.9,.04,0xffd27a,wx,1.7,fz+face*.09);
   if(two){bx(1.4,1.1,.08,0x2a3a48,wx,4.6,fz+face*.05,sc);if(R()<.6)nb(1.2,.9,.04,0xffd27a,wx,4.6,fz+face*.09)}}
  foot(hx,hz,w,d,h+2);solid(gx,hz+face*.6,4.2,5.6,3.1);
@@ -84,7 +84,7 @@ function port(cx,cz){dPad(cx,cz);if(R()<.7)stacks(cx,cz);else warehouse(cx,cz,rr
 function apartments(cx,cz){const col=ri(DPAL.house),w=rr(16,22),d=rr(12,16),h=3*(4+(R()*6|0));WK=R()<.5?3:1;wall(w,h,d,col,cx,cz);shopBase(cx,cz,w,d);
  for(let y=6;y<h-1;y+=3)for(const sz of[-1,1]){bx(w*.8,.18,1.3,0xd8d4cc,cx,y,cz+sz*(d/2+.65),sc);bx(w*.8,.9,.06,0x6a7078,cx,y+.5,cz+sz*(d/2+1.28),sc)}
  nsign(ri(SHOPS),ri(NC),cx,4.3,cz+d/2+.1,6);foot(cx,cz,w,d+2.6,h);if(R()<.4)mkRoof(cx,cz,w,d,h,parseInt(ri(NC).slice(1),16));else if(R()<.5)bx(w*.3,2,d*.3,0x8a8f96,cx,h+1,cz,sc)}
-function parking(cx,cz,n){const p=new T.Mesh(new T.PlaneGeometry(27,27),roadMat());p.rotation.x=-PI/2;p.position.set(cx,.075,cz);p.receiveShadow=true;sc.add(p);
+function parking(cx,cz,n){const p=new T.Mesh(new T.PlaneGeometry(27,27),roadMat());p.rotation.x=-PI/2;p.position.set(cx,.1,cz);p.receiveShadow=true;sc.add(p);
  for(let i=0;i<9;i++)for(const z of[-8,8])bx(.12,.02,5,0xffffff,cx-12+i*3,.09,cz+z,sc);for(let i=0;i<n;i++){const s=R()*16|0;boxCar(cx-10.5+(s%8)*3,cz+(s<8?-8:8),R()<.5?0:PI)}}
 function mall(cx,cz){dPad(cx,cz);WK=0;wall(26,9,18,0xe8e0d0,cx,cz-4);bx(26.4,.5,3,0xff2f6d,cx,6,cz+5.2,sc);nsign('EMBER MALL','#ff2f6d',cx,7.6,cz+5.1,12);for(const x of[-8,0,8])bx(4,3.2,.1,0x2a3a48,x+cx,1.7,cz+5.06,sc);foot(cx,cz-4,26,18,9);
  for(let i=0;i<4;i++)if(i!=1&&i!=2)boxCar(cx-10+i*6.5,cz+10.5,PI/2);buildMall(cx,cz)}

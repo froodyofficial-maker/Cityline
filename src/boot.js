@@ -6,12 +6,11 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
-import {GTAOPass} from 'three/addons/postprocessing/GTAOPass.js';
 import {SMAAPass} from 'three/addons/postprocessing/SMAAPass.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {GAME_FILES} from './manifest.js';
 
-window.THREE=Object.assign({},THREE_NS,{EffectComposer,RenderPass,ShaderPass,UnrealBloomPass,OutputPass,GTAOPass,SMAAPass,RoundedBoxGeometry});
+window.THREE=Object.assign({},THREE_NS,{EffectComposer,RenderPass,ShaderPass,UnrealBloomPass,OutputPass,SMAAPass,RoundedBoxGeometry});
 const bar=document.getElementById('bootp'),txt=document.getElementById('boott');
 window.__emberBootDone=()=>{bar.style.width='100%';setTimeout(()=>document.getElementById('boot').classList.add('done'),250)};
 function fail(e){txt.textContent='Failed to start: '+(e&&e.message||e);txt.style.color='#ff6a6a';console.error(e)}

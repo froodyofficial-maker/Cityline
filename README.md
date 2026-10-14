@@ -6,9 +6,9 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 ## Play
 
-**Desktop app (Windows):** run `EmberCity-2.2.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
+**Desktop app (Windows):** run `EmberCity-2.3.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
 
-The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.2.0` does the same.
+The **Desktop app** GitHub Actions workflow builds the `.exe` on Windows and publishes it as a GitHub Release (Actions tab → *Desktop app* → *Run workflow*). Pushing a tag such as `v2.3.0` does the same.
 
 **Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
@@ -115,11 +115,11 @@ Rosy is your golden retriever and goes everywhere with you.
 
 Graphics quality is set from the Open World setup screen. It has four levels: Low, Medium, High and Ultra. High and Ultra use:
 
-- physically based materials with procedural normal and roughness maps, plus image-based lighting from a live environment cube
-- night windows driven by a shader, with lit interiors
+- a blocky-realistic look: ground and wall textures are painted in chunky pixel blocks that read clearly up close and blend smoothly into the distance, under realistic lighting
+- physically based materials with soft normal and roughness maps, plus image-based lighting from a live environment cube
+- night windows driven by a shader, with steady lit interiors (no flickering windows or twinkling stars)
 - planar-reflection water with waves, foam and depth tint
-- GTAO ambient occlusion, an exponential height-fog pass with sun in-scattering, and bloom
-- ACES grading with god rays, MSAA and soft shadows
+- bloom, and ACES grading with god rays, MSAA and soft shadows
 - interiors that switch to warm practical lighting and close off the sky
 
 ## Performance
@@ -127,13 +127,15 @@ Graphics quality is set from the Open World setup screen. It has four levels: Lo
 - **Automatic starting quality:** on first launch the game picks Low on phones, Medium on 4-core or 4 GB machines, and High otherwise.
 - **Adaptive resolution:** render resolution drops (to as low as 50%) when the frame rate falls, and recovers when there's headroom.
 - **Anti-aliasing:** handled once, inside the post-processing chain, and the browser is asked for the high-performance GPU.
-- **Throttled extras:** water reflections refresh every other frame on High, and the reflection capture refreshes every 5–12 seconds.
+- **Throttled extras:** water reflections refresh every other frame on High (every frame on Ultra), and the reflection capture refreshes every 5–12 seconds.
 - **No UI blur:** the HUD has no backdrop blur, and its text is rewritten only when it changes.
 - **Batching:** static scenery merges into about 420 batches for the whole map. Facades use one material per style, with the colour stored in the geometry.
-- **Lighter rendering:** water reflects only the merged city, terrain and sky. Shadows are drawn once per frame instead of once per render pass.
+- **Lighter rendering:** no screen-space ambient occlusion or full-screen fog pass, and bloom runs at half resolution. Water reflects only the merged city, terrain and sky. Shadows are drawn once per frame instead of once per render pass.
+- **No hitches:** the reflection cube is re-captured one face per frame instead of all six at once.
+- **Stable image:** ground layers sit far enough apart that they don't flicker (z-fight) as the camera moves, and the sun's shadow map is snapped to whole texels so shadow edges don't crawl.
 - **Level of detail:** cars past about 70 m draw as just body and glass, and pedestrians past about 170 m aren't drawn.
 - **Fast collisions:** collision and line-of-sight checks use a 16 m spatial grid over the buildings.
-- **Fewer per-frame updates:** object positions are updated once per frame instead of once per render pass, and above 50 fps the shadow map refreshes every other frame.
+- **Fewer per-frame updates:** object positions are updated once per frame instead of once per render pass.
 - **FPS counter:** F3 shows frame rate and draw calls.
 
 ## Story mode

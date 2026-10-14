@@ -41,7 +41,7 @@ function placesAct(k,id){if(k=='court'){courtAct(id);return true}if(k=='outfit')
 const DISP=[];/* showroom cars get the same distance LOD as traffic */
 const MODELS=[{n:'EMBER SEDAN',t:0,p:3500,cols:[0xd03030,0x2a6fd0,0xeeeeee,0x333333]},{n:'VELOCE COUPE',t:1,p:9000,cols:[0xffc94a,0xff2f6d,0x111111,0x2bf0ff]},{n:'RANGER SUV',t:2,p:6000,cols:[0x30a060,0x6a7078,0x8a3aa8,0xe8e4d8]}];let DEAL=null;
 function dealership(cx,cz){dPad(cx,cz);WK=1;wall(18,6,10,0xb8c4d0,cx,cz-7);nsign('EMBER MOTORS','#2bf0ff',cx,6.6,cz-1.9,10);nRing(18.3,10.3,0x2bf0ff,cx,6.2,cz-7);foot(cx,cz-7,18,10,6);
- const pl=new T.Mesh(new T.PlaneGeometry(26,12),roadMat());pl.rotation.x=-PI/2;pl.position.set(cx,.075,cz+7);sc.add(pl);
+ const pl=new T.Mesh(new T.PlaneGeometry(26,12),roadMat());pl.rotation.x=-PI/2;pl.position.set(cx,.1,cz+7);sc.add(pl);
  MODELS.forEach((m,i)=>{const c=car(m.cols[0],m.t);c.x=cx-8+i*8;c.z=cz+5;DISP.push(c);c.g.position.set(cx-8+i*8,0,cz+5);c.g.rotation.y=PI*.15;bx(5,.2,5,0x3a3f48,cx-8+i*8,.1,cz+5,sc);solid(cx-8+i*8,cz+5,2.4,4.6,1.4);for(const s of[-1,1])bx(.1,4,.1,0xdddddd,cx-8+i*8+s*2.4,2,cz+2.4,sc)});
  DEAL={x:cx,z:cz};poi({x:cx,z:cz-1,r:3.4,txt:()=>'E - Buy a car',e:()=>{let h='<h2>EMBER MOTORS</h2><div class="stat">CASH $'+cash+' / DRIVE IT OFF THE LOT</div>';MODELS.forEach((m,i)=>h+=row('star',m.n,'$'+m.p.toLocaleString(),'BUY','car:'+i));openMd(h+'<button data-a="close">LEAVE</button>')}});PLACES.push({x:cx,z:cz,icon:'car'})}
 /* ---------- CHOP SHOP ---------- */

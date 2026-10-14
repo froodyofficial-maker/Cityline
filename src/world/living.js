@@ -47,21 +47,21 @@ function bush(x,z,r){const m=new T.Mesh(IG,mat(ri([0x2f7a35,0x3a8a3a,0x28702e]))
 function bench(x,z,rot){const g=new T.Group();g.userData.stat=1;bx(1.8,.12,.5,0x8a5a2a,0,.5,0,g);bx(1.8,.5,.1,0x8a5a2a,0,.85,-.22,g);bx(.12,.5,.4,0x333333,-.8,.25,0,g);bx(.12,.5,.4,0x333333,.8,.25,0,g);g.position.set(x,0,z);g.rotation.y=rot||0;sc.add(g)}
 function lampP(x,z,ax,az){const m=new T.Mesh(LPG,mat(0x2a2c30));m.position.set(x,2.5,z);m.castShadow=true;sc.add(m);let hx2=x,hz2=z;
  if(ax!==undefined){const l=Math.hypot(ax,az)||1;hx2=x+ax/l*1.3;hz2=z+az/l*1.3;const a=new T.Mesh(geo(.08,.08,1.4),mat(0x2a2c30));a.position.set((x+hx2)/2,4.95,(z+hz2)/2);a.rotation.y=Math.atan2(ax,az);sc.add(a)}
- bx(.55,.14,.34,0x222428,hx2,4.92,hz2,sc);nb(.42,.04,.24,0xfff1c8,hx2,4.83,hz2);GLOWP.push(hx2,4.75,hz2);const p=new T.Mesh(POOLG,POOLM);p.rotation.x=-PI/2;p.position.set(hx2,.09,hz2);sc.add(p)}
+ bx(.55,.14,.34,0x222428,hx2,4.92,hz2,sc);nb(.42,.04,.24,0xfff1c8,hx2,4.83,hz2);GLOWP.push(hx2,4.75,hz2);const p=new T.Mesh(POOLG,POOLM);p.rotation.x=-PI/2;p.position.set(hx2,.2,hz2);sc.add(p)}
 function hedge(x1,x2,z1,z2){bx(x2-x1,1.2,z2-z1,0x2f7a35,(x1+x2)/2,.6,(z1+z2)/2,sc);B.push({x1,x2,z1,z2,h:1.2});const n=Math.max(1,Math.round(Math.max(x2-x1,z2-z1)/6));for(let i=0;i<n;i++)HIDE.push({x:x1+(x2-x1)*(i+.5)/n,z:z1+(z2-z1)*(i+.5)/n,r:1.4})}
 function plane(x,z,w,d,c,y,rot){const m=new T.Mesh(new T.PlaneGeometry(w,d),mat(c));m.rotation.x=-PI/2;m.rotation.z=rot||0;m.position.set(x,y,z);m.receiveShadow=true;sc.add(m)}
 function mkPark(cx,cz,kind){PARKS.push({cx,cz});const k=cx+','+cz;if(BLK[k])removeBlock(k);const pad=PADS[k];if(pad)pad.material=GRASSM;
  const free=(x,z)=>Math.abs(x-cx)>2.4&&Math.abs(z-cz)>2.4&&Math.hypot(x-cx,z-cz)>6;
  hedge(cx-14,cx-2.2,cz-13.9,cz-13.5);hedge(cx+2.2,cx+14,cz-13.9,cz-13.5);hedge(cx-14,cx-2.2,cz+13.5,cz+13.9);hedge(cx+2.2,cx+14,cz+13.5,cz+13.9);hedge(cx-13.9,cx-13.5,cz-12.5,cz-2.2);hedge(cx-13.9,cx-13.5,cz+2.2,cz+12.5);hedge(cx+13.5,cx+13.9,cz-12.5,cz-2.2);hedge(cx+13.5,cx+13.9,cz+2.2,cz+12.5);
- plane(cx,cz,3.4,27,0xcdbf9a,.075);plane(cx,cz,27,3.4,0xcdbf9a,.075);
- if(kind==0){plane(cx,cz,9,9,0xd8cba6,.08);cy(1.6,.5,0xdddddd,cx,.3,cz,16);cy(1.3,.3,0x2b8fff,cx,.55,cz,16);nb(.4,1.6,.4,0x37e6ff,cx,1.1,cz);
-  const pond=new T.Mesh(new T.CircleGeometry(5,32),waterMat(1));pond.rotation.x=-PI/2;pond.position.set(cx+8,.09,cz-8);sc.add(pond);PONDS.push({x:cx+8,z:cz-8,r:5});for(let i=0;i<14;i++){const a=i/14*6.283;bx(.8,.4,.8,0x7a7f88,cx+8+Math.cos(a)*5.2,.2,cz-8+Math.sin(a)*5.2,sc)}
-  for(let i=0;i<5;i++){const m=new T.Mesh(new T.CircleGeometry(.5,8),mat(0x3a9a4a));m.rotation.x=-PI/2;m.position.set(cx+8+rr(-3,3),.1,cz-8+rr(-3,3));sc.add(m)}
-  for(let i=0;i<6;i++){const a=i/6*6.283;bx(.3,2.6,.3,0xf2f2f2,cx-8+Math.cos(a)*2.2,1.3,cz-8+Math.sin(a)*2.2,sc)}const rf=new T.Mesh(new T.ConeGeometry(3.1,1.6,6),mat(0x8b3a2f));rf.position.set(cx-8,3.4,cz-8);rf.castShadow=true;sc.add(rf);plane(cx-8,cz-8,5,5,0xd8cba6,.08)}
- else if(kind==1){plane(cx-6,cz-6,11,7,0xd0602a,.085);nb(11,.03,.2,0xffffff,cx-6,.1,cz-6);for(const sx of[-1,1]){bx(.15,3,.15,0x555555,cx-6+sx*5.3,1.5,cz-6,sc);bx(.1,1.1,1.6,0xffffff,cx-6+sx*5.2,3,cz-6,sc)}
+ plane(cx,cz,3.4,27,0xcdbf9a,.12);plane(cx,cz,27,3.4,0xcdbf9a,.12);
+ if(kind==0){plane(cx,cz,9,9,0xd8cba6,.16);cy(1.6,.5,0xdddddd,cx,.3,cz,16);cy(1.3,.3,0x2b8fff,cx,.55,cz,16);nb(.4,1.6,.4,0x37e6ff,cx,1.1,cz);
+  const pond=new T.Mesh(new T.CircleGeometry(5,32),waterMat(1));pond.rotation.x=-PI/2;pond.position.set(cx+8,.14,cz-8);sc.add(pond);PONDS.push({x:cx+8,z:cz-8,r:5});for(let i=0;i<14;i++){const a=i/14*6.283;bx(.8,.4,.8,0x7a7f88,cx+8+Math.cos(a)*5.2,.2,cz-8+Math.sin(a)*5.2,sc)}
+  for(let i=0;i<5;i++){const m=new T.Mesh(new T.CircleGeometry(.5,8),mat(0x3a9a4a));m.rotation.x=-PI/2;m.position.set(cx+8+rr(-3,3),.18,cz-8+rr(-3,3));sc.add(m)}
+  for(let i=0;i<6;i++){const a=i/6*6.283;bx(.3,2.6,.3,0xf2f2f2,cx-8+Math.cos(a)*2.2,1.3,cz-8+Math.sin(a)*2.2,sc)}const rf=new T.Mesh(new T.ConeGeometry(3.1,1.6,6),mat(0x8b3a2f));rf.position.set(cx-8,3.4,cz-8);rf.castShadow=true;sc.add(rf);plane(cx-8,cz-8,5,5,0xd8cba6,.16)}
+ else if(kind==1){plane(cx-6,cz-6,11,7,0xd0602a,.16);nb(11,.03,.2,0xffffff,cx-6,.19,cz-6);for(const sx of[-1,1]){bx(.15,3,.15,0x555555,cx-6+sx*5.3,1.5,cz-6,sc);bx(.1,1.1,1.6,0xffffff,cx-6+sx*5.2,3,cz-6,sc)}
   for(const sx of[-1,1]){bx(.2,2.8,.2,0x3a5ea8,cx+6+sx*1.6,1.4,cz+6,sc)}bx(3.6,.2,.2,0x3a5ea8,cx+6,2.8,cz+6,sc);for(const sx of[-.8,.8]){bx(.05,2.2,.05,0x888888,cx+6+sx,1.7,cz+6,sc);bx(.5,.1,.3,0xffd23f,cx+6+sx,.6,cz+6,sc)}
   const sl=bx(1,.2,4,0xe8452c,cx+8,1.2,cz+9,sc);sl.rotation.x=.5;bx(1,.15,1,0x8a5a2a,cx+8,2.2,cz+7.4,sc);bx(.2,2.4,.2,0x555555,cx+7.6,1.2,cz+7.4,sc);bx(4,.3,4,0xe3c07a,cx+8,.15,cz-8,sc)}
- else{plane(cx,cz,22,22,0xc7b98a,.07,0);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(i||j){bx(2.2,.1,1.2,0x8a5a2a,cx+i*7,.8,cz+j*7,sc);bx(2.2,.5,.1,0x8a5a2a,cx+i*7,.5,cz+j*7+.8,sc);bx(2.2,.5,.1,0x8a5a2a,cx+i*7,.5,cz+j*7-.8,sc)}
+ else{plane(cx,cz,22,22,0xc7b98a,.09,0);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)if(i||j){bx(2.2,.1,1.2,0x8a5a2a,cx+i*7,.8,cz+j*7,sc);bx(2.2,.5,.1,0x8a5a2a,cx+i*7,.5,cz+j*7+.8,sc);bx(2.2,.5,.1,0x8a5a2a,cx+i*7,.5,cz+j*7-.8,sc)}
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){const x=cx-10.5+i*7,z=cz-10.5+j*7;if(Math.abs(x-cx)>3&&Math.abs(z-cz)>3)tree(x,z,1.1,0x7aa83a)}}
  for(let i=0;i<(kind==2?6:20);i++){let x,z,t=0;do{x=cx+rr(-12,12);z=cz+rr(-12,12);t++}while(t<20&&!free(x,z));tree(x,z,rr(.9,1.5))}
  for(let i=0;i<14;i++){let x,z,t=0;do{x=cx+rr(-12.5,12.5);z=cz+rr(-12.5,12.5);t++}while(t<20&&!free(x,z));bush(x,z,rr(.9,1.6))}
@@ -78,14 +78,14 @@ function mkDump(x,z,alongZ){if(!DUMPG)DUMPG=mergeGeos([[2.4,1.3,1.5,0,.65,0,0x2f
 function signal(x,z,grp){bx(.18,4.2,.18,0x333333,x,2.1,z,sc);bx(.5,1.2,.5,0x222222,x,4.4,z,sc);const r=new T.Mesh(geo(.3,.3,.1),nmat(0xff2222)),gm=new T.Mesh(geo(.3,.3,.1),nmat(0x22ff44));r.position.set(x,4.75,z+.28);gm.position.set(x,4.1,z+.28);sc.add(r,gm);SIGS.push({r,g:gm,grp,ph:-1})}
 function streetLife(){
  for(const a of RD)for(const b of RD){signal(a-7,b-7,0);signal(a+7,b-7,0);signal(a-7,b+7,1);
-  for(const[ax,az,rot]of[[a+9,b,0],[a-9,b,0],[a,b+9,PI/2],[a,b-9]]){const m=new T.Mesh(new T.PlaneGeometry(3,11),XWM);m.rotation.x=-PI/2;m.rotation.z=rot||0;m.position.set(ax,.04,az);sc.add(m)}
-  const p=new T.Mesh(POOLG,POOLM);p.rotation.x=-PI/2;p.position.set(a+7,.09,b+7);sc.add(p)}
+  for(const[ax,az,rot]of[[a+9,b,0],[a-9,b,0],[a,b+9,PI/2],[a,b-9]]){const m=new T.Mesh(new T.PlaneGeometry(3,11),XWM);m.rotation.x=-PI/2;m.rotation.z=rot||0;m.position.set(ax,.07,az);sc.add(m)}
+  const p=new T.Mesh(POOLG,POOLM);p.rotation.x=-PI/2;p.position.set(a+7,.2,b+7);sc.add(p)}
  for(const r of RD)for(const t of[-80,-40,0,40,80]){lampP(r+7,t,-1,0);if(t!=80)lampP(t,r+7,0,-1)}
  /* outside downtown: a lamp every block on alternating sides, zebra crossings at every junction */
  const dt0=(x,z)=>Math.abs(x)<=104&&Math.abs(z)<=104;
  for(const s of ROADS)for(let u=Math.ceil((s.a+20)/40)*40;u<=s.b-14;u+=40){if(s.skip&&u>s.skip[0]-8&&u<s.skip[1]+8)continue;const sd=((u/40)&1)?1:-1,x=s.ax?s.c+sd*7:u,z=s.ax?u:s.c+sd*7;if(dt0(x,z)||(!s.ax&&Math.abs(u-80)<14))continue;s.ax?lampP(x,z,-sd,0):lampP(x,z,0,-sd)}
  for(const v of ROADS)if(v.ax)for(const h of ROADS)if(!h.ax&&v.c>=h.a&&v.c<=h.b&&h.c>=v.a&&h.c<=v.b&&!dt0(v.c,h.c)&&!(h.skip&&v.c>h.skip[0]&&v.c<h.skip[1]))
-  for(const[ax,az,rot]of[[v.c+9,h.c,0],[v.c-9,h.c,0],[v.c,h.c+9,PI/2],[v.c,h.c-9,0]]){if((ax-v.c)&&!(ax>=h.a&&ax<=h.b))continue;if((az-h.c)&&!(az>=v.a&&az<=v.b))continue;const m=new T.Mesh(new T.PlaneGeometry(3,11),XWM);m.rotation.x=-PI/2;m.rotation.z=(az-h.c)?PI/2:0;m.position.set(ax,.04,az);sc.add(m)}
+  for(const[ax,az,rot]of[[v.c+9,h.c,0],[v.c-9,h.c,0],[v.c,h.c+9,PI/2],[v.c,h.c-9,0]]){if((ax-v.c)&&!(ax>=h.a&&ax<=h.b))continue;if((az-h.c)&&!(az>=v.a&&az<=v.b))continue;const m=new T.Mesh(new T.PlaneGeometry(3,11),XWM);m.rotation.x=-PI/2;m.rotation.z=(az-h.c)?PI/2:0;m.position.set(ax,.07,az);sc.add(m)}
  for(const k in PADS){if(!PADS[k].parent)continue;const[cx,cz]=k.split(',').map(Number);if(PARKS.some(p=>p.cx==cx&&p.cz==cz))continue;
   bx(.4,.9,.4,0xd0302a,cx+13.2,.45,cz-13.2,sc);bx(.5,.3,.5,0xd0302a,cx+13.2,.95,cz-13.2,sc);cy(.35,.9,0x3a3a3a,cx-13.2,.45,cz+13.2,8);bench(cx+rr(-8,8),cz+13.4,PI)}
  const ks=Object.keys(BLK);for(const k of ks){const b=BLK[k];mkDump(b.cx+12.6,b.cz+rr(-7,7),1);mkDump(b.cx+rr(-7,7),b.cz-12.6,0)}
@@ -132,11 +132,10 @@ function addPalms(){const pl=(x,z,s)=>{if(bNear(x-1,z-1,x+1,z+1).some(b=>!b.air&
  for(let x=132;x<=330;x+=16){pl(x,27.5,rr(.95,1.2));pl(x,-27.5,rr(.95,1.2))}
  for(const[cx,cz]of[[0,0],[40,0],[-40,0]])for(const sx of[-1,1])pl(cx+sx*12.6,cz+12.8,rr(1,1.2))}
 
-/* shadows are drawn once per frame (by the first scene render), not again by the GTAO normal pass */
 /* world matrices are updated once per frame (three.js would redo all ~5000 objects in every render pass);
-   above ~50 fps the sun's shadow map is refreshed every other frame - the one-frame lag is invisible */
-sc.matrixWorldAutoUpdate=false;let SHF=0,LRF=0;
-function renderFrame(){const now=performance.now(),fdt=now-LRF;LRF=now;GU.uTime.value=now*.001;rd.info.autoReset=false;rd.info.reset();skyPlace();lightsU();sc.updateMatrixWorld();envUpdate();reflRender();rd.shadowMap.autoUpdate=false;rd.shadowMap.needsUpdate=(SHF^=1)||fdt>20;if(comp){gradeU();comp.render()}else rd.render(sc,cam);fpsU(fdt)}
+   the sun's shadow map is drawn once per frame, by the main scene render only (not the reflection or env passes) */
+sc.matrixWorldAutoUpdate=false;let LRF=0;
+function renderFrame(){const now=performance.now(),fdt=now-LRF;LRF=now;GU.uTime.value=now*.001;rd.info.autoReset=false;rd.info.reset();skyPlace();lightsU();sc.updateMatrixWorld();envUpdate();reflRender();rd.shadowMap.autoUpdate=false;rd.shadowMap.needsUpdate=true;if(comp){gradeU();comp.render()}else rd.render(sc,cam);fpsU(fdt)}
 /* --- build everything --- */
 function removeBlock(k){const b=BLK[k];if(!b)return;for(const o of b.objs)sc.remove(o);for(const x of b.bs){const i=B.indexOf(x);if(i>=0)B.splice(i,1)}for(const l of b.ls){const i=ladders.indexOf(l);if(i>=0)ladders.splice(i,1)}delete BLK[k]}
 function buildWorld(){buildTerrain();buildSky();for(const pk in PADS)PADS[pk].material=PADM;
