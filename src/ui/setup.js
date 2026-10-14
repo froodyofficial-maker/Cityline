@@ -27,7 +27,7 @@ function setShirt(c){reShirt(P.g,c)}
 function applyCfg(){try{localStorage.setItem('embercity_cfg',JSON.stringify(CFG))}catch(e){}
  if(CFG.mode==1){CFG.hunger=0;CFG.rent=0;CFG.peds=0;CFG.traffic=3;CFG.dayLen=600;copsOff=1}
  while(peds.length<CFG.peds)mkPed();while(peds.length>CFG.peds){const e=peds.pop();sc.remove(e.g)}
- const ai=cars.filter(c=>c.ai);while(ai.length<CFG.traffic){const c=car(ri([0xd03030,0x2a6fd0,0xe0b020,0x30a060,0xeeeeee,0x333333]));c.ai=1;c.ax=R()<.5?1:0;const d=R()<.5?1:-1,r=ri(RD);c.d=d;c.r=r;c.ln=d*3;const a=rr(-100,100);setCar(c,c.ax?r+c.ln:a,c.ax?a:r+c.ln,c.ax?(d>0?0:PI):(d>0?PI/2:-PI/2));cars.push(c);ai.push(c)}
+ const ai=cars.filter(c=>c.ai);while(ai.length<CFG.traffic){const c=car(ri([0xd03030,0x2a6fd0,0xe0b020,0x30a060,0xeeeeee,0x333333]));c.ai=1;aiCarPlace(c,1);cars.push(c);ai.push(c)}
  while(ai.length>CFG.traffic){const c=ai.pop();sc.remove(c.g);cars.splice(cars.indexOf(c),1)}
  cash=dispCash=lastCash=CFG.cash;tod=CFG.start;if(CFG.allW)for(const k of WK2){own[k]=1;ammo[k]=Math.max(ammo[k],200)}lastHot='';setShirt(CFG.shirt);initGfx();applyMap(CFG.map);gfxFinalize();if(CFG.mode==1)startWar()}
 function cfgU(dt){const dh=heat-lastHeat;if(dh>0&&CFG.heatMult!=1)heat=lastHeat+dh*CFG.heatMult;lastHeat=heat;if(CFG.god){P.hp=100;hunger=100}if(CFG.goal&&cash>=CFG.goal&&!won&&!cut&&!P.dead){won=1;winScreen()}}
@@ -36,7 +36,7 @@ function winScreen(){mode='eod';document.exitPointerLock&&document.exitPointerLo
 function gameOver(){mode='eod';document.exitPointerLock&&document.exitPointerLock();$('eodp').innerHTML='<h2>GAME OVER</h2><div class="er"><span>DAYS SURVIVED</span><b>'+(day-1)+'</b></div><div class="er"><span>CASH</span><b>$'+cash+'</b></div><div class="er"><span>CIVILIANS KILLED</span><b>'+kills+'</b></div><div class="er"><span>COPS KILLED TODAY</span><b>'+dS.cops+'</b></div><button id="eodgo">BACK TO MENU</button>';
  $('eod').style.display='flex';$('eodgo').onclick=()=>location.reload();snd(120,1,'sawtooth',.1)}
 /* ---- jumping ---- */
-function walkH(x,z){if(inWater(x,z))return -.4;let g=Math.max(0,terrH(x,z));for(const b of B)if(!b.air&&b.h>2&&x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
+function walkH(x,z){if(onPier(x,z))return .5;if(inWater(x,z))return -.4;let g=Math.max(0,terrH(x,z));for(const b of bNear(x,z,x,z))if(!b.air&&b.h>2&&x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
 function footY(dt){P.g.scale.y=P.crouch?.76:1;const gy=IN?0:walkH(P.x,P.z);P.y=P.y||0;P.vy=P.vy||0;
  if(CFG.god){P.vy=(K.Space?12:0)-(K.KeyC?12:0);P.y=Math.max(gy,P.y+P.vy*dt);P.roof=null;P.gr=P.y<=gy+.02;return}
  if(P.y<=gy+.02&&P.vy<=0){P.y=gy;P.vy=0;P.gr=1;if(P.jr&&CFG.jump>0){P.vy=Math.sqrt(2*22*CFG.jump);P.gr=0;snd(420,.1,'sine',.03)}}

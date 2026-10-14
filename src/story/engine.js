@@ -95,7 +95,7 @@ function camOcc(p,l){OCO.set(l[0],l[1],l[2]);OCD.set(p[0]-l[0],p[1]-l[1],p[2]-l[
  const skip=new Set([P.g,DOME,WATER,GLOWS,RAIN]);for(const n in NPC)skip.add(NPC[n].g);if(PN&&PN.g)skip.add(PN.g);const list=sc.children.filter(o=>o.visible&&!skip.has(o)&&!o.isLight&&!o.isCamera);
  for(const h of OCR.intersectObjects(list,true)){const o=h.object,m=Array.isArray(o.material)?o.material[0]:o.material;if(!o.isMesh||!m||!m.visible||m.transparent&&m.opacity<.6)continue;
   let v=true;for(let q=o;q;q=q.parent)if(!q.visible){v=false;break}if(!v)continue;return Math.max(.75/d,(h.distance-.3)/d)}return 1}
-function camIn(x,z,y){const L=IN?IB:B;for(const b of L)if(!b.air&&(b.h===undefined||y<b.h+.25)&&x>b.x1-.28&&x<b.x2+.28&&z>b.z1-.28&&z<b.z2+.28)return 1;return 0}
+function camIn(x,z,y){const L=IN?IB:bNear(x-.3,z-.3,x+.3,z+.3);for(const b of L)if(!b.air&&(b.h===undefined||y<b.h+.25)&&x>b.x1-.28&&x<b.x2+.28&&z>b.z1-.28&&z<b.z2+.28)return 1;return 0}
 function camFree(p,l){let k=0;while(k<45&&camIn(p[0],p[2],p[1])){p[0]+=(l[0]-p[0])*.06;p[1]+=(l[1]-p[1])*.06;p[2]+=(l[2]-p[2])*.06;k++}}
 function cinNext(){const C=CIN;if(!C||!cut)return;const s=C.shots[C.i];if(!s)return;const L=s.l||[];if(C.li<L.length){C.li++;C.lt=0;if(C.li>=L.length)C.st=Math.max(C.st,s._d)}else C.st=s._d}
 function cinEnd(instant){const C=CIN;if(!C)return;for(let i=Math.max(0,C.i);i<C.shots.length;i++){const s=C.shots[i];if(i>C.i){if(s.tod!==undefined)tod=s.tod;if(s.on)s.on()}if(s.post&&!s._pd){s._pd=1;s.post()}}PN.anim='idle';PN.y=0;P.g.rotation.set(0,P.h,0);for(const l of P.g.l)l.rotation.x=0;for(const a of P.g.a){a.rotation.x=0;a.rotation.z=0}if(P.g.hd[0].rotation)P.g.hd[0].rotation.x=P.g.hd[1].rotation.x=0;

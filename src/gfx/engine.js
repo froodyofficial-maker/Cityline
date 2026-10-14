@@ -54,16 +54,18 @@ function facadeHook(s){s.uniforms.uNight=GU.uNight;s.uniforms.uTime=GU.uTime;
  .replace('#include <emissivemap_fragment>','vec4 wm=texture2D(emissiveMap,vEmissiveMapUv);vec2 cl=floor(vEmissiveMapUv*2.);float sd=floor(vSeed+.5);float wr1=fh(cl+sd*.713),wr2=fh(cl*1.7+sd*.31+3.);float lit=max(step(.52,wr1)*wm.r,wm.g);vec3 tn=mix(vec3(1.,.72,.4),vec3(.7,.85,1.),step(.78,wr2));tn=mix(tn,vec3(1.,.38,.72),step(.965,wr2));float wfl=1.-step(.988,wr1)*step(.5,fract(uTime*2.3+wr2*7.));totalEmissiveRadiance=tn*lit*uNight*(.35+.55*wr2)*wfl*.85;')
  .replace('#include <aomap_fragment>','#include <aomap_fragment>\nfloat gao=mix(.5,1.,smoothstep(0.,4.,vWY));reflectedLight.indirectDiffuse*=gao;reflectedLight.directDiffuse*=mix(.7,1.,smoothstep(0.,3.,vWY));reflectedLight.indirectSpecular*=gao;')}
 const FMC={},FMS=[];
-function facMat(st,col){const k=st+'|'+col;if(FMC[k])return FMC[k];const S=st=='shop'?SHOPT:FS[st];let c=new T.Color(col);if(st===0||st===3||st===5)c.lerp(new T.Color(0xffffff),.6);if(st=='shop')c.setHex(0xffffff);
- const m=LOWM?new T.MeshLambertMaterial({color:c,map:S.map,emissiveMap:S.mask,emissive:0xffffff}):new T.MeshStandardMaterial({color:c,map:S.map,roughnessMap:S.rm,metalnessMap:S.rm,normalMap:S.nrm,emissiveMap:S.mask,emissive:0xffffff,roughness:1,metalness:1,envMapIntensity:1});
+/* one material per facade style; the wall colour lives in the geometry's vertex colours, so a whole district merges into a handful of draw calls */
+function facCol(st,col){const c=new T.Color(col);if(st===0||st===3||st===5)c.lerp(new T.Color(0xffffff),.6);if(st=='shop')c.setHex(0xffffff);return c}
+function facMat(st){const k=st;if(FMC[k])return FMC[k];const S=st=='shop'?SHOPT:FS[st];
+ const m=LOWM?new T.MeshLambertMaterial({vertexColors:true,map:S.map,emissiveMap:S.mask,emissive:0xffffff}):new T.MeshStandardMaterial({vertexColors:true,map:S.map,roughnessMap:S.rm,metalnessMap:S.rm,normalMap:S.nrm,emissiveMap:S.mask,emissive:0xffffff,roughness:1,metalness:1,envMapIntensity:1});
  m.onBeforeCompile=facadeHook;FMC[k]=m;FMS.push(m);return m}
 const ROOFM=STD({color:0xffffff,map:ROOFT.map,normalMap:LOWM?null:ROOFT.nrm,roughness:.95});
-const SHOPM=facMat('shop',0xffffff);
+const SHOPM=facMat('shop');
 /* UV scaling so one shared texture tile = 8m x 6m of facade */
 function facGeo(w,h,d,cyl,TW,TH){TW=TW||8;TH=TH||6;let g;
  if(cyl){const r=w/2;g=new T.CylinderGeometry(r,r,h,18,1);const uv=g.attributes.uv,n=19*2,circ=Math.max(2,Math.round(2*PI*r/TW));for(let i=0;i<uv.count;i++){if(i<n)uv.setXY(i,uv.getX(i)*circ,uv.getY(i)*h/TH);else uv.setXY(i,uv.getX(i)*w/8,uv.getY(i)*w/8)}}
  else{g=new T.BoxGeometry(w,h,d);const uv=g.attributes.uv;for(let f=0;f<6;f++){const fw=f<2?d:w,fh=f==2||f==3?d:h,sx=f==2||f==3?fw/8:fw/TW,sy=f==2||f==3?fh/8:fh/TH;for(let i=f*4;i<f*4+4;i++)uv.setXY(i,uv.getX(i)*sx,uv.getY(i)*sy)}}
- const s=new Float32Array(g.attributes.position.count).fill(R()*64|0);g.setAttribute('aSeed',new T.BufferAttribute(s,1));return g}
+ const s=new Float32Array(g.attributes.position.count).fill(R()*64|0);g.setAttribute('aSeed',new T.BufferAttribute(s,1));return colGeo(g,0xffffff)}
 /* ---------- geometry merge (also used for static batching) ---------- */
 function mergeGeos(items){let tot=0;const ex=[];let hasC=false,hasS=false;
  for(const it of items){const g=it.g,ix=g.index,s=it.s||0,n=it.n!=null?Math.min(it.n,(ix?ix.count:g.attributes.position.count)-s):(ix?ix.count:g.attributes.position.count);ex.push([it,s,n]);tot+=n;if(it.col||g.attributes.color)hasC=true;if(g.attributes.aSeed)hasS=true}
@@ -113,7 +115,11 @@ function mkCar(col,type){if(type===undefined)type=R()<.14?1:R()<.22?2:0;const S=
  if(!BLOBT)BLOBT=cvsT(64,64,(c,w,h)=>{const r=c.createRadialGradient(32,32,4,32,32,32);r.addColorStop(0,'rgba(0,0,0,.62)');r.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=r;c.fillRect(0,0,w,h)});
  if(!BLOBM)BLOBM=new T.MeshBasicMaterial({map:BLOBT,transparent:true,depthWrite:false});const bl=new T.Mesh(BLOBG,BLOBM);bl.rotation.x=-PI/2;bl.position.y=.04;bl.scale.set(S.bw*1.35,(fz-rz)*1.25,1);g.add(bl);
  {const bm=new T.Mesh(BEAMG,BEAMM);bm.rotation.x=-PI/2;bm.position.set(0,.08,fz+4.4);g.add(bm)}
+ g.det=g.children.filter(o=>o!==body&&o!==cab);/* detail parts, hidden at distance (see carLod) */
  g.castShadow=true;sc.add(g);return{g,x:0,z:0,h:0,v:0,ai:0,type}}
+/* level of detail: past ~70 m a car is just body + glass (2 draws instead of 19); people past 170 m are not drawn */
+function carLod(c){if(!c.g.det)return;const d=Math.abs(c.x-cam.position.x)+Math.abs(c.z-cam.position.z),l=d>95?1:0;if(c.lod!==l){c.lod=l;for(const o of c.g.det)o.visible=!l}}
+function pedLod(e){const far=Math.abs(e.x-cam.position.x)+Math.abs(e.z-cam.position.z)>230;if(e.far!==far){e.far=far;e.g.visible=!far}}
 const BLOBG=new T.PlaneGeometry(1,1);let BLOBM=null;
 /* ---------- vegetation ---------- */
 const TCAN=[];
@@ -178,21 +184,21 @@ function waterMat(round){const u=Object.assign({},WU,{uTM:{value:new T.Matrix4()
 /* ---------- planar reflection for the river (HIGH/ULTRA) ---------- */
 const RF={rt:null,cam:new T.PerspectiveCamera(),on:0,s:.4,pl:new T.Plane(),cp:new T.Vector4(),q:new T.Vector4(),v:new T.Vector3(),t:new T.Vector3(),l:new T.Vector3(),rm:new T.Matrix4(),n:new T.Vector3(0,1,0),wp:new T.Vector3()};
 function reflRender(){if(!RF.on||!WATER||IN)return;if(CFG.gfx<3&&(RF.k=(RF.k||0)+1)%2)return;/* HIGH: refresh the reflection every other frame */const M=WATER,u=M.material.uniforms;M.updateMatrixWorld();RF.wp.setFromMatrixPosition(M.matrixWorld);const cp=cam.position;
- if(Math.abs(cp.x-80)>230||cp.y<RF.wp.y+.2){u.uHasRefl.value=0;return}RF.pm=RF.pm||new T.Matrix4();RF.fr=RF.fr||new T.Frustum();cam.updateMatrixWorld();RF.pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);RF.fr.setFromProjectionMatrix(RF.pm);RF.bb=RF.bb||new T.Box3(new T.Vector3(70.4,-.6,-350),new T.Vector3(89.6,-.4,350));if(!RF.fr.intersectsBox(RF.bb)){u.uHasRefl.value=0;return}
+ if(cp.y<RF.wp.y+.2){u.uHasRefl.value=0;return}RF.pm=RF.pm||new T.Matrix4();RF.fr=RF.fr||new T.Frustum();cam.updateMatrixWorld();RF.pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);RF.fr.setFromProjectionMatrix(RF.pm);RF.bb=RF.bb||new T.Box3(new T.Vector3(70.4,-.6,-480),new T.Vector3(89.6,-.4,COAST+40));RF.bo=RF.bo||new T.Box3(new T.Vector3(-1400,-.6,COAST+26),new T.Vector3(1400,-.4,2200));if(!RF.fr.intersectsBox(RF.bb)&&!RF.fr.intersectsBox(RF.bo)){u.uHasRefl.value=0;return}
  const w=Math.round(innerWidth*RF.s*rd.getPixelRatio()),h=Math.round(innerHeight*RF.s*rd.getPixelRatio());if(RF.rt.width!==w||RF.rt.height!==h)RF.rt.setSize(w,h);
  const n=RF.n,v=RF.v.subVectors(RF.wp,cp);v.reflect(n).negate();v.add(RF.wp);RF.rm.extractRotation(cam.matrixWorld);RF.l.set(0,0,-1).applyMatrix4(RF.rm).add(cp);
  const t=RF.t.subVectors(RF.wp,RF.l);t.reflect(n).negate();t.add(RF.wp);const vc=RF.cam;vc.position.copy(v);vc.up.set(0,1,0).applyMatrix4(RF.rm).reflect(n);vc.lookAt(t);vc.far=cam.far;vc.updateMatrixWorld();vc.projectionMatrix.copy(cam.projectionMatrix);
  const tm=u.uTM.value;tm.set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);tm.multiply(vc.projectionMatrix);tm.multiply(vc.matrixWorldInverse);tm.multiply(M.matrixWorld);
  RF.pl.setFromNormalAndCoplanarPoint(n,RF.wp);RF.pl.applyMatrix4(vc.matrixWorldInverse);const c=RF.cp.set(RF.pl.normal.x,RF.pl.normal.y,RF.pl.normal.z,RF.pl.constant),pm=vc.projectionMatrix,q=RF.q;
  q.x=(Math.sign(c.x)+pm.elements[8])/pm.elements[0];q.y=(Math.sign(c.y)+pm.elements[9])/pm.elements[5];q.z=-1;q.w=(1+pm.elements[10])/pm.elements[14];c.multiplyScalar(2/c.dot(q));pm.elements[2]=c.x;pm.elements[6]=c.y;pm.elements[10]=c.z+1-.003;pm.elements[14]=c.w;
- M.visible=false;const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const ot=rd.getRenderTarget();if(DOME)DOME.position.copy(vc.position);rd.setRenderTarget(RF.rt);rd.clear();rd.render(sc,vc);rd.setRenderTarget(ot);rd.shadowMap.autoUpdate=su;M.visible=true;if(DOME)DOME.position.copy(cam.position);
+ M.visible=false;if(OCEAN)OCEAN.visible=false;const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const ot=rd.getRenderTarget();if(DOME)DOME.position.copy(vc.position);rd.setRenderTarget(RF.rt);rd.clear();vc.layers.set(1);rd.render(sc,vc);rd.setRenderTarget(ot);rd.shadowMap.autoUpdate=su;M.visible=true;if(OCEAN)OCEAN.visible=true;if(DOME)DOME.position.copy(cam.position);
  u.uRefl.value=RF.rt.texture;u.uHasRefl.value=1}
 /* ---------- environment (IBL) capture ---------- */
 const ENV={cube:null,cc:null,pm:null,rt:null,t:-1e9,tod:-1,res:0};
 function envSetup(res){if(ENV.cube){sc.remove(ENV.cc);ENV.cube.dispose();ENV.cube=null}if(!res){sc.environment=null;WU.uHasEnv.value=0;return}ENV.res=res;ENV.cube=new T.WebGLCubeRenderTarget(res,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter,type:T.HalfFloatType});ENV.cc=new T.CubeCamera(1,350,ENV.cube);sc.add(ENV.cc);ENV.pm=ENV.pm||new T.PMREMGenerator(rd);ENV.t=-1e9}
 function envUpdate(){if(!ENV.cube||!started)return;const now=performance.now(),iv=CFG.gfx>=3?5000:CFG.gfx>=2?8000:12000;if(now-ENV.t<iv&&Math.abs(tod-ENV.tod)<.015&&ENV.in===IN)return;ENV.t=now;ENV.tod=tod;ENV.in=IN;
- const c=ENV.cc,src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(DOME)DOME.position.copy(c.position);if(GLOWS)GLOWS.visible=false;
- WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME)DOME.position.copy(cam.position);
+ const c=ENV.cc,src=IN?cam.position:(P.car||P);c.position.set(src.x,IN?2:Math.max(6,(P.y||0)+6),src.z);const su=rd.shadowMap.autoUpdate;rd.shadowMap.autoUpdate=false;const pv=P.g.visible;P.g.visible=false;if(WATER)WATER.visible=false;if(OCEAN)OCEAN.visible=false;if(DOME)DOME.position.copy(c.position);if(GLOWS)GLOWS.visible=false;
+ WU.uEnv.value=null;c.update(rd,sc);rd.shadowMap.autoUpdate=su;P.g.visible=pv;if(WATER)WATER.visible=true;if(OCEAN)OCEAN.visible=true;if(GLOWS)GLOWS.visible=true;if(DOME)DOME.position.copy(cam.position);
  const old=ENV.rt;ENV.rt=ENV.pm.fromCubemap(ENV.cube.texture);sc.environment=ENV.rt.texture;if(old)old.dispose();WU.uEnv.value=ENV.cube.texture;WU.uHasEnv.value=1}
 /* ---------- static batching: merge thousands of static meshes into a few chunked draw calls ---------- */
 let MERGED=0;
@@ -203,12 +209,13 @@ function mergeStatic(){if(MERGED)return;MERGED=1;const t0=performance.now();cons
  const bk=new Map(),used=[],wp=new T.Vector3(),okM=m=>m&&!m.isShaderMaterial&&!m.isPointsMaterial&&!m.isSpriteMaterial&&(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshBasicMaterial||m.isMeshPhongMaterial);
  for(const o of cand){if(ex.has(o)||!o.visible||o.userData.dyn||o.isSkinnedMesh||o.isInstancedMesh)continue;const ms=o.material,g=o.geometry;if(!g||!g.attributes||!g.attributes.position)continue;const arr=Array.isArray(ms);if(arr&&!g.groups.length)continue;
   const parts=arr?g.groups.map(gr=>({m:ms[gr.materialIndex],s:gr.start,n:gr.count})):[{m:ms,s:0,n:null}];if(!parts.every(p=>okM(p.m)))continue;
-  o.getWorldPosition(wp);const ck=Math.floor(wp.x/72)+','+Math.floor(wp.z/72);
+  o.getWorldPosition(wp);const ck=Math.floor(wp.x/200)+','+Math.floor(wp.z/200);
   for(const p of parts){let tm=p.m,col=null;if(tm.userData.plain){col=tm.color.clone();tm=PLAINM}else if(NEONB.has(tm)){col=NEONB.get(tm);tm=NEONM}
    const key=tm.uuid+'|'+ck+'|'+(o.castShadow?1:0);let b=bk.get(key);if(!b){b={m:tm,items:[],cast:o.castShadow};bk.set(key,b)}b.items.push({g,mx:o.matrixWorld,col,s:p.s,n:p.n})}
   used.push(o)}
  for(const b of bk.values()){const m=new T.Mesh(mergeGeos(b.items),b.m);m.castShadow=b.cast;m.receiveShadow=!b.m.isMeshBasicMaterial;m.matrixAutoUpdate=false;m.updateMatrix();made.push(m)}
- for(const o of used)o.parent.remove(o);for(const m of made)sc.add(m);console.log('static merge: '+used.length+' meshes -> '+made.length+' batches in '+(performance.now()-t0|0)+'ms')}
+ /* layer 1 = what water reflects: the merged city, terrain and sky (not people, cars or effects) */
+ for(const o of used)o.parent.remove(o);for(const m of made){m.layers.enable(1);sc.add(m)}ground.layers.enable(1);if(DOME)DOME.layers.enable(1);console.log('static merge: '+used.length+' meshes -> '+made.length+' batches in '+(performance.now()-t0|0)+'ms')}
  catch(e){console.log('merge failed',e);for(const m of made)sc.remove(m)}}
 const NEONB=new Map();
 /* ---------- ground surfaces: asphalt w/ baked markings + puddles, paving, grass ---------- */

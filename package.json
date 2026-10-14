@@ -1,6 +1,6 @@
 {
   "name": "ember-city",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Ember City: an open-world crime game with a full story mode, built on three.js",
   "private": true,
   "type": "module",
@@ -8,7 +8,9 @@
     "start": "node tools/serve.mjs 8080",
     "dev": "node tools/serve.mjs 8080",
     "build": "node tools/build.mjs",
-    "check": "node tools/check.mjs"
+    "check": "node tools/check.mjs",
+    "desktop": "npm run build && npm --prefix desktop install && npm --prefix desktop start",
+    "desktop:win": "npm run build && npm --prefix desktop install && npm --prefix desktop run dist:win"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"

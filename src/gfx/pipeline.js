@@ -7,7 +7,7 @@ const GSV=new T.Vector3();let ILS=null,HEADL=null,KEYL=null,gtaoP=null,fogP=null
 const QUAD_VS='varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
 const FOG_FS=`uniform sampler2D tDiffuse;uniform sampler2D tDepth;uniform mat4 uInvProj;uniform mat4 uCamW;uniform vec3 uCam;uniform vec3 uFogCol;uniform vec3 uSunDir;uniform vec3 uSunCol;uniform float uA;uniform float uB;varying vec2 vUv;
 void main(){vec4 c=texture2D(tDiffuse,vUv);float d=texture2D(tDepth,vUv).x;if(d>=.99999){gl_FragColor=c;return;}
- vec4 v=uInvProj*vec4(vUv*2.-1.,d*2.-1.,1.);v/=v.w;vec3 wp=(uCamW*vec4(v.xyz,1.)).xyz;vec3 rd=wp-uCam;float dist=length(rd);if(dist>350.){gl_FragColor=c;return;}rd/=dist;
+ vec4 v=uInvProj*vec4(vUv*2.-1.,d*2.-1.,1.);v/=v.w;vec3 wp=(uCamW*vec4(v.xyz,1.)).xyz;vec3 rd=wp-uCam;float dist=length(rd);if(dist>1500.){gl_FragColor=c;return;}rd/=dist;
  float h=max(uCam.y,0.);float fa=abs(rd.y)<1e-3?uA*exp(-h*uB)*dist:(uA/uB)*exp(-h*uB)*(1.-exp(-dist*rd.y*uB))/rd.y;
  float f=clamp(1.-exp(-max(fa,0.)),0.,.9);float s=pow(max(dot(rd,uSunDir),0.),7.);vec3 fc=uFogCol+uSunCol*s*.55;
  gl_FragColor=vec4(mix(c.rgb,fc,f),c.a);}`;
@@ -33,7 +33,8 @@ function initGfx(){const q=CFG.gfx;BASEPR=Math.min(devicePixelRatio,q>=3?2:q>=2?
   /* after a resize the GTAO depth texture keeps its old GPU allocation (framebuffer incomplete -> garbage depth -> the fog pass floods the screen blue); rebuild the G-buffer at the new size */
   comp.onResize=()=>{if(!gtaoP)return;const ort=gtaoP.normalRenderTarget,od=gtaoP.depthTexture;gtaoP.setGBuffer();ort.dispose();od.dispose();if(fogP)fogP.uniforms.tDepth.value=gtaoP.depthTexture};if(q==1&&T.SMAAPass)comp.addPass(new T.SMAAPass(w*pr,h*pr));comp.setSize(w,h)}catch(e){comp=null;console.warn('post-processing unavailable',e)}}
  if(!comp){rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1}
- sc.fog.near=fogP?240:75;sc.fog.far=fogP?600:q>=2?340:260}
+ /* view distance per preset: the bigger city's skyline fades into the height fog on HIGH+ */
+ sc.fog.near=fogP?300:90;sc.fog.far=fogP?1100:q>=1?460:330;cam.far=fogP?900:sc.fog.far+40;cam.updateProjectionMatrix()}
 /* dynamic resolution: keep the frame rate up by trading render resolution (50-100% of the preset) */
 let BASEPR=1;const DRS={s:1,ema:16,t:0};
 function drsU(ms){if(document.hidden||!(ms>0))return;DRS.ema+=(Math.min(ms,100)-DRS.ema)*.05;DRS.t+=ms;if(DRS.t<1500)return;DRS.t=0;

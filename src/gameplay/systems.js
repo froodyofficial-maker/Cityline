@@ -42,7 +42,7 @@ function itemMesh(t){const g=new T.Group();
  else if(t.startsWith('am_')){bx(.34,.2,.24,0xff8a2b,0,.1,0,g);bx(.3,.06,.26,0x3ec24a,0,.2,0,g)}
  else{const w=WP[t.slice(3)];bx(.12,.14,.5+w.len*.3,w.col,0,.1,0,g);bx(.1,.22,.28,0x3a2a1a,0,.1,-.3-w.len*.12,g)}
  return g}
-function mkStore(o,i){const ox=335+i*35,oz=300,nh=o.nh,k=o.kind,st={name:o.name,kind:k,ox,oz,ret:{x:o.x,z:o.z+1.5},cash:Math.round(rr(250,700)),menu:MENU[k],alarm:0,counted:0};
+function mkStore(o,i){const ox=2335+i*35,oz=2300,nh=o.nh,k=o.kind,st={name:o.name,kind:k,ox,oz,ret:{x:o.x,z:o.z+1.5},cash:Math.round(rr(250,700)),menu:MENU[k],alarm:0,counted:0};
  const wc=ri([0xe8e0d4,0xd8e4ea,0xeadcc8]),iw2=(x,z,w,d)=>{bx(w,3.5,d,wc,ox+x,1.75,oz+z,sc);IB.push({x1:ox+x-w/2,x2:ox+x+w/2,z1:oz+z-d/2,z2:oz+z+d/2})};
  const fl2=(x,z,w,d,c,y)=>{const f=new T.Mesh(new T.PlaneGeometry(w,d),mat(c));f.rotation.x=-PI/2;f.position.set(ox+x,y,oz+z);f.receiveShadow=true;sc.add(f)};
  fl2(0,0,16,12,k=='guns'?0x2a2a30:0xd8d2c4,.02);fl2(0,2,5,8,0x8a8478,.03);iw2(0,-6,16.4,.4);iw2(-8,0,.4,12);iw2(8,0,.4,12);iw2(-4.75,6,6.5,.4);iw2(4.75,6,6.5,.4);IB.push({x1:ox-8,x2:ox+8,z1:oz+6.6,z2:oz+7});

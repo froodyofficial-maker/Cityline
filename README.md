@@ -6,7 +6,11 @@ An open-world crime game with a full story mode, built on [three.js](https://thr
 
 ## Play
 
-**Quickest:** open `dist/ember-city.html` in a browser. It's one self-contained file, so it runs straight from disk with no install.
+**Desktop app (Windows):** run `EmberCity-2.1.0-portable.exe`. It needs no install and runs straight from a USB stick or Downloads. It uses the game's own window instead of a browser tab, asks for the laptop's high-performance graphics card, and isn't slowed down in the background. F11 or Alt+Enter toggles fullscreen.
+
+Every run of the **Desktop app** GitHub Actions workflow builds the `.exe` (Actions tab → *Desktop app* → *Run workflow*). The build appears as a downloadable artifact. Pushing a tag such as `v2.1.0` also publishes it as a Release.
+
+**Browser:** open `dist/ember-city.html`. It's one self-contained file, so it runs straight from disk with no install.
 
 **From source:**
 
@@ -22,6 +26,8 @@ npm start            # serves the project at http://localhost:8080
 npm install          # one dev dependency: esbuild
 npm run build        # -> dist/ember-city.html (three.js, game, CSS, fonts and icon inlined)
 npm run check        # syntax-check every game source and the combined script
+npm run desktop      # run the desktop app (Electron)
+npm run desktop:win  # build desktop/release/EmberCity-<version>-portable.exe and a zip
 ```
 
 ## Project layout
@@ -36,16 +42,39 @@ src/manifest.js         load order of the game scripts
 src/core/               renderer, scene, input, shared helpers
 src/gfx/engine.js       procedural textures/materials, building facades, water, characters, env + reflections
 src/gfx/pipeline.js     quality presets, post chain, dynamic lights
-src/world/              city layout, interiors, map variants, navigation grid, sky + ambient life
+src/world/              city layout + road network, districts.js (everything outside downtown), interiors,
+                        map variants, navigation grids, sky + ambient life
 src/gameplay/           player, combat, police, shops, casino, day cycle
 src/vehicles/air.js     helicopters + planes
 src/net/                optional peer-to-peer multiplayer
 src/story/engine.js     mission runner, cinematic camera, NPC actors, saves
 src/story/chapters.js   the story: all cutscenes, dialogue and missions
 tools/                  dev server, single-file builder, syntax checker
+desktop/                Electron wrapper + Windows/Linux/macOS packaging (electron-builder)
+.github/workflows/      desktop build on GitHub's Windows runners
 ```
 
 The game scripts share one global scope. `boot.js` concatenates them in manifest order and runs them as a single classic script, which is the same thing the bundled build does. A new file goes in `src/manifest.js`.
+
+## The city
+
+Greater Ember City covers about 780 × 730 m, roughly seven times the old map. It's surrounded by mountains, with the ocean to the south. A river runs north to south through it, with a bridge on every street.
+
+| District | What's there |
+| --- | --- |
+| Downtown | The original centre: the bank, the casino, your apartment, shops. The story starts here. |
+| Ember Heights | Skyscrapers, plazas and the 190 m Ember Tower (north). |
+| Palm Grove | Suburban streets with houses, lawns, driveways and mailboxes (west). |
+| Foundry | Warehouses, smokestacks, tank farms and truck yards (south-west). |
+| Port Ember | Container yards, harbour cranes and moored cargo ships (south-east). |
+| Eastside | Apartment blocks, the Ember Mall and car parks. |
+| Midtown | Shop rows, gas stations, offices and parks between the districts. |
+| Ember Beach | Sand, palms, lifeguard towers, beach huts and the pier with its Ferris wheel. |
+| Ember International | The airport. |
+
+A name card shows when you cross into a new district. The minimap covers the whole city, and the full-screen map (M) is drawn at full resolution with district labels.
+
+Traffic and pedestrians spawn on the streets around you wherever you are, and are recycled as you move. Police chase you anywhere on the map using a city-wide pathfinding grid.
 
 ## Graphics
 
@@ -65,6 +94,10 @@ Graphics quality is set from the Open World setup screen. It has four levels: Lo
 - **Anti-aliasing:** handled once, inside the post-processing chain, and the browser is asked for the high-performance GPU.
 - **Throttled extras:** water reflections refresh every other frame on High, and the reflection capture refreshes every 5–12 seconds.
 - **No UI blur:** the HUD has no backdrop blur, and its text is rewritten only when it changes.
+- **Batching:** static scenery merges into about 420 batches for the whole map. Facades use one material per style, with the colour stored in the geometry.
+- **Lighter rendering:** water reflects only the merged city, terrain and sky. Shadows are drawn once per frame instead of once per render pass.
+- **Level of detail:** cars past about 70 m draw as just body and glass, and pedestrians past about 170 m aren't drawn.
+- **Fast collisions:** collision and line-of-sight checks use a 16 m spatial grid over the buildings.
 
 ## Story mode
 
@@ -92,6 +125,7 @@ There are eleven chapters, from *Homecoming* to *Ember Falls*. They are fully st
 | Space | Jump; next line in cutscenes |
 | Enter | Skip a cutscene |
 | T | Skip time (open world) |
+| F11 / Alt+Enter | Fullscreen (desktop app) |
 
 ## Credits
 
