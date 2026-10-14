@@ -1,5 +1,5 @@
 /* ---- casino interior & games ---- */
-let casOpen=0;const CAS={name:'CASINO',kind:'casino',ox:400,oz:400,cash:Math.round(rr(5000,9000)),alarm:0,counted:0,games:[],menu:[],buy:{x:-9999,z:-9999}};STORES.push(CAS);
+let casOpen=0;const CAS={name:'CASINO',kind:'casino',ox:2400,oz:2400,cash:Math.round(rr(5000,9000)),alarm:0,counted:0,games:[],menu:[],buy:{x:-9999,z:-9999}};STORES.push(CAS);
 (function(){const ox=CAS.ox,oz=CAS.oz;CAS.ret={x:casino.x,z:casino.z+1.5};
  const W_=(x,z,w,d)=>{bx(w,4.5,d,0x2a1538,ox+x,2.25,oz+z,sc);IB.push({x1:ox+x-w/2,x2:ox+x+w/2,z1:oz+z-d/2,z2:oz+z+d/2})};
  const F=(x,z,w,d,c,y)=>{const f=new T.Mesh(new T.PlaneGeometry(w,d),mat(c));f.rotation.x=-PI/2;f.position.set(ox+x,y,oz+z);f.receiveShadow=true;sc.add(f)};

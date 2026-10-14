@@ -1,7 +1,7 @@
 /* ---- helicopters & bombing ---- */
 
 const helis=[],BOMBS=[],EXP=[],SCO=[];let bcd=0;
-function groundH(x,z){let g=Math.max(0,terrH(x,z));for(const b of B)if(x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
+function groundH(x,z){let g=Math.max(0,terrH(x,z));for(const b of bNear(x,z,x,z))if(x>b.x1&&x<b.x2&&z>b.z1&&z<b.z2)g=Math.max(g,b.h+.06);return g}
 function mkHeli(x,y,z,h,col){const g=new T.Group();g.rotation.order='YXZ';const pm=paintM(col),dk=TRIMM,add=(geo,m,px,py,pz)=>{const q=new T.Mesh(geo,m);q.position.set(px,py,pz);q.castShadow=true;g.add(q);return q};
  add(new T.SphereGeometry(1,20,14).scale(1.2,1.02,2.25),pm,0,1.45,.1);add(new T.SphereGeometry(1,18,12).scale(1.02,.86,1.15),GLASSM,0,1.62,1.05);add(new T.CylinderGeometry(.2,.4,4.8,12).rotateX(PI/2),pm,0,1.72,-3.4);
  add(new T.BoxGeometry(.12,1.35,.75),pm,0,2.32,-5.65);add(new T.BoxGeometry(1.7,.08,.42),pm,0,1.78,-5.15);add(new T.BoxGeometry(1,.52,1.7),dk,0,2.42,-.25);add(new T.CylinderGeometry(.16,.16,.3,10),dk,0,2.75,0);
@@ -20,7 +20,7 @@ function heliU(dt){bcd-=dt;for(const q of helis){const mine=P.heli===q&&!cut&&!P
   if(mine){const fw=(K.KeyW|0)-(K.KeyS|0),st=(K.KeyA|0)-(K.KeyD|0),up=(K.Space|0)-((K.ShiftLeft|0)||(K.KeyC|0));
    q.v+=((fw>0?24:fw<0?-9:0)-q.v)*Math.min(1,dt*(fw?1.5:.7));q.h+=st*dt*1.7;q.vy+=(up*10-q.vy)*Math.min(1,dt*3);q.rot=Math.min(1,q.rot+dt);
    q.x+=sin(q.h)*q.v*dt;q.z+=cos(q.h)*q.v*dt;q.y=Math.min(150,q.y+q.vy*dt);
-   for(const b of B)if(q.y<b.h-.3&&q.x>b.x1-2.5&&q.x<b.x2+2.5&&q.z>b.z1-2.5&&q.z<b.z2+2.5){const d=[q.x-(b.x1-2.5),b.x2+2.5-q.x,q.z-(b.z1-2.5),b.z2+2.5-q.z],m=Math.min(...d);if(m==d[0])q.x=b.x1-2.5;else if(m==d[1])q.x=b.x2+2.5;else if(m==d[2])q.z=b.z1-2.5;else q.z=b.z2+2.5;if(Math.abs(q.v)>8){shake=.6;snd(90,.2,'sawtooth',.08)}q.v*=-.3}
+   for(const b of bNear(q.x-3,q.z-3,q.x+3,q.z+3))if(q.y<b.h-.3&&q.x>b.x1-2.5&&q.x<b.x2+2.5&&q.z>b.z1-2.5&&q.z<b.z2+2.5){const d=[q.x-(b.x1-2.5),b.x2+2.5-q.x,q.z-(b.z1-2.5),b.z2+2.5-q.z],m=Math.min(...d);if(m==d[0])q.x=b.x1-2.5;else if(m==d[1])q.x=b.x2+2.5;else if(m==d[2])q.z=b.z1-2.5;else q.z=b.z2+2.5;if(Math.abs(q.v)>8){shake=.6;snd(90,.2,'sawtooth',.08)}q.v*=-.3}
    q.x=Math.max(-118,Math.min(345,q.x));q.z=Math.max(-118,Math.min(118,q.z));
    if(performance.now()-mvT>1500){let d=q.h-camYaw;d=Math.atan2(sin(d),cos(d));camYaw+=d*Math.min(1,dt*2)}
    if((q.snT-=dt)<=0){q.snT=.2;snd(70,.2,'square',.015)}
@@ -102,7 +102,7 @@ function ragU(dt){for(let i=RAG.length-1;i>=0;i--){const r=RAG[i];
   if(r.dead){if((r.dt+=dt)>40){sc.remove(r.g);RAG.splice(i,1)}continue}
   r.v.y-=22*dt;r.x+=r.v.x*dt;r.y+=r.v.y*dt;r.z+=r.v.z*dt;r.g.position.set(r.x,r.y,r.z);r.g.rotation.x+=r.w.x*dt;r.g.rotation.y+=r.w.y*dt;r.g.rotation.z+=r.w.z*dt;
   if((r.sc-=dt)<=0&&r.sc>-.1)snd(rr(700,1100),.9,'sawtooth',.03);if((r.tr-=dt)<=0){r.tr=.05;part(r.x,r.y+.8,r.z,rr(-1,1),rr(0,2),rr(-1,1),rr(.1,.2),ri(BL),rr(6,12))}
-  if(!r.hitW)for(const b of B)if(r.x>b.x1&&r.x<b.x2&&r.z>b.z1&&r.z<b.z2&&r.y<b.h&&r.y>.6){const d=[r.x-b.x1,b.x2-r.x,r.z-b.z1,b.z2-r.z],m=Math.min(...d);let nx=0,nz=0;
+  if(!r.hitW)for(const b of bNear(r.x,r.z,r.x,r.z))if(r.x>b.x1&&r.x<b.x2&&r.z>b.z1&&r.z<b.z2&&r.y<b.h&&r.y>.6){const d=[r.x-b.x1,b.x2-r.x,r.z-b.z1,b.z2-r.z],m=Math.min(...d);let nx=0,nz=0;
    if(m==d[0]){nx=-1;r.x=b.x1-.3}else if(m==d[1]){nx=1;r.x=b.x2+.3}else if(m==d[2]){nz=-1;r.z=b.z1-.3}else{nz=1;r.z=b.z2+.3}
    r.hitW=1;r.when=performance.now();wallBlood(nx<0?b.x1:nx>0?b.x2:r.x,r.y,nz<0?b.z1:nz>0?b.z2:r.z,nx,nz);gore({x:r.x,z:r.z,g:r.g,y0:r.y-.8},nx*3,nz*3,true);bloodBurst(r.x,r.z,26,r.y-1);bodyParts(r.x,r.z,6,12,r.y);shake=Math.max(shake,.8);snd(110,.25,'sawtooth',.06);
    r.v.set(nx*2,Math.min(r.v.y,0),nz*2);r.w.multiplyScalar(.3);if(R()<.6){r.g.visible=false;r.gone=1}break}
@@ -117,7 +117,7 @@ function planeU(dt){ragU(dt);for(let i=PR.length-1;i>=0;i--){PR[i].t-=dt;if(PR[i
   let vy=0;if(was||(p.pitch>.05&&lift>.4))vy=Math.sin(p.pitch)*p.sp*Math.max(.15,lift)-(1-lift)*20;p.vy=vy;p.y=Math.min(170,p.y+vy*dt);p.x+=sin(p.h)*Math.cos(p.pitch)*p.sp*dt;p.z+=cos(p.h)*Math.cos(p.pitch)*p.sp*dt;p.x=Math.max(-118,Math.min(345,p.x));p.z=Math.max(-118,Math.min(118,p.z));
   if(mine&&p.sp<16&&p.y>6&&(p.wn-=dt)<=0){p.wn=3;msg('STALL! Throttle up and nose down','#ff3b3b')}
   const g2=groundH(p.x,p.z),th=terrH(p.x,p.z);let crash=0;if(th>1&&p.y<th+.6&&p.sp>8)crash=2;
-  for(const b of B){const e=p.wide;if(p.x>b.x1-e&&p.x<b.x2+e&&p.z>b.z1-e&&p.z<b.z2+e&&p.y<b.h+1){if(p.sp>12)crash=2;else{p.sp=0;p.x-=sin(p.h)*2;p.z-=cos(p.h)*2}}}
+  for(const b of bNear(p.x-p.wide,p.z-p.wide,p.x+p.wide,p.z+p.wide)){const e=p.wide;if(p.x>b.x1-e&&p.x<b.x2+e&&p.z>b.z1-e&&p.z<b.z2+e&&p.y<b.h+1){if(p.sp>12)crash=2;else{p.sp=0;p.x-=sin(p.h)*2;p.z-=cos(p.h)*2}}}
   if(p.y<=g2){if(was&&(g2>0||p.vy<-13||p.pitch<-.3||Math.abs(p.roll)>.5))crash=1;p.y=g2;if(p.pitch<0)p.pitch*=1-dt*4}
   if(crash){crashPlane(p,crash);continue}
   p.g.position.set(p.x,p.y,p.z);p.g.rotation.set(-p.pitch,p.h,p.roll);if(p.prop)p.prop.rotation.z+=(p.thr*40+2)*dt;

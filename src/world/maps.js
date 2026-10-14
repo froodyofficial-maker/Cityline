@@ -4,8 +4,8 @@ const MAPT=[null,{sky:0xe6c88e,dusk:0xff7a3a,night:0x27304f,fog:[70,230],ground:
  {sky:0xcfe4f5,dusk:0xf0a0c0,night:0x2a3a66,fog:[40,160],ground:0xf2f6fa,rock:0x9aa5b0,peak:0xffffff,water:0x9fd8e8,park:0xdde8ee,pad:0xe4eaf0,road:0x6a7280,tint:[.88,.94,1]},
  {sky:0x9a7a4a,dusk:0xc8501f,night:0x1f2a22,fog:[28,120],ground:0x4a4636,rock:0x4a4034,peak:0x6a6458,water:0x4a7a3a,park:0x5a5a3a,pad:0x6a645a,road:0x24231f,tint:[.55,.5,.44]}];
 let mapOpen=0,WX=null;
-const inCity=(x,z)=>Math.abs(x)<126&&Math.abs(z)<126,inAir=(x,z)=>x>112&&x<352&&z>-80&&z<62;
-function scatter(n,fn){let k=0;for(let i=0;i<n*4&&k<n;i++){const x=rr(-340,340),z=rr(-340,340);if(inCity(x,z)||inAir(x,z)||Math.abs(x-80)<16)continue;const n0=sc.children.length;fn(x,z);const th=terrH(x,z);for(let q=n0;q<sc.children.length;q++)sc.children[q].position.y+=th;k++}}
+const inCity=(x,z)=>x>WB.x0-24&&x<WB.x1+24&&z>WB.z0-24,inAir=(x,z)=>x>112&&x<352&&z>-80&&z<62;
+function scatter(n,fn){let k=0;for(let i=0;i<n*4&&k<n;i++){const x=rr(-720,720),z=rr(-720,COAST+20);if(inCity(x,z)||inAir(x,z)||Math.abs(x-80)<16)continue;const n0=sc.children.length;fn(x,z);const th=terrH(x,z);for(let q=n0;q<sc.children.length;q++)sc.children[q].position.y+=th;k++}}
 function pine(x,z,q){bx(.4,1.2*q,.4,0x5a3a22,x,.6*q,z,sc);for(let i=0;i<3;i++){const m=new T.Mesh(new T.ConeGeometry(1.9*q*(1-i*.25),2.2*q,7),mat(i==2?0xf4f8fb:0x2f6a4a));m.position.set(x,(1.2+i*1.3+1.1)*q,z);m.castShadow=true;sc.add(m)}}
 function cactus(x,z){const c=0x3f8f4a;bx(.6,2.6,.6,c,x,1.3,z,sc);bx(.35,.35,1,c,x+.7,1.6,z,sc);bx(.35,1,.35,c,x+1.15,2.1,z,sc);bx(.35,.35,.9,c,x-.7,1.1,z,sc);bx(.35,.9,.35,c,x-1.1,1.55,z,sc)}
 function mkWeather(col,size,fall,drift,n,op){const geo=new T.BufferGeometry(),a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=rr(-45,45);a[i*3+1]=rr(0,40);a[i*3+2]=rr(-45,45)}geo.setAttribute('position',new T.BufferAttribute(a,3));
@@ -17,7 +17,7 @@ function applyMap(id){const t=MAPT[id];if(!t)return;cD.setHex(t.sky);cO.setHex(t
   scatter(26,(x,z)=>{const m=bx(rr(30,70),rr(2,6),rr(20,40),0xe3c07a,x,2,z,sc);m.rotation.y=rr(0,3)});scatter(6,(x,z)=>{for(const[a,b]of[[-1,-1],[1,-1],[-1,1],[1,1]])bx(.4,14,.4,0x333333,x+a,7,z+b,sc);bx(3.4,.6,3.4,0x555555,x,14,z,sc);bx(.5,6,.5,0xcc3333,x,17,z,sc)});mkWeather(0xe3c07a,.2,.3,12,700,.5)}
  else if(id==2){scatter(150,(x,z)=>pine(x,z,rr(.9,1.8)));for(const px of CC)for(const pz of CC)for(const[a,b]of[[-13,-13],[13,-13],[-13,13],[13,13]])if(R()<.55)pine(px+a,pz+b,rr(.8,1.3));
   for(const b of B)if(!b.air&&b.h>2)bx(b.x2-b.x1+.4,.5,b.z2-b.z1+.4,0xffffff,(b.x1+b.x2)/2,b.h+.28,(b.z1+b.z2)/2,sc);
-  const lk=new T.Mesh(new T.PlaneGeometry(110,80),mat(0xbfe8f5));lk.rotation.x=-PI/2;lk.position.set(-200,.04,130);sc.add(lk);scatter(40,(x,z)=>bx(rr(3,8),rr(.6,1.6),rr(3,8),0xffffff,x,.4,z,sc));mkWeather(0xffffff,.35,4,1.2,1400,.9)}
+  scatter(40,(x,z)=>bx(rr(3,8),rr(.6,1.6),rr(3,8),0xffffff,x,.4,z,sc));mkWeather(0xffffff,.35,4,1.2,1400,.9)}
  else if(id==3){for(const b of B)if(!b.air&&b.h>2)for(let i=0;i<3;i++){const m=bx(rr(.8,2.2),rr(.6,1.6),rr(.8,2.2),0x6a645a,(R()<.5?b.x1-1.4:b.x2+1.4),.5,rr(b.z1,b.z2),sc);m.rotation.y=rr(0,3)}
   scatter(60,(x,z)=>{bx(.5,rr(4,8),.5,0x2a2218,x,3,z,sc);bx(.3,.3,2.4,0x2a2218,x,rr(4,6),z+1,sc);bx(.3,.3,2,0x2a2218,x,rr(3,5),z-1,sc)});
   for(let i=0;i<14;i++){const r=ri(RD),al=R()<.5,x=al?rr(-110,110):r+rr(-4,4),z=al?r+rr(-4,4):rr(-110,110),c=car(0x3a2a22);c.g.position.set(x,0,z);c.g.rotation.y=rr(0,6)}

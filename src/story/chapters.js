@@ -1,5 +1,5 @@
 /* ================= v9: STORY — "EMBER CITY: ASHES" (world additions, cutscenes, missions) ================= */
-const GAR=[115,44],GFC=[115,31],CASX=400,CASZ=400,ROOFY=16.06;
+const GAR=[115,44],GFC=[115,31],CASX=2400,CASZ=2400,ROOFY=16.06;
 /* --- Okafor Auto (Dex's garage) + freight-yard props, built into the world for story & free roam --- */
 (function(){const gx=GAR[0],gz=GAR[1];WK=5;wall(14,6,12,0x8a9098,gx,gz);foot(gx,gz,14,12,6);bx(7.2,4.4,.3,0x0e0e12,gx-2,2.26,gz-6.02,sc);bx(7.4,1.1,.4,0xa0a6ae,gx-2,3.95,gz-6.1,sc);for(let i=0;i<6;i++)bx(7.3,.06,.42,0x6a7078,gx-2,3.45+i*.18,gz-6.12,sc);
  bx(2.2,2.4,.2,0x2a2a30,gx+4.2,1.26,gz-6.02,sc);nb(1.4,.9,.05,0xffd27a,gx+4.2,1.7,gz-6.15);const q=nsign('OKAFOR AUTO','#5aa8ff',gx+1,6.9,gz-6.12,9);q.rotation.y=PI;
