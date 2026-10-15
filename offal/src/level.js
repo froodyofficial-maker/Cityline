@@ -6,6 +6,8 @@ import { TILE, WALL_H, difficulty } from './config.js';
 export const CRAWL_H = 1.2; // the roof of a crouchway: you crouched fit (eyes at 1.0), he doesn't
 import { makeRng } from './rng.js';
 import * as P from './props.js';
+import * as P2 from './props2.js';
+import { themeMaterials } from './textures.js';
 
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
@@ -33,7 +35,9 @@ export function makeLayout(depth, seed, D) {
     L.block[wing.door.y * L.W + wing.door.x] = 1;
     return L;
   }
-  throw new Error('could not lay out a floor with a sealed wing');
+  // no chokepoint anywhere for a shutter: drop the keypad from this floor rather than fail
+  D.puzzles = D.puzzles.filter((k) => k !== 'keypad');
+  return generateLayout(depth, seed, D);
 }
 
 // a straight piece of corridor that, shut, cuts off a good chunk of the floor (but never the lift)
@@ -79,22 +83,19 @@ function findWing(L) {
 }
 
 // ---------- layout ----------
-export function generateLayout(depth, seed, D = difficulty(depth)) {
-  const rng = makeRng(seed);
-  const W = D.size, H = D.size;
-  const grid = new Uint8Array(W * H);
-  const roomOf = new Int16Array(W * H).fill(-1);
-  const corridor = new Uint8Array(W * H);
-  const rooms = [];
-
+// ---------- layouts ----------
+// rooms scattered and joined by a spanning tree plus a few loops: the meatworks, and (with other sizes and
+// corridor styles) the offices, the drains and the deep freeze. The order of rng calls for the meatworks is
+// exactly what it always was, so a saved floor comes back the same.
+function standardRooms(c, nRooms, { size, wide = false, meander = false, extra = 0.45 }) {
+  const { rng, W, H, grid, roomOf, corridor, rooms } = c;
   const lw = 4, lh = 3, lx = rng.int(2, W - lw - 2), ly = H - 2 - lh;
   rooms.push({ x: lx, y: ly, w: lw, h: lh, type: 'lift' });
   const ax = lx + rng.int(1, lw - 2), ay = H - 2;
-
-  for (let tries = 0; rooms.length < D.rooms + 1 && tries < 600; tries++) {
-    const w = rng.int(3, 7), h = rng.int(3, 6);
+  for (let tries = 0; rooms.length < nRooms + 1 && tries < 600; tries++) {
+    const [w, h] = size(rooms.length - 1);
     const x = rng.int(1, W - w - 1), y = rng.int(1, H - h - 7);
-    if (y < 1) continue;
+    if (y < 1 || x < 1 || w < 2 || h < 2) continue;
     if (rooms.some((r) => x < r.x + r.w + 1 && x + w + 1 > r.x && y < r.y + r.h + 1 && y + h + 1 > r.y)) continue;
     rooms.push({ x, y, w, h, type: '' });
   }
@@ -103,19 +104,31 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
     r.cy = r.y + (r.h >> 1);
     for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) { grid[y * W + x] = 1; roomOf[y * W + x] = i; }
   });
-
+  const open = (x, y) => { if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return; const i = y * W + x; if (!grid[i]) { grid[i] = 1; corridor[i] = 1; } };
   const carve = (a, b) => {
     let x = a.cx, y = a.cy;
     const step = (tx, ty) => {
       while (x !== tx || y !== ty) {
         if (x !== tx) x += Math.sign(tx - x); else y += Math.sign(ty - y);
-        const i = y * W + x;
-        if (!grid[i]) { grid[i] = 1; corridor[i] = 1; }
+        open(x, y);
       }
     };
-    if (rng() < 0.5) { step(b.cx, y); step(b.cx, b.cy); } else { step(x, b.cy); step(b.cx, b.cy); }
+    if (meander) {
+      // the drains wander: pick an axis at random every step, so the tunnels come out ragged
+      while (x !== b.cx || y !== b.cy) {
+        if (x !== b.cx && (y === b.cy || rng() < 0.5)) x += Math.sign(b.cx - x); else y += Math.sign(b.cy - y);
+        open(x, y);
+      }
+      return;
+    }
+    const horizFirst = rng() < 0.5;
+    if (horizFirst) { step(b.cx, y); step(b.cx, b.cy); } else { step(x, b.cy); step(b.cx, b.cy); }
+    if (wide) {
+      // two tiles across: retrace the same route one tile over
+      x = a.cx + (horizFirst ? 0 : 1); y = a.cy + (horizFirst ? 1 : 0);
+      if (horizFirst) { step(b.cx + 1, y); step(b.cx + 1, b.cy); } else { step(x, b.cy + 1); step(b.cx, b.cy + 1); }
+    }
   };
-  // minimum spanning tree, then a few extra links so there is always another way round
   const inTree = [0], dist2 = (a, b) => (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
   const linked = new Set();
   while (inTree.length < rooms.length) {
@@ -130,11 +143,113 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
     inTree.push(best[2]);
   }
   rooms.forEach((r, i) => {
-    if (!rng.chance(D.puzzles && D.puzzles.includes('keypad') ? 0.2 : 0.45)) return;
+    if (!rng.chance(extra)) return;
     const near = rooms.map((o, j) => [dist2(r, o), j]).filter(([, j]) => j !== i).sort((a, b) => a[0] - b[0]).slice(0, 3);
     const [, j] = rng.pick(near);
     if (!linked.has(i + ',' + j)) { carve(r, rooms[j]); linked.add(i + ',' + j).add(j + ',' + i); }
   });
+  return { ax, ay };
+}
+
+// the morgue is a hospital wing, laid out on a plan: long two-tile halls running east-west, rows of rooms
+// between them, each room off one hall by a single door, and narrow stairwell passages joining the halls
+function wardRooms(c) {
+  const { rng, W, H, grid, roomOf, corridor, rooms, keypad } = c;
+  const set = (x, y, corr, ri = -1) => { if (x < 1 || y < 1 || x >= W - 1 || y >= H - 1) return; const i = y * W + x; grid[i] = 1; if (corr) corridor[i] = 1; if (ri >= 0) roomOf[i] = ri; };
+  const lw = 4, lh = 3, lx = Math.max(3, Math.min(W - lw - 3, (W >> 1) - 2 + rng.int(-4, 4))), ly = H - 2 - lh;
+  rooms.push({ x: lx, y: ly, w: lw, h: lh, type: 'lift' });
+  const ax = lx + rng.int(1, lw - 2), ay = H - 2;
+  const halls = [];
+  for (let y = ly - 2; y >= 2; y -= 9) {
+    const x0 = rng.int(1, 4), x1 = W - 2 - rng.int(0, 3);
+    halls.push({ y, x0: Math.min(x0, lx), x1: Math.max(x1, lx + lw - 1) });
+  }
+  for (const h of halls) for (let y = h.y; y <= h.y + 1; y++) for (let x = h.x0; x <= h.x1; x++) set(x, y, true);
+  // bands of rooms: between each pair of halls, and above the top one
+  const bands = [];
+  for (let k = 0; k < halls.length; k++) {
+    const lower = halls[k], upper = halls[k + 1] || null;
+    if (upper) bands.push({ top: upper.y + 3, h: 5, up: upper, down: lower });
+    else if (lower.y - 2 >= 3) bands.push({ top: Math.max(1, lower.y - 6), h: lower.y - 1 - Math.max(1, lower.y - 6), up: null, down: lower });
+  }
+  for (const b of bands) {
+    if (b.h < 2) continue;
+    // where the stairwells go up through this band (only between two halls)
+    const stairs = [];
+    if (b.up) {
+      const n = keypad ? 1 : 1 + (rng() < 0.6 ? 1 : 0);
+      const lo = Math.max(b.up.x0, b.down.x0) + 2, hi = Math.min(b.up.x1, b.down.x1) - 2;
+      for (let i = 0; i < n; i++) stairs.push(rng.int(lo, hi));
+    }
+    let x = 2;
+    while (x < W - 3) {
+      if (stairs.some((sx) => sx >= x && sx <= x + 1)) {
+        const sx = stairs.find((v) => v >= x && v <= x + 1);
+        for (let y = b.top - 1; y <= b.top + b.h; y++) set(sx, y, true);
+        x = sx + 2;
+        continue;
+      }
+      let w = rng.int(3, 6);
+      const nextStair = stairs.filter((sx) => sx > x).sort((p, q) => p - q)[0];
+      if (nextStair !== undefined && x + w >= nextStair) w = nextStair - x - 1;
+      if (x + w > W - 2) w = W - 2 - x;
+      if (w < 2) { x += Math.max(1, w) + 1; continue; }
+      const ri = rooms.length;
+      const r = { x, y: b.top, w, h: b.h, type: '' };
+      rooms.push(r);
+      for (let y = r.y; y < r.y + r.h; y++) for (let xx = r.x; xx < r.x + r.w; xx++) set(xx, y, false, ri);
+      // its door: onto the hall above or below, wherever there is one alongside
+      const canUp = b.up && x + 1 >= b.up.x0 && x + w - 2 <= b.up.x1, canDown = x + 1 >= b.down.x0 && x + w - 2 <= b.down.x1;
+      const doors = [];
+      if (canUp && canDown) doors.push(rng() < 0.5 ? 'up' : 'down');
+      else if (canUp) doors.push('up');
+      else if (canDown) doors.push('down');
+      if (!keypad && canUp && canDown && rng() < 0.3) doors.push(doors[0] === 'up' ? 'down' : 'up'); // a back way through
+      for (const d of doors) {
+        const dx = rng.int(x, x + w - 1), dy = d === 'up' ? r.y - 1 : r.y + r.h;
+        set(dx, dy, true);
+      }
+      // and sometimes straight through into the next room along
+      if (!keypad && rng() < 0.3 && x + w + 1 < W - 3) set(x + w, rng.int(r.y, r.y + r.h - 1), true);
+      x += w + 1;
+    }
+  }
+  rooms.forEach((r) => { r.cx = r.x + (r.w >> 1); r.cy = r.y + (r.h >> 1); });
+  rooms[0].cx = rooms[0].x + (rooms[0].w >> 1); rooms[0].cy = rooms[0].y + (rooms[0].h >> 1);
+  for (let y = rooms[0].y; y < rooms[0].y + rooms[0].h; y++) for (let x = rooms[0].x; x < rooms[0].x + rooms[0].w; x++) set(x, y, false, 0);
+  // anything a room got cut off from (a door that landed off the end of a short hall): join it to the nearest hall
+  const seen = new Uint8Array(W * H), q = [ay * W + ax];
+  grid[q[0]] = 1;
+  seen[q[0]] = 1;
+  for (let h = 0; h < q.length; h++) { const cc = q[h], cx = cc % W, cy = (cc / W) | 0; for (const [dx, dy] of DIRS) { const n = (cy + dy) * W + cx + dx; if (grid[n] && !seen[n]) { seen[n] = 1; q.push(n); } } }
+  rooms.forEach((r) => {
+    if (seen[r.cy * W + r.cx]) return;
+    // dig straight down (or up) until we hit something connected
+    for (const dir of [1, -1]) {
+      let y = dir > 0 ? r.y + r.h : r.y - 1;
+      const path = [];
+      while (y > 0 && y < H - 1 && !seen[y * W + r.cx]) { path.push(y); y += dir; }
+      if (y > 0 && y < H - 1 && seen[y * W + r.cx]) { for (const py of path) set(r.cx, py, true); return; }
+    }
+  });
+  return { ax, ay };
+}
+
+export function generateLayout(depth, seed, D = difficulty(depth)) {
+  const rng = makeRng(seed);
+  const W = D.size, H = D.size;
+  const grid = new Uint8Array(W * H);
+  const roomOf = new Int16Array(W * H).fill(-1);
+  const corridor = new Uint8Array(W * H);
+  const rooms = [];
+
+  const theme = D.theme || 'plant';
+  const c = { rng, W, H, grid, roomOf, corridor, rooms, keypad: !!(D.puzzles && D.puzzles.includes('keypad')) };
+  const { ax, ay } = theme === 'morgue' ? wardRooms(c)
+    : theme === 'offices' ? standardRooms(c, D.rooms, { size: (i) => (i < 3 ? [rng.int(8, 12), rng.int(6, 9)] : [rng.int(3, 5), rng.int(3, 4)]), wide: true, extra: 0.4 })
+    : theme === 'sewer' ? standardRooms(c, D.rooms, { size: () => { const k = rng.int(3, 5); return [k, k + rng.int(-1, 1)]; }, meander: true, extra: 0.6 })
+    : theme === 'freezer' ? standardRooms(c, Math.max(5, Math.round(D.rooms * 0.6)), { size: () => [rng.int(7, 11), rng.int(6, 9)], wide: true, extra: 0.5 })
+    : standardRooms(c, D.rooms, { size: () => [rng.int(3, 7), rng.int(3, 6)], extra: c.keypad ? 0.2 : 0.45 });
   grid[ay * W + ax] = 1;
 
   // crouchways: low crawl tunnels through the rock, out of dead ends and as a few shortcuts. You fit; he doesn't.
@@ -199,18 +314,31 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
     k++;
   }
 
-  // room jobs
-  // a morgue floor is mostly freezers
-  const morgue = D.theme === 'morgue';
-  const pool = morgue ? ['freezer', 'freezer', 'lockers', 'morgue', 'freezer', 'butcher'] : ['cold', 'butcher', 'lockers', 'morgue', 'pit'];
+  // room jobs: what each room is for depends on what kind of floor it is
   const others = rooms.slice(1);
-  rng.shuffle(others);
-  others.forEach((r, i) => {
-    if (i < pool.length) r.type = pool[i];
-    else if (morgue) r.type = rng.pick(['freezer', 'freezer', 'morgue', 'lockers']);
-    else r.type = r.w * r.h >= 16 ? rng.pick(['cold', 'cold', 'butcher', 'pit']) : rng.pick(['butcher', 'lockers', 'morgue']);
-    if (r.type === 'cold' && r.w * r.h < 12) r.type = 'butcher';
-  });
+  if (theme === 'plant') {
+    const pool = ['cold', 'butcher', 'lockers', 'morgue', 'pit'];
+    rng.shuffle(others);
+    others.forEach((r, i) => {
+      if (i < pool.length) r.type = pool[i];
+      else r.type = r.w * r.h >= 16 ? rng.pick(['cold', 'cold', 'butcher', 'pit']) : rng.pick(['butcher', 'lockers', 'morgue']);
+      if (r.type === 'cold' && r.w * r.h < 12) r.type = 'butcher';
+    });
+  } else {
+    const jobs = {
+      morgue: { first: ['freezer', 'autopsy', 'ward', 'records', 'freezer', 'lockers'], then: ['freezer', 'ward', 'autopsy', 'records', 'lockers', 'freezer'] },
+      offices: { first: ['office', 'meeting', 'breakroom', 'copy', 'lockers'], then: ['office', 'office', 'meeting', 'copy', 'lockers'] },
+      sewer: { first: ['cistern', 'pumproom', 'nest', 'lockers', 'junction'], then: ['junction', 'junction', 'cistern', 'pumproom', 'lockers'] },
+      freezer: { first: ['racks', 'hanging', 'dock', 'blast', 'lockers'], then: ['racks', 'hanging', 'racks', 'blast'] },
+    }[theme];
+    const shuffled = rng.shuffle(others.slice());
+    let k = 0;
+    for (const r of shuffled) {
+      if (theme === 'offices' && r.w * r.h >= 40) { r.type = 'openplan'; continue; }
+      r.type = k < jobs.first.length ? jobs.first[k] : rng.pick(jobs.then);
+      k++;
+    }
+  }
 
   // walking distance from the lift: what's far away is where the tags (and the Foreman) are
   const dist = new Int32Array(W * H).fill(-1);
@@ -225,7 +353,13 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
       q.push(n);
     }
   }
-  return { depth, seed, W, H, grid, roomOf, corridor, crawl, rooms, alcove: { x: ax, y: ay }, dist, block: new Uint8Array(W * H), D };
+  // the drains run with water: every tunnel, and the cisterns
+  const water = new Uint8Array(W * H);
+  if (theme === 'sewer') {
+    for (let i = 0; i < W * H; i++) if (corridor[i] && !crawl[i]) water[i] = 1;
+    rooms.forEach((r, ri) => { if (r.type === 'cistern') for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) water[y * W + x] = 1; });
+  }
+  return { depth, seed, W, H, grid, roomOf, corridor, crawl, water, theme, rooms, alcove: { x: ax, y: ay }, dist, block: new Uint8Array(W * H), D };
 }
 
 // ---------- geometry ----------
@@ -320,9 +454,18 @@ export function buildLevel(L, mats) {
     if (cf.p.length) group.add(P.mesh(cf.build(), mats.floors[3], false));
     if (cc.p.length) group.add(P.mesh(cc.build(), mats.rust[1], false));
   }
-  for (const [k, g] of wallBufs) { const m = P.mesh(g.build(), D.theme === 'morgue' ? mats.morgueWalls[Math.floor(k / 3)] : mats.walls[k], false); group.add(m); }
-  for (const [k, g] of floorBufs) { const m = P.mesh(g.build(), mats.floors[k], false); group.add(m); }
-  group.add(P.mesh(ceil.build(), mats.ceil, false));
+  // every kind of floor has its own surfaces; the meatworks keeps the originals
+  const TM = themeMaterials(mats, L.theme || 'plant');
+  for (const [k, g] of wallBufs) { const m = P.mesh(g.build(), TM ? TM.walls[Math.floor(k / 3)] : mats.walls[k], false); group.add(m); }
+  for (const [k, g] of floorBufs) { const m = P.mesh(g.build(), TM ? TM.floors[k] : mats.floors[k], false); group.add(m); }
+  group.add(P.mesh(ceil.build(), TM ? TM.ceil : mats.ceil, false));
+  // the drains: dark water over every wet tile
+  if (L.water && L.water.some((v) => v)) {
+    const wet = [];
+    for (let i = 0; i < W * H; i++) if (L.water[i]) wet.push([i % W, (i / W) | 0]);
+    out.water = P2.waterSheet(mats, wet, TILE);
+    group.add(out.water);
+  }
 
   const lampAt = (x, z, kind, room) => {
     const r = rng();
@@ -377,12 +520,189 @@ export function buildLevel(L, mats) {
   // keep the way into every crouchway clear
   for (let i = 0; i < W * H; i++) if (crawl[i]) for (const [dx, dy] of DIRS) { const x = (i % W) + dx, y = ((i / W) | 0) + dy; if (grid[y * W + x] && !crawl[y * W + x]) used.add(x + ',' + y); }
 
+  // a free stretch of wall in room r: [x, y, side]. Marks it used.
+  const wallSpot = (r, pred = () => true) => {
+    const opts = [];
+    for (const [x, y] of allTiles(r)) for (const sd of wallSides(x, y)) if (!used.has(x + ',' + y + 'L' + sd) && !used.has(x + ',' + y) && pred(x, y, sd)) opts.push([x, y, sd]);
+    if (!opts.length) return null;
+    const t = rng.pick(opts);
+    used.add(t[0] + ',' + t[1] + 'L' + t[2]);
+    return t;
+  };
+  // put o against that wall, facing into the room; give it a collider depth d (in from the wall) and width w
+  const onWall = (o, [x, y, [dx, dy]], d = 0.5, w = 1, solid = true) => {
+    const ox = tileCenter(x) + dx * TILE / 2, oz = tileCenter(y) + dy * TILE / 2;
+    add(o, ox, oz, Math.atan2(-dx, -dy));
+    if (solid) { const ax = Math.abs(dy) * w / 2 + Math.abs(dx) * 0.001, az = Math.abs(dx) * w / 2 + Math.abs(dy) * 0.001; collider(ox - ax, oz - az, ox - dx * d + ax, oz - dy * d + az); }
+    return o;
+  };
+  const centerOf = (x, y) => [tileCenter(x), tileCenter(y)];
+  const blockTile = (x, y) => { L.block[y * W + x] = 1; used.add(x + ',' + y); };
+  function furnish(r, ri) {
+    const rx = r.x * TILE, rz = r.y * TILE, rw = r.w * TILE, rh = r.h * TILE;
+    const inner = rng.shuffle(interior(r).filter(([x, y]) => !used.has(x + ',' + y)));
+    switch (r.type) {
+      // ---- the hospital wing ----
+      case 'autopsy': {
+        for (const [x, y] of inner.slice(0, r.w * r.h >= 15 ? 2 : 1)) {
+          const [cx, cz] = centerOf(x, y);
+          add(P.autopsyTable(mats, rng), cx, cz, 0);
+          collider(cx - 1, cz - 0.42, cx + 1, cz + 0.42);
+          blockTile(x, y);
+          add(P2.instrumentCart(mats, rng), cx + (rng() - 0.5) * 0.6, cz + 0.85, rng() * 0.6);
+          group.add(P.decal(mats.pool[(rng() * 3) | 0], 2.2, cx, cz + 0.3, rng() * 6));
+        }
+        const sp = wallSpot(r); if (sp) onWall(P2.sink(mats, rng), sp, 0.45, 0.6);
+        const sh = wallSpot(r); if (sh) onWall(P2.specimenShelf(mats, rng), sh, 0.38, 1.45);
+        for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (rng() < 0.3) out.bloodTiles[y * W + x] = 1;
+        return true;
+      }
+      case 'ward': {
+        // beds head-on to the walls, curtains between them, drips and a wheelchair
+        let beds = 0;
+        for (let k = 0; k < 6 && beds < Math.max(2, (r.w * r.h) / 4); k++) {
+          const sp = wallSpot(r, (x, y) => wallSides(x, y).length === 1);
+          if (!sp) break;
+          const [x, y, [dx, dy]] = sp;
+          const b = P2.hospitalBed(mats, rng);
+          const ox = tileCenter(x) + dx * (TILE / 2 - 1.02), oz = tileCenter(y) + dy * (TILE / 2 - 1.02);
+          add(b, ox, oz, Math.atan2(-dx, -dy));
+          collider(ox - (Math.abs(dy) * 0.5 + Math.abs(dx) * 1.0), oz - (Math.abs(dx) * 0.5 + Math.abs(dy) * 1.0), ox + (Math.abs(dy) * 0.5 + Math.abs(dx) * 1.0), oz + (Math.abs(dx) * 0.5 + Math.abs(dy) * 1.0));
+          used.add(x + ',' + y);
+          if (rng() < 0.7) add(P2.ivStand(mats, rng), ox + dy * 0.7, oz - dx * 0.7, rng() * 6);
+          if (rng() < 0.6) add(P2.curtain(mats, rng), ox + dy * 1.0, oz - dx * 1.0, Math.atan2(-dy, dx) + Math.PI / 2);
+          beds++;
+        }
+        if (inner.length && rng() < 0.6) { const [x, y] = inner[0]; add(P2.wheelchair(mats, rng), tileCenter(x) + (rng() - 0.5), tileCenter(y) + (rng() - 0.5), rng() * 6); }
+        return true;
+      }
+      case 'records': {
+        for (let k = 0; k < Math.min(6, r.w + r.h); k++) { const sp = wallSpot(r); if (!sp) break; const g = new THREE.Group(); for (const o of [-0.5, 0, 0.5]) { const fc = P2.filingCabinet(mats, rng); fc.position.set(o, 0, 0.32); g.add(fc); } onWall(g, sp, 0.62, 1.6); }
+        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.desk(mats, rng), cx, cz, rng() * 4); collider(cx - 0.8, cz - 0.8, cx + 0.8, cz + 0.8); blockTile(x, y); }
+        for (let i = 0; i < 12; i++) { const p = P.mesh(new THREE.BoxGeometry(0.21, 0.003, 0.29), P2.p2mats(mats).paper, false); add(p, rx + 0.5 + rng() * (rw - 1), rz + 0.5 + rng() * (rh - 1), rng() * 6).position.y = 0.01; }
+        return true;
+      }
+      // ---- offices ----
+      case 'openplan': {
+        // rows of cubicles: every third column and every other row left clear as a walkway
+        for (let y = r.y + 1; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
+          if ((x - r.x) % 3 === 0 || (y - r.y) % 2 === 0 || used.has(x + ',' + y)) continue;
+          const x0 = x * TILE, z0 = y * TILE;
+          add(P2.partition(mats, TILE), x0 + TILE / 2, z0 + 0.05);
+          collider(x0, z0, x0 + TILE, z0 + 0.1);
+          const side = P2.partition(mats, 1.5);
+          add(side, x0 + 0.05, z0 + 0.75, Math.PI / 2);
+          collider(x0, z0, x0 + 0.1, z0 + 1.5);
+          const d = P2.desk(mats, rng);
+          d.scale.set(0.95, 1, 0.95);
+          add(d, x0 + TILE / 2 + 0.05, z0 + 0.5);
+          collider(x0 + 0.3, z0 + 0.1, x0 + TILE - 0.2, z0 + 0.88);
+          used.add(x + ',' + y);
+        }
+        for (let i = 0; i < 2; i++) { const sp = wallSpot(r); if (sp) onWall(P2.waterCooler(mats), sp, 0.35, 0.4); }
+        for (let i = 0; i < 3; i++) { const sp = wallSpot(r); if (sp) onWall(P2.deadPlant(mats, rng), sp, 0.3, 0.4); }
+        return true;
+      }
+      case 'office': {
+        if (inner.length || allTiles(r).length) {
+          const [x, y] = inner[0] || allTiles(r)[0], [cx, cz] = centerOf(x, y);
+          add(P2.desk(mats, rng), cx, cz, rng.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]));
+          collider(cx - 0.8, cz - 0.8, cx + 0.8, cz + 0.8);
+          used.add(x + ',' + y);
+        }
+        const fc = wallSpot(r); if (fc) onWall(P2.filingCabinet(mats, rng, true), fc, 0.62, 0.5);
+        const wb = wallSpot(r); if (wb) onWall(P2.whiteboard(mats), wb, 0, 1, false);
+        const pl = wallSpot(r); if (pl) onWall(P2.deadPlant(mats, rng), pl, 0.3, 0.4);
+        return true;
+      }
+      case 'meeting': {
+        const len = Math.min(rw - 2.4, 4.5);
+        if (len > 1.5) {
+          const along = rw >= rh, cx = rx + rw / 2, cz = rz + rh / 2;
+          add(P2.meetingTable(mats, rng, len), cx, cz, along ? 0 : Math.PI / 2);
+          if (along) collider(cx - len / 2, cz - 0.55, cx + len / 2, cz + 0.55); else collider(cx - 0.55, cz - len / 2, cx + 0.55, cz + len / 2);
+          for (const [x, y] of interior(r)) used.add(x + ',' + y);
+        }
+        const wb = wallSpot(r); if (wb) onWall(P2.whiteboard(mats), wb, 0, 1, false);
+        return true;
+      }
+      case 'breakroom': {
+        const v = wallSpot(r); if (v) onWall(P2.vending(mats), v, 0.78, 0.9);
+        const f = wallSpot(r); if (f) onWall(P2.fridge(mats), f, 0.7, 0.7);
+        const wc = wallSpot(r); if (wc) onWall(P2.waterCooler(mats), wc, 0.35, 0.4);
+        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.meetingTable(mats, rng, 1.6), cx, cz, 0); collider(cx - 0.8, cz - 0.55, cx + 0.8, cz + 0.55); used.add(x + ',' + y); }
+        return true;
+      }
+      case 'copy': {
+        for (let i = 0; i < 2; i++) { const sp = wallSpot(r); if (sp) onWall(P2.copier(mats), sp, 0.68, 0.95); }
+        for (let i = 0; i < 2; i++) { const sp = wallSpot(r); if (sp) onWall(P2.filingCabinet(mats, rng, true), sp, 0.62, 0.5); }
+        for (let i = 0; i < 16; i++) { const p = P.mesh(new THREE.BoxGeometry(0.21, 0.003, 0.29), P2.p2mats(mats).paper, false); add(p, rx + 0.4 + rng() * (rw - 0.8), rz + 0.4 + rng() * (rh - 0.8), rng() * 6).position.y = 0.01; }
+        return true;
+      }
+      // ---- the drains ----
+      case 'cistern': case 'junction': case 'pumproom': case 'nest': {
+        for (let i = 0; i < 2; i++) { const sp = wallSpot(r); if (sp) onWall(P2.pipeRun(mats, TILE, rng), sp, 0, 1, false); }
+        if (r.type !== 'nest') { const sp = wallSpot(r); if (sp) onWall(P2.outflow(mats, rng), sp, 0.6, 0.8); }
+        if (r.type === 'junction') { const sp = wallSpot(r); if (sp) onWall(P2.ladder(mats), sp, 0.15, 0.5, false); }
+        if (r.type === 'pumproom' && inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.pump(mats, rng), cx - 0.4, cz, 0); collider(cx - 1.0, cz - 0.6, cx + 1.1, cz + 0.6); blockTile(x, y); }
+        if (r.type === 'nest') {
+          const [cx, cz] = [rx + rw / 2, rz + rh / 2];
+          add(P2.nest(mats, rng), cx, cz, rng() * 6);
+          for (let i = 0; i < 4; i++) group.add(P.decal(mats.splat[(rng() * 4) | 0], 1.6, cx + (rng() - 0.5) * rw * 0.6, cz + (rng() - 0.5) * rh * 0.6, rng() * 6));
+          for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) out.bloodTiles[y * W + x] = 1;
+        }
+        return true;
+      }
+      // ---- the deep freeze ----
+      case 'racks': {
+        // long rows of racking with a gap every few bays to cut through
+        for (let y = r.y + 1; y < r.y + r.h - 1; y += 2) {
+          for (let x = r.x + 1; x < r.x + r.w - 1; x += 3) {
+            const n = Math.min(2, r.x + r.w - 1 - x);
+            if (n < 1) continue;
+            const len = n * TILE - 0.3, cx = x * TILE + (n * TILE) / 2, cz = tileCenter(y);
+            add(P2.palletRack(mats, rng, len), cx, cz);
+            collider(cx - len / 2 - 0.05, cz - 0.55, cx + len / 2 + 0.05, cz + 0.55);
+            for (let k = 0; k < n; k++) blockTile(x + k, y);
+          }
+        }
+        return true;
+      }
+      case 'dock': {
+        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); const yaw = rng() * 6; add(P2.forklift(mats, rng), cx, cz, yaw); collider(cx - 0.9, cz - 0.9, cx + 0.9, cz + 0.9); blockTile(x, y); }
+        for (const [x, y] of inner.slice(1, 4)) { const [cx, cz] = centerOf(x, y); add(P2.crateStack(mats, rng), cx + (rng() - 0.5) * 0.4, cz + (rng() - 0.5) * 0.4, rng() * 0.3); collider(cx - 0.65, cz - 0.6, cx + 0.65, cz + 0.6); blockTile(x, y); }
+        const cu = wallSpot(r); if (cu) onWall(P2.coolerUnit(mats, rng), cu, 0, 1, false);
+        return true;
+      }
+      case 'blast': {
+        for (let i = 0; i < 2; i++) { const cu = wallSpot(r); if (cu) onWall(P2.coolerUnit(mats, rng), cu, 0, 1, false); }
+        // people, left standing in here until they froze
+        for (const [x, y] of inner.slice(0, 2)) {
+          const [cx, cz] = centerOf(x, y);
+          const b = P.makeBody(mats, rng, { naked: rng() < 0.5 });
+          b.arms.forEach((a, i) => { a.rotation.z = (i ? 1 : -1) * 0.2; a.rotation.x = -0.3; });
+          b.root.position.set(cx, 0.95, cz);
+          b.root.rotation.y = rng() * 6;
+          b.jaw.rotation.x = 0.4;
+          group.add(b.root);
+          const frost = P.mesh(new THREE.CylinderGeometry(0.32, 0.36, 1.9, 8), P2.p2mats(mats).ice, false);
+          add(frost, cx, cz).position.y = 0.95;
+          collider(cx - 0.35, cz - 0.35, cx + 0.35, cz + 0.35);
+          used.add(x + ',' + y);
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
   // rooms
   L.rooms.forEach((r, ri) => {
     const rx = r.x * TILE, rz = r.y * TILE, rw = r.w * TILE, rh = r.h * TILE;
-    if (r.type !== 'lift') lampAt(rx + rw / 2, rz + rh / 2, r.w * r.h >= 12 ? 'tube' : 'bulb', ri);
+    const themeLamp = { morgue: 'tube', offices: 'tube', freezer: 'tube', sewer: 'bulb' }[L.theme];
+    if (r.type !== 'lift') lampAt(rx + rw / 2, rz + rh / 2, themeLamp || (r.w * r.h >= 12 ? 'tube' : 'bulb'), ri);
     else lampAt(rx + rw / 2, rz + rh / 2 - 1, 'tube', ri);
-    if (r.type === 'cold') {
+    if (furnish(r, ri)) { /* the other kinds of floor: see furnish() */ } else if (r.type === 'cold' || r.type === 'hanging') {
       // rails of meat on the tile corners, so there is always a way between them (if you can stand to)
       for (let y = r.y + 1; y < r.y + r.h; y += 2) {
         const z = y * TILE;
@@ -456,8 +776,9 @@ export function buildLevel(L, mats) {
       add(P.entrails(mats, rng, new THREE.Vector3(0, 0.05, 0), 1.5, 14), cx + 0.4, cz - 0.3);
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) out.bloodTiles[y * W + x] = 1;
     }
-    // lockers
-    if (r.type === 'lockers' || (r.type !== 'lift' && rng() < 0.4)) {
+    // lockers (the floors with lots of small rooms would otherwise be wall to wall with them)
+    const lockerCap = L.theme && L.theme !== 'plant' ? 20 : Infinity;
+    if (out.lockers.length < lockerCap && (r.type === 'lockers' || (r.type !== 'lift' && rng() < (L.theme === 'morgue' ? 0.12 : 0.4)))) {
       const sides = [];
       for (const [x, y] of allTiles(r)) for (const s of wallSides(x, y)) sides.push([x, y, s]);
       rng.shuffle(sides);
@@ -602,6 +923,17 @@ export function buildLevel(L, mats) {
   };
   for (let i = 0; i < D.batteries; i++) pickup('battery');
   for (let i = 0; i < D.adrenaline; i++) pickup('adrenaline');
+  // loot that depends on the run (gun parts, bolts, keepsakes): main.js asks for it once the floor is up
+  out.addPickup = (type, meta = {}) => {
+    const t = out.takeTile(([x, y]) => !L.crawl[y * W + x]);
+    if (!t) return null;
+    const g = P2.lootMesh(mats, type, meta, rng);
+    const x = tileCenter(t[0]) + (rng() - 0.5) * 1.2, z = tileCenter(t[1]) + (rng() - 0.5) * 1.2;
+    add(g, x, z, rng() * 6).position.y = 0.04;
+    const p = { type, ...meta, obj: g, pos: new THREE.Vector3(x, 0.1, z), taken: false };
+    out.pickups.push(p);
+    return p;
+  };
 
   // the lift
   const { x: ax, y: ay } = L.alcove;

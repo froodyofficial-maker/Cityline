@@ -309,6 +309,29 @@ export class AudioEngine {
     this.burst(this.sfx, { type: 'highpass', f: 900, dur: 0.04, vol: 0.6, at: 0.03 });
     this.tone(this.sfx, { f: 160, f2: 50, dur: 0.12, vol: 0.6 });
   }
+  // a foot coming down in standing water
+  splash(v = 0.7) {
+    this.burst(this.sfx, { type: 'bandpass', f: 900 + Math.random() * 600, q: 0.8, dur: 0.18, vol: 0.18 * v, sweep: [1400, 500] });
+    this.burst(this.sfx, { type: 'highpass', f: 2500, dur: 0.08, vol: 0.1 * v, at: 0.04 });
+    this.tone(this.sfx, { f: 180, f2: 90, dur: 0.1, vol: 0.06 * v });
+  }
+  // the captive bolt: a crack of powder, the bolt slamming out on its spring and back
+  boltShot() {
+    const t = this.t;
+    this.burst(this.shockClip, { type: 'lowpass', f: 2400, dur: 0.12, vol: 1.2, a: 0.001 });
+    this.burst(this.sfx, { type: 'highpass', f: 1800, dur: 0.05, vol: 0.9, a: 0.001 });
+    this.tone(this.shockClip, { f: 140, f2: 45, dur: 0.22, vol: 0.9 });
+    this.tone(this.sfx, { type: 'square', f: 900, f2: 300, dur: 0.06, vol: 0.2, at: 0.05 }); // the bolt going back in
+    this.burst(this.sfx, { type: 'bandpass', f: 4200, q: 12, dur: 0.4, vol: 0.15, at: 0.02 }); // the barrel ringing
+    void t;
+  }
+  // and what it sounds like when it goes in
+  boltHit(pos) {
+    const p = this.pan(pos, 3, 0.8);
+    this.burst(p, { type: 'lowpass', f: 900, dur: 0.12, vol: 0.9 });
+    this.tone(p, { f: 70, f2: 35, dur: 0.3, vol: 0.8 });
+    this.growl(pos, 1.2);
+  }
   tear() {
     this.burst(this.sfx, { type: 'bandpass', f: 300, q: 3, dur: 0.5, vol: 0.6, sweep: [250, 3200] });
     this.burst(this.sfx, { type: 'lowpass', f: 500, dur: 0.6, vol: 0.5, brown: true });

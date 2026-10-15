@@ -4,12 +4,16 @@
 //   scale    - the counterweight is jammed: hang exactly the right weight of meat on the freight scale
 //   valves   - steam has locked the brake: find the release order, turn the hissing valves in it
 //   breakers - the finale: pull three kill switches to stop the line, then run for the lift
+//   sluices  - the drains: the lift sump is flooded; open three sluice gates to drain it (and the floor)
+//   keycard  - administration: the lift is locked to management; search the managers' desks for a keycard
+//   meatkey  - the deep freeze: the cage key was hung up with the meat; search the wrapped carcasses for it
 // Every puzzle gives main.js its interactions, the Q-listen arrow its targets, and the HUD its lines.
 import * as THREE from 'three';
 import { TILE, WALL_H } from './config.js';
 import { tileCenter } from './level.js';
 import { makeRng } from './rng.js';
 import * as P from './props.js';
+import * as P2 from './props2.js';
 import { canvas, BLOOD, drip, wallSplat, handprint } from './textures.js';
 import * as UI from './ui.js';
 
@@ -755,7 +759,186 @@ class Drawers {
   }
 }
 
-const KINDS = { fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers, drawers: Drawers };
+// ---------- the drains: three sluice gates ----------
+class Sluices {
+  constructor(ctx) {
+    const { G, B, mats, add } = ctx;
+    this.kind = 'sluices';
+    this.gates = true;
+    this.ctx = ctx;
+    this.wheels = [];
+    const usedRooms = new Set();
+    for (let i = 0; i < 3; i++) {
+      const spot = B.takeWall(([x, y, , ri]) => !B.inWing(x, y) && !usedRooms.has(ri) && G.L.dist[y * G.L.W + x] > ctx.maxDist * 0.25) || B.takeWall(([x, y]) => !B.inWing(x, y));
+      if (!spot) continue;
+      usedRooms.add(spot[3]);
+      const w = onWall(spot[0], spot[1], spot[2], 1.2, 0.15);
+      const g = new THREE.Group();
+      const gate = P.mesh(new THREE.BoxGeometry(1.1, 1.4, 0.12), mats.rust[0]);
+      gate.position.set(0, -0.5, -0.1);
+      const wheel = new THREE.Group();
+      const rim = P.mesh(new THREE.TorusGeometry(0.28, 0.035, 6, 18), mats.rust[2]);
+      wheel.add(rim);
+      for (let k = 0; k < 3; k++) { const sp = P.mesh(new THREE.BoxGeometry(0.56, 0.035, 0.035), mats.rust[2], false); sp.rotation.z = (k * Math.PI) / 3; wheel.add(sp); }
+      wheel.position.z = 0.1;
+      g.add(gate, wheel);
+      const lbl = plane(0.4, 0.14, new THREE.MeshBasicMaterial({ map: plainTex(128, 44, (gg) => { gg.fillStyle = '#c8b030'; gg.fillRect(0, 0, 128, 44); gg.fillStyle = '#111'; gg.font = 'bold 22px "Courier New", monospace'; gg.textAlign = 'center'; gg.fillText('SLUICE ' + (i + 1), 64, 30); }).tex }));
+      lbl.position.set(0, 0.48, 0.02);
+      g.add(lbl);
+      g.position.copy(w.pos);
+      g.rotation.y = w.yaw;
+      add(g);
+      this.wheels.push({ obj: wheel, pos: w.pos.clone(), open: false });
+    }
+    this.level = 1;
+  }
+  get opened() { return this.wheels.filter((w) => w.open).length; }
+  get solved() { return this.opened >= this.wheels.length; }
+  update(dt) {
+    // the water goes down as the gates open
+    const want = 1 - this.opened / Math.max(1, this.wheels.length);
+    this.level += (want - this.level) * Math.min(1, dt * 0.4);
+    const B = this.ctx.B;
+    this.ctx.G.waterLevel = this.level;
+    if (B.water) { B.water.position.y = 0.02 + 0.1 * this.level; B.water.material.opacity = 0.25 + 0.63 * this.level; B.water.visible = this.level > 0.03; }
+    for (const w of this.wheels) if (w.turning > 0) { w.turning -= dt; w.obj.rotation.z -= dt * 4; }
+  }
+  interactables() {
+    return this.wheels.filter((w) => !w.open).map((w) => ({ pos: w.pos, range: 1.7, minFacing: 0.4, hold: 3, label: 'HOLD — WRENCH THE SLUICE OPEN', tick: 'clank', noise: 11,
+      use: () => {
+        w.open = true;
+        w.turning = 1.2;
+        const G = this.ctx.G;
+        G.audio.gateSlide(w.pos);
+        G.noise(w.pos, 16, true);
+        if (this.solved) UI.message('The last gate grinds open. Somewhere under the lift, the sump drains with a long, sucking roar.', 4.5);
+        else UI.message(`The gate lifts and black water starts to move. ${this.wheels.length - this.opened} more.`, 3);
+      } }));
+  }
+  goals() { return this.solved ? [] : this.wheels.filter((w) => !w.open).map((w) => w.pos); }
+  line() { return this.solved ? null : `SLUICES ${this.opened}/${this.wheels.length}`; }
+  title() { return `DRAIN THE SUMP — SLUICES <b>${this.opened}/${this.wheels.length}</b>`; }
+  liftMsg() { return 'THE LIFT SUMP IS FLOODED — OPEN THE SLUICES'; }
+  save() { return { open: this.wheels.map((w) => w.open) }; }
+  load(s) { s.open.forEach((v, i) => { if (this.wheels[i]) this.wheels[i].open = v; }); this.level = 1 - this.opened / Math.max(1, this.wheels.length); }
+}
+
+// ---------- administration: a manager's keycard, in one of the managers' desks ----------
+const DESK_JUNK = [
+  'A drawer full of signed overtime slips. Nobody was ever paid for them.',
+  'A bottle, nearly empty, and a framed photo turned face down.',
+  'Staff files. Every one is stamped REASSIGNED in red.',
+  'A box of brass tags, blank, waiting to be stamped with names.',
+  'A memo: HEADCOUNT MUST BE MAINTAINED. It is signed by the Foreman.',
+  'Nothing but a cheap pen and a lot of dried blood in the corners.',
+];
+class Keycard {
+  constructor(ctx) {
+    const { G, B, mats, rng, add } = ctx;
+    this.kind = 'keycard';
+    this.gates = true;
+    this.ctx = ctx;
+    this.desks = [];
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+      const t = B.takeTile(([x, y, ri]) => G.L.rooms[ri].type === 'office' && !B.inWing(x, y)) || B.takeTile(([x, y]) => !B.inWing(x, y));
+      if (!t) break;
+      const x = tileCenter(t[0]), z = tileCenter(t[1]);
+      const d = P2.desk(mats, rng);
+      const yaw = rng.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]);
+      add(d, x, z, yaw);
+      B.colliders.push({ x0: x - 0.8, z0: z - 0.8, x1: x + 0.8, z1: z + 0.8, hunters: true });
+      // a brass nameplate: MANAGER
+      const plate = plane(0.3, 0.07, new THREE.MeshBasicMaterial({ map: plainTex(128, 30, (g) => { g.fillStyle = '#9a7a30'; g.fillRect(0, 0, 128, 30); g.fillStyle = '#201408'; g.font = 'bold 18px "Courier New", monospace'; g.textAlign = 'center'; g.fillText('MANAGER', 64, 22); }).tex }));
+      plate.position.set(0, 0.8, 0.36);
+      plate.rotation.x = -0.4;
+      d.add(plate);
+      this.desks.push({ obj: d, pos: new THREE.Vector3(x, 0.8, z), searched: false, has: false, junk: DESK_JUNK[i % DESK_JUNK.length] });
+    }
+    rng.pick(this.desks).has = true;
+    this.found = false;
+  }
+  get solved() { return this.found; }
+  interactables() {
+    if (this.found) return [];
+    return this.desks.filter((d) => !d.searched).map((d) => ({ pos: d.pos, range: 1.6, minFacing: 0.35, hold: 2, label: 'HOLD — GO THROUGH THE DRAWERS', tick: 'clank', noise: 7,
+      use: () => {
+        d.searched = true;
+        this.ctx.G.audio.clank(d.pos, 0.5);
+        if (d.has) { this.found = true; this.ctx.G.audio.pickup(); UI.message('Under a stack of disciplinary letters: a keycard. MANAGEMENT — ALL FLOORS. The photo on it has been scratched out.', 5); }
+        else UI.message(d.junk, 3.5);
+      } }));
+  }
+  goals() { return this.found ? [] : this.desks.filter((d) => !d.searched).map((d) => d.pos); }
+  line() { return this.found ? 'KEYCARD ✓' : `DESKS ${this.desks.filter((d) => d.searched).length}/${this.desks.length}`; }
+  title() { return this.found ? 'KEYCARD FOUND — THE LIFT WILL TAKE IT' : 'FIND THE MANAGER’S KEYCARD — SEARCH THE DESKS'; }
+  liftMsg() { return 'LOCKED — MANAGEMENT KEYCARD REQUIRED'; }
+  save() { return { found: this.found, searched: this.desks.map((d) => d.searched), has: this.desks.findIndex((d) => d.has) }; }
+  load(s) { this.found = s.found; s.searched.forEach((v, i) => { if (this.desks[i]) this.desks[i].searched = v; }); this.desks.forEach((d, i) => (d.has = i === s.has)); }
+}
+
+// ---------- the deep freeze: the cage key, hung up with the meat ----------
+class MeatKey {
+  constructor(ctx) {
+    const { G, B, mats, rng, add } = ctx;
+    this.kind = 'meatkey';
+    this.gates = true;
+    this.ctx = ctx;
+    this.sides = [];
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const t = B.takeTile(([x, y, ri]) => ['racks', 'hanging', 'blast', 'dock'].includes(G.L.rooms[ri].type) && !B.inWing(x, y)) || B.takeTile(([x, y]) => !B.inWing(x, y));
+      if (!t) break;
+      const x = tileCenter(t[0]) + (rng() - 0.5) * 0.5, z = tileCenter(t[1]) + (rng() - 0.5) * 0.5;
+      const c = P.makeCarcass(mats, rng, rng() < 0.6);
+      c.position.set(x, WALL_H, z);
+      add(c);
+      // wrapped in plastic, with a paper tag
+      const wrap = P.mesh(new THREE.CapsuleGeometry(0.3, 0.9, 3, 8), P2.p2mats(mats).wrap, false);
+      wrap.position.set(x, WALL_H - 1.55, z);
+      add(wrap);
+      const tag = plane(0.12, 0.16, new THREE.MeshBasicMaterial({ map: plainTex(48, 64, (g) => { g.fillStyle = '#d8d0b0'; g.fillRect(0, 0, 48, 64); g.fillStyle = '#300'; g.font = 'bold 14px monospace'; g.fillText('#' + (100 + ((rng() * 900) | 0)), 4, 30); }).tex, side: THREE.DoubleSide }));
+      tag.position.set(x + 0.32, 1.3, z);
+      add(tag);
+      B.swingers.push(c);
+      B.colliders.push({ x0: x - 0.32, z0: z - 0.32, x1: x + 0.32, z1: z + 0.32, hunters: false });
+      this.sides.push({ obj: c, wrap, pos: new THREE.Vector3(x, 1.1, z), searched: false, has: false, alive: false });
+    }
+    const order = rng.shuffle(this.sides.slice());
+    if (order[0]) order[0].has = true;
+    if (order[1]) order[1].alive = true; // one of them is not what it looks like
+    this.found = false;
+  }
+  get solved() { return this.found; }
+  interactables() {
+    if (this.found) return [];
+    return this.sides.filter((c) => !c.searched).map((c) => ({ pos: c.pos, range: 1.5, minFacing: 0.35, hold: 2.5, label: 'HOLD — CUT OPEN THE WRAPPING', tick: 'squelch', noise: 6,
+      use: () => {
+        c.searched = true;
+        c.wrap.visible = false;
+        const G = this.ctx.G;
+        G.audio.tear();
+        if (c.has) { this.found = true; G.audio.pickup(); UI.message('Frozen into the cavity, wrapped round a rib: a heavy key on a wire. CAGE — LIFT 2.', 4.5); }
+        else if (c.alive) {
+          // it was never meat
+          G.audio.shriek(c.pos);
+          G.scare = Math.max(G.scare, 1);
+          G.flash = 0.6;
+          c.obj.userData.swing.v += 1.2;
+          G.noise(c.pos, 22, true);
+          UI.message('It moves. Under the plastic it is a man, frozen blue, and his eyes are open. He screams until he doesn’t.', 4.5);
+        } else UI.message(['Frozen meat. Just meat. You think.', 'Ribs, fat, ice. No key.', 'Somebody wrote a name on the inside of the plastic.'][(Math.random() * 3) | 0], 3);
+      } }));
+  }
+  goals() { return this.found ? [] : this.sides.filter((c) => !c.searched).map((c) => c.pos); }
+  line() { return this.found ? 'CAGE KEY ✓' : `CARCASSES ${this.sides.filter((c) => c.searched).length}/${this.sides.length}`; }
+  title() { return this.found ? 'CAGE KEY FOUND — THE LIFT WILL OPEN' : 'FIND THE CAGE KEY — IT WAS HUNG UP WITH THE MEAT'; }
+  liftMsg() { return 'THE LIFT CAGE IS PADLOCKED — FIND THE KEY'; }
+  save() { return { found: this.found, searched: this.sides.map((c) => c.searched), has: this.sides.findIndex((c) => c.has) }; }
+  load(s) { this.found = s.found; s.searched.forEach((v, i) => { const c = this.sides[i]; if (c && v) { c.searched = true; c.wrap.visible = false; } }); this.sides.forEach((c, i) => (c.has = i === s.has)); }
+}
+
+const KINDS = { fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers, drawers: Drawers, sluices: Sluices, keycard: Keycard, meatkey: MeatKey };
 
 export class Puzzles {
   constructor(G, kinds, seed) {

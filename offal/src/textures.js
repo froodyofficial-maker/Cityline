@@ -374,6 +374,254 @@ function ceilingCanvas() {
   return c;
 }
 
+// ---------- the other kinds of floor ----------
+// blood on a wall, at a gore level 0..3 (shared by every theme's walls)
+function wallBlood(g, W, H, gore, rng, scale = 1) {
+  const n = [0, 2, 4, 7][gore];
+  for (let i = 0; i < n; i++) {
+    const kind = rng(), col = rng() < 0.4 ? BLOOD.dried : rng() < 0.5 ? BLOOD.dark : BLOOD.fresh;
+    if (kind < 0.35) wallSplat(g, rng() * W, 60 + rng() * 220, (14 + rng() * 30) * scale, rng, col);
+    else if (kind < 0.55) arterial(g, rng() * W * 0.5, 40 + rng() * 140, 120 + rng() * 120, rng() * 0.8 - 0.2, rng, col);
+    else if (kind < 0.8) handprint(g, rng() * W, 160 + rng() * 170, 18 + rng() * 6, (rng() - 0.5) * 0.8, rng, col, rng() < 0.6 ? 40 + rng() * 80 : 0);
+    else smear(g, rng() * W, 250 + rng() * 40, 40 + rng() * 30, 90 + rng() * 40, (rng() - 0.5) * 0.4, rng, col);
+  }
+  if (gore >= 2) for (let i = 0; i < 6 * gore; i++) drip(g, rng() * W, 0, 20 + rng() * 120, 1.5 + rng() * 3, BLOOD.dark, 0.7);
+}
+// a drop ceiling: square panels in a metal grid, water stains, a panel or two missing
+function dropCeiling(seed, base, grid) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(seed);
+  g.fillStyle = grid;
+  g.fillRect(0, 0, S, S);
+  const n = 4, ps = S / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (rng() < 0.06) { g.fillStyle = '#060504'; g.fillRect(x * ps + 2, y * ps + 2, ps - 4, ps - 4); continue; } // a hole into the dark
+    const v = rng() * 14 - 7;
+    g.fillStyle = `rgb(${base[0] + v | 0},${base[1] + v | 0},${base[2] + v | 0})`;
+    g.fillRect(x * ps + 2, y * ps + 2, ps - 4, ps - 4);
+    for (let k = 0; k < 40; k++) { g.fillStyle = `rgba(0,0,0,${rng() * 0.12})`; g.fillRect(x * ps + 2 + rng() * (ps - 6), y * ps + 2 + rng() * (ps - 6), 1.5, 1.5); } // the pinholes
+    if (rng() < 0.3) { const gr = g.createRadialGradient(x * ps + ps / 2, y * ps + ps / 2, 2, x * ps + ps / 2, y * ps + ps / 2, ps * 0.6); gr.addColorStop(0, 'rgba(110,80,30,.55)'); gr.addColorStop(0.7, 'rgba(110,80,30,.25)'); gr.addColorStop(1, 'rgba(110,80,30,0)'); g.fillStyle = gr; g.fillRect(x * ps, y * ps, ps, ps); }
+  }
+  speckle(g, S, S, 14, rng);
+  return c;
+}
+
+// hospital: small white tiles above a band of green paint, a steel kick plate, and decades of mould
+function wardWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(901 + gore * 31);
+  g.fillStyle = '#6c706a';
+  g.fillRect(0, 0, W, H);
+  const band = 210, tw = 16, th = 8;
+  for (let y = 0, row = 0; y < band; y += th, row++)
+    for (let x = row % 2 ? -tw / 2 : 0; x < W; x += tw) {
+      const v = rng() * 16 - 8, yel = rng() * 10;
+      g.fillStyle = `rgb(${214 + v | 0},${212 + v - yel * 0.3 | 0},${198 + v - yel | 0})`;
+      g.fillRect(x + 1, y + 1, tw - 2, th - 2);
+      g.fillStyle = 'rgba(255,255,255,.22)';
+      g.fillRect(x + 2, y + 1.5, tw - 6, 1);
+    }
+  // the stripe and the painted lower wall
+  g.fillStyle = '#1f4a46'; g.fillRect(0, band, W, 10);
+  const gr = g.createLinearGradient(0, band + 10, 0, H);
+  gr.addColorStop(0, '#7f9c8a'); gr.addColorStop(1, '#5d7566');
+  g.fillStyle = gr; g.fillRect(0, band + 10, W, H - band - 10);
+  blotches(g, W, H, 50, 2, 8, '230,240,225', 0.15, rng); // paint gone chalky
+  // the stainless kick plate
+  g.fillStyle = '#8c9294'; g.fillRect(0, H - 34, W, 34);
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(255,255,255,${rng() * 0.08})`; g.fillRect(0, H - 34 + rng() * 34, W, 1); }
+  g.fillStyle = '#2c3030'; g.fillRect(0, H - 35, W, 2);
+  // mould, damp, rust from the fixings
+  blotches(g, W, H, 34, 4, 26, '40,50,30', 0.18, rng);
+  streaks(g, W, H, 16, '120,90,40', 0.35, rng, true);
+  wallBlood(g, W, H, gore, rng);
+  speckle(g, W, H, 14, rng);
+  return c;
+}
+// hospital floor: a cream and grey-green chequerboard of lino tiles, worn through in the walkways
+function wardFloorCanvas(kind) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(931 + kind * 7);
+  const n = 8, ts = S / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = rng() * 10 - 5, dark = (x + y) % 2;
+    g.fillStyle = dark ? `rgb(${104 + v | 0},${116 + v | 0},${104 + v | 0})` : `rgb(${196 + v | 0},${190 + v | 0},${170 + v | 0})`;
+    g.fillRect(x * ts, y * ts, ts, ts);
+    for (let k = 0; k < 20; k++) { g.fillStyle = `rgba(${dark ? '60,70,60' : '120,110,90'},${rng() * 0.5})`; g.fillRect(x * ts + rng() * ts, y * ts + rng() * ts, 1.5, 1.5); } // the fleck in it
+  }
+  g.strokeStyle = 'rgba(30,30,25,.35)';
+  for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * ts, 0); g.lineTo(i * ts, S); g.moveTo(0, i * ts); g.lineTo(S, i * ts); g.stroke(); }
+  blotches(g, S, S, 90, 6, 34, '40,36,26', 0.12, rng); // grime
+  if (kind === 2) { // a floor drain: everything ran down here
+    const gr = g.createRadialGradient(S / 2, S / 2, 6, S / 2, S / 2, 80); gr.addColorStop(0, 'rgba(50,0,0,.9)'); gr.addColorStop(1, 'rgba(50,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, S, S);
+    g.fillStyle = '#111'; g.beginPath(); g.arc(S / 2, S / 2, 18, 0, TAU); g.fill();
+    g.strokeStyle = '#777'; g.lineWidth = 2; for (let i = -12; i <= 12; i += 6) { g.beginPath(); g.moveTo(S / 2 + i, S / 2 - 15); g.lineTo(S / 2 + i, S / 2 + 15); g.stroke(); }
+  }
+  if (kind === 1) { splat(g, S / 2, S / 2, 40, rng, BLOOD.dark, 0.85); smear(g, S * 0.3, S * 0.8, 40, 120, -0.6, rng, BLOOD.dried); }
+  if (kind === 3) for (let i = 0; i < 6; i++) { g.strokeStyle = 'rgba(20,20,20,.35)'; g.lineWidth = 3; g.beginPath(); g.moveTo(S * 0.42 + i * 2, 0); g.lineTo(S * 0.44 + i * 2, S); g.stroke(); } // gurney wheel tracks
+  speckle(g, S, S, 12, rng);
+  return c;
+}
+
+// offices: faded wallpaper above a dado rail, wood panelling below, nicotine and water damage
+function officeWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(611 + gore * 13);
+  g.fillStyle = '#9e9472';
+  g.fillRect(0, 0, W, H);
+  const dado = 250;
+  for (let x = 0; x < W; x += 32) { g.fillStyle = 'rgba(80,70,40,.18)'; g.fillRect(x, 0, 12, dado); g.fillStyle = 'rgba(255,250,220,.08)'; g.fillRect(x + 14, 0, 4, dado); } // the stripe
+  for (let y = 16; y < dado; y += 48) for (let x = 16; x < W; x += 32) { g.fillStyle = 'rgba(90,70,40,.2)'; g.beginPath(); g.moveTo(x, y - 7); g.lineTo(x + 5, y); g.lineTo(x, y + 7); g.lineTo(x - 5, y); g.fill(); } // a little diamond motif
+  const ny = g.createLinearGradient(0, 0, 0, dado); ny.addColorStop(0, 'rgba(110,80,30,.35)'); ny.addColorStop(1, 'rgba(110,80,30,0)');
+  g.fillStyle = ny; g.fillRect(0, 0, W, dado); // nicotine from the ceiling down
+  // the paper peeling in places
+  for (let i = 0; i < 3; i++) { const x = rng() * W, y = rng() * dado * 0.8, w = 20 + rng() * 30, h = 30 + rng() * 60; g.fillStyle = '#5e5a4c'; g.fillRect(x, y, w, h); g.fillStyle = 'rgba(200,190,150,.6)'; g.fillRect(x + w - 4, y, 4, h); }
+  // dado rail and panelling
+  g.fillStyle = '#3a2614'; g.fillRect(0, dado, W, 10);
+  g.fillStyle = '#5a3c22'; g.fillRect(0, dado + 10, W, H - dado - 10);
+  for (let x = 0; x < W; x += 64) { g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, dado + 10, 3, H); g.strokeStyle = 'rgba(0,0,0,.25)'; g.strokeRect(x + 10, dado + 24, 44, H - dado - 50); }
+  for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(30,18,8,${rng() * 0.3})`; g.fillRect(rng() * W, dado + 10 + rng() * (H - dado), 30 + rng() * 40, 1); } // grain
+  g.fillStyle = '#20150b'; g.fillRect(0, H - 14, W, 14); // skirting
+  streaks(g, W, H, 10, '90,70,40', 0.4, rng, true);
+  blotches(g, W, H, 30, 6, 30, '40,40,30', 0.12, rng);
+  wallBlood(g, W, H, gore, rng);
+  speckle(g, W, H, 16, rng);
+  return c;
+}
+// carpet tiles: blue-grey, each laid at right angles to the next, trodden into paths
+function officeFloorCanvas(kind) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(641 + kind * 3);
+  const n = 4, ts = S / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = rng() * 8 - 4;
+    g.fillStyle = `rgb(${62 + v | 0},${68 + v | 0},${78 + v | 0})`;
+    g.fillRect(x * ts, y * ts, ts, ts);
+    const across = (x + y) % 2;
+    for (let k = 0; k < 120; k++) { g.fillStyle = `rgba(${rng() < 0.5 ? '20,24,30' : '110,118,130'},${rng() * 0.35})`; if (across) g.fillRect(x * ts + rng() * ts, y * ts + rng() * ts, 4, 1); else g.fillRect(x * ts + rng() * ts, y * ts + rng() * ts, 1, 4); }
+  }
+  g.strokeStyle = 'rgba(0,0,0,.4)';
+  for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * ts, 0); g.lineTo(i * ts, S); g.moveTo(0, i * ts); g.lineTo(S, i * ts); g.stroke(); }
+  blotches(g, S, S, 30, 8, 30, '40,30,20', 0.18, rng); // coffee, and worse
+  if (kind === 1) { bloodPool(g, S / 2, S / 2, 46, rng); }
+  if (kind === 2) { splat(g, S / 2, S / 2, 40, rng, BLOOD.dried, 0.8); }
+  if (kind === 3) for (let i = 0; i < 20; i++) { g.fillStyle = `rgba(${BLOOD.dried},${0.2 + rng() * 0.3})`; g.beginPath(); g.ellipse(S / 2 + (rng() - 0.5) * 30, i * 13, 22, 7, 0, 0, TAU); g.fill(); }
+  speckle(g, S, S, 20, rng);
+  return c;
+}
+
+// the drains: Victorian brick, black slime up to the high-water line, salt bleeding out of the joints
+function sewerWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(711 + gore * 11);
+  g.fillStyle = '#2a1e18';
+  g.fillRect(0, 0, W, H);
+  const bw = 32, bh = 12;
+  for (let y = 0, row = 0; y < H; y += bh, row++)
+    for (let x = row % 2 ? -bw / 2 : 0; x < W; x += bw) {
+      const v = rng() * 30 - 15;
+      g.fillStyle = `rgb(${128 + v | 0},${72 + v * 0.6 | 0},${54 + v * 0.4 | 0})`;
+      g.fillRect(x + 1.5, y + 1.5, bw - 3, bh - 3);
+      if (rng() < 0.3) { g.fillStyle = `rgba(0,0,0,${rng() * 0.3})`; g.fillRect(x + 2, y + bh - 5, bw - 4, 3); }
+    }
+  streaks(g, W, H, 40, '210,210,190', 0.25, rng, true); // efflorescence
+  // the high-water line: everything below is black-green and wet
+  const hw = H - 110;
+  const gr = g.createLinearGradient(0, hw - 20, 0, H);
+  gr.addColorStop(0, 'rgba(14,20,8,0)'); gr.addColorStop(0.12, 'rgba(14,20,8,.85)'); gr.addColorStop(1, 'rgba(6,10,4,.95)');
+  g.fillStyle = gr; g.fillRect(0, hw - 20, W, H - hw + 20);
+  g.save(); g.translate(0, hw); blotches(g, W, 150, 60, 3, 18, '50,80,24', 0.3, rng); g.restore(); // algae
+  for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(150,170,120,${rng() * 0.25})`; g.fillRect(rng() * W, hw + rng() * 150, 1, 6 + rng() * 20); } // the wet catching the light
+  streaks(g, W, H, 14, '30,40,15', 0.5, rng, true);
+  wallBlood(g, W, H, gore, rng);
+  speckle(g, W, H, 22, rng);
+  return c;
+}
+function sewerFloorCanvas(kind) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(741 + kind * 5);
+  g.fillStyle = '#1a1712';
+  g.fillRect(0, 0, S, S);
+  // stone setts
+  const n = 8, ts = S / n;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = rng() * 20 - 10;
+    g.fillStyle = `rgb(${84 + v | 0},${78 + v | 0},${66 + v | 0})`;
+    g.beginPath(); g.ellipse(x * ts + ts / 2 + (y % 2 ? ts / 2 : 0) % S, y * ts + ts / 2, ts * 0.46, ts * 0.42, rng() * 0.3, 0, TAU); g.fill();
+  }
+  blotches(g, S, S, 60, 6, 30, '20,30,10', 0.5, rng); // muck
+  for (let i = 0; i < 5; i++) { const gr = g.createRadialGradient(rng() * S, rng() * S, 2, rng() * S, rng() * S, 40); gr.addColorStop(0, 'rgba(10,14,8,.8)'); gr.addColorStop(1, 'rgba(10,14,8,0)'); g.fillStyle = gr; g.fillRect(0, 0, S, S); } // puddles
+  if (kind === 1 || kind === 2) bloodPool(g, S / 2, S / 2, 40, rng);
+  if (kind === 3) smear(g, S / 2, 0, 50, S, 0, rng, BLOOD.dried);
+  speckle(g, S, S, 24, rng);
+  return c;
+}
+function sewerCeilCanvas() {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(777);
+  g.fillStyle = '#1c1410';
+  g.fillRect(0, 0, S, S);
+  for (let y = 0, row = 0; y < S; y += 12, row++) for (let x = row % 2 ? -16 : 0; x < S; x += 32) { const v = rng() * 16; g.fillStyle = `rgb(${50 + v | 0},${30 + v * 0.5 | 0},${24 + v * 0.3 | 0})`; g.fillRect(x + 1.5, y + 1.5, 29, 9); }
+  blotches(g, S, S, 50, 6, 30, '10,14,6', 0.5, rng);
+  streaks(g, S, S, 20, '200,200,180', 0.2, rng, true);
+  speckle(g, S, S, 20, rng);
+  return c;
+}
+
+// the deep freeze: insulated panels a metre wide, frost growing out of every seam, the lower half dented by forklifts
+function freezeWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(811 + gore * 17);
+  const gr = g.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, '#b8c4cc'); gr.addColorStop(1, '#8e9aa2');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  for (let x = 0; x < W; x += 128) {
+    g.fillStyle = '#4a5258'; g.fillRect(x, 0, 3, H); // seam
+    for (let y = 20; y < H; y += 48) { g.fillStyle = '#5a6268'; g.beginPath(); g.arc(x + 8, y, 2, 0, TAU); g.arc(x + 120, y, 2, 0, TAU); g.fill(); } // rivets
+    for (let y = 0; y < H; y += 6) { g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(x + 4, y, 124, 1); } // the fine ribbing
+  }
+  // frost: white crust thick at the top and along every seam
+  for (let i = 0; i < 60; i++) { const x = (rng() < 0.5 ? Math.round(rng() * 2) * 128 : rng() * W), len = 20 + rng() * 200; const fr = g.createLinearGradient(0, 0, 0, len); fr.addColorStop(0, 'rgba(245,250,255,.75)'); fr.addColorStop(1, 'rgba(245,250,255,0)'); g.fillStyle = fr; g.fillRect(x - 3, 0, 4 + rng() * 10, len); }
+  blotches(g, W, 50, 80, 4, 20, '250,252,255', 0.5, rng);
+  // forklift scuffs and a black-and-yellow guard
+  g.fillStyle = '#1a1a14'; g.fillRect(0, H - 60, W, 26);
+  g.fillStyle = '#b08a1a'; for (let x = -26; x < W; x += 26) { g.beginPath(); g.moveTo(x, H - 34); g.lineTo(x + 13, H - 34); g.lineTo(x + 26, H - 60); g.lineTo(x + 13, H - 60); g.fill(); }
+  for (let i = 0; i < 20; i++) { g.fillStyle = `rgba(30,30,30,${rng() * 0.4})`; g.fillRect(rng() * W, H - 110 + rng() * 40, 20 + rng() * 40, 2); }
+  g.fillStyle = '#6e767c'; g.fillRect(0, H - 34, W, 34);
+  streaks(g, W, H, 10, '120,90,50', 0.3, rng, false);
+  wallBlood(g, W, H, gore, rng);
+  speckle(g, W, H, 10, rng);
+  return c;
+}
+function freezeFloorCanvas(kind) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(841 + kind * 9);
+  g.fillStyle = '#7a8086'; g.fillRect(0, 0, S, S);
+  blotches(g, S, S, 160, 4, 30, '60,64,70', 0.15, rng);
+  blotches(g, S, S, 50, 10, 50, '235,242,250', 0.35, rng); // frost
+  if (kind === 3) { g.fillStyle = '#b8901c'; g.fillRect(S / 2 - 8, 0, 16, S); } // a painted aisle line
+  g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2; g.strokeRect(0, 0, S, S);
+  if (kind === 1 || kind === 2) { const r = makeRng(kind); bloodPool(g, S / 2, S / 2, 38, r); blotches(g, S, S, 30, 4, 14, '240,245,255', 0.4, rng); } // frozen into it
+  speckle(g, S, S, 12, rng);
+  return c;
+}
+function freezeCeilCanvas() {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(877);
+  for (let x = 0; x < S; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#5c646a'); gr.addColorStop(0.5, '#8a949a'); gr.addColorStop(1, '#4a5258'); g.fillStyle = gr; g.fillRect(x, 0, 16, S); } // corrugated
+  blotches(g, S, S, 70, 6, 30, '240,245,255', 0.4, rng);
+  speckle(g, S, S, 10, rng);
+  return c;
+}
+
+// one set of surfaces per kind of floor, built the first time that kind of floor comes up
+export function themeMaterials(mats, theme) {
+  mats.themes ||= {};
+  if (mats.themes[theme]) return mats.themes[theme];
+  const phong = (o) => new THREE.MeshPhongMaterial(o);
+  const tx = (c) => toTex(c);
+  const wall = (fn, shine, spec, bump = 1.2) => [0, 1, 2, 3].map((gore) => { const t = tx(fn(gore)); return phong({ map: t, bumpMap: t, bumpScale: bump, shininess: shine, specular: spec }); });
+  const floor = (fn, shine, spec) => [0, 1, 2, 3].map((k) => { const t = tx(fn(k)); return phong({ map: t, bumpMap: t, bumpScale: 0.8, shininess: shine, specular: spec }); });
+  let m;
+  if (theme === 'morgue') m = { walls: wall(wardWallCanvas, 60, 0x445048, 0.8), floors: floor(wardFloorCanvas, 70, 0x333833), ceil: phong({ map: tx(dropCeiling(951, [190, 188, 172], '#4e4c44')), shininess: 4 }) };
+  else if (theme === 'offices') m = { walls: wall(officeWallCanvas, 8, 0x111111), floors: floor(officeFloorCanvas, 2, 0x000000), ceil: phong({ map: tx(dropCeiling(661, [168, 160, 136], '#3e3a30')), shininess: 4 }) };
+  else if (theme === 'sewer') m = { walls: wall(sewerWallCanvas, 70, 0x334422, 2), floors: floor(sewerFloorCanvas, 110, 0x445533), ceil: phong({ map: tx(sewerCeilCanvas()), shininess: 30, specular: 0x222222 }) };
+  else if (theme === 'freezer') m = { walls: wall(freezeWallCanvas, 50, 0x8899aa, 0.6), floors: floor(freezeFloorCanvas, 60, 0x99aabb), ceil: phong({ map: tx(freezeCeilCanvas()), shininess: 40, specular: 0x666666 }) };
+  else m = null;
+  mats.themes[theme] = m;
+  return m;
+}
+
 // raw muscle with fat marbling
 function meatCanvas(seed = 3, pale = false) {
   const S = 256, { c, g } = canvas(S, S), rng = makeRng(seed);

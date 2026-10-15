@@ -161,6 +161,16 @@ export function poseForeman(f, s) {
   f.neck.rotation.x = -hunch * 0.7 + (twitch ? twitch.x : 0);
   f.head.rotation.set(twitch ? twitch.y : 0, twitch ? twitch.z : 0, twitch ? twitch.r : 0);
   f.jaw.rotation.x = 0.1 + jawOpen * 0.9;
+  if (mode === 'stunned') {
+    // on his knees, folded over, arms hanging, head lolling
+    f.hips.position.y = 0.62;
+    f.legs.forEach((l) => { l.thigh.rotation.x = -1.3; l.knee.rotation.x = 2.2; });
+    f.torso.rotation.x = 1.1;
+    f.neck.rotation.x = 0.6 + (twitch ? twitch.x * 0.3 : 0);
+    f.jaw.rotation.x = 0.9;
+    f.arms.forEach((a, i) => { a.sh.rotation.set(-1.1 + Math.sin(t * 7 + i) * 0.05, 0, (i ? -1 : 1) * 0.15); a.el.rotation.x = -0.1; });
+    return;
+  }
   f.arms.forEach((a, i) => {
     const p = gait + (i ? 0 : Math.PI);
     let sh = -hunch + Math.sin(p) * 0.35 * stride;
@@ -217,8 +227,20 @@ export class Hunter {
     this.pathT = 0;
   }
 
+  // a bolt in the head: he drops where he stands
+  stun(secs) {
+    this.setState('stunned');
+    this.stunFor = secs;
+    this.awareness = 0;
+    this.swing = 0;
+    this.struck = false;
+    this.opening = false;
+    this.speed = 0;
+  }
+
   // anything loud: footsteps, cutting, a scream from a carcass
   hear(n) {
+    if (this.state === 'stunned') return;
     if (inCrawl(this.w.L, n.pos.x, n.pos.z)) return; // in a crouchway you're somewhere he can't go: he doesn't care
     if (this.state === 'chase' && this.pos.distanceTo(n.pos) < n.radius * this.w.D.hearing) { this.lastSeen = n.pos.clone(); this.lastVel = null; this.cast = null; return; } // still hunting: he follows the sound
     if (this.state === 'chase' || this.state === 'attack' || this.state === 'recover' || this.state === 'locker' || this.state === 'grab') return;
@@ -235,7 +257,7 @@ export class Hunter {
 
   canSee() {
     const pl = this.w.player;
-    if (pl.hidden || pl.inLift && this.w.liftSealed || pl.inCrawl) return false;
+    if (pl.hidden || pl.inLift && this.w.liftSealed || pl.inCrawl || this.state === 'stunned') return false;
     const dx = pl.pos.x - this.pos.x, dz = pl.pos.z - this.pos.z, d = Math.hypot(dx, dz);
     if (d > 26) return false;
     if (!lineOfSight(this.w.L, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) return false;
@@ -430,6 +452,15 @@ export class Hunter {
       case 'grab':
         speed = 0;
         break;
+      case 'stunned': // down on his knees, twitching, until it wears off; then he comes looking
+        speed = 0;
+        if (this.stateT > this.stunFor) {
+          this.w.audio.roar(this.pos);
+          this.lastSeen = pl.pos.clone();
+          this.awareness = 0.5;
+          this.setState('search');
+        }
+        break;
     }
 
     // steering
@@ -477,7 +508,7 @@ export class Hunter {
       this.twitchT = this.state === 'chase' ? 0.15 + Math.random() * 0.3 : 0.4 + Math.random() * 2.5;
       if (big && this.state !== 'chase' && dP < 14) w.audio.click(this.pos);
     }
-    const mode = this.state === 'chase' ? 'chase' : this.state === 'attack' ? 'attack' : this.state === 'grab' ? 'grab' : 'walk';
+    const mode = this.state === 'chase' ? 'chase' : this.state === 'attack' ? 'attack' : this.state === 'grab' ? 'grab' : this.state === 'stunned' ? 'stunned' : 'walk';
     const jaw = this.state === 'chase' ? 0.35 + Math.sin(t * 9) * 0.25 : this.state === 'attack' ? 0.8 : 0.05;
     poseForeman(this.body, { gait: this.gait, speed: this.speed, mode, t, swing: this.swing, jawOpen: jaw, twitch: this.twitch });
     this.obj.position.copy(this.pos);

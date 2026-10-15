@@ -143,8 +143,8 @@ export function stamina(v, out, boost) {
   $('staminaLabel').textContent = boost ? 'ADRENALINE' : out ? 'OUT OF BREATH' : 'STAMINA';
 }
 
-export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrgent, adrenaline = 0 }) {
-  const key = [floor, have, fed, need, Math.ceil(battery / 20), battery < 20, adrenaline].join('|');
+export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrgent, adrenaline = 0, gun = '' }) {
+  const key = [floor, have, fed, need, Math.ceil(battery / 20), battery < 20, adrenaline, gun].join('|');
   if (key !== hudKey) {
     hudKey = key;
     $('floorLabel').textContent = floor;
@@ -162,6 +162,7 @@ export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrg
     for (let i = 0; i < 5; i++) { const x = document.createElement('i'); if (i >= bars) x.className = 'off'; b.appendChild(x); }
     b.classList.toggle('low', battery < 20);
     $('syringes').textContent = adrenaline ? `R \u00B7 SYRINGE \u00D7${adrenaline}` : '';
+    $('gunLine').textContent = gun;
   }
   const br = $('breath');
   br.classList.toggle('on', !!hidden);

@@ -4,13 +4,14 @@
 //   grinder - (third person) dragged by the ankle and fed into the meat grinder
 //   fan     - (third person) held up by the throat into the blades of a ceiling fan
 //   eaten   - (third person) he takes you apart on the floor and eats you, and then he looks at you
+//   rack    - (third person) chained to a winch table; he cranks until your arms and legs come away
 // Each one builds its own little stage, runs off a timeline, and throws gore around with a small physics pass.
 import * as THREE from 'three';
 import { createForemanMesh, poseForeman } from './monster.js';
-import { makeBody, openChest, mesh, decal, severedArm, severedHead, meatChunk, makeLamp } from './props.js';
+import { makeBody, openChest, mesh, decal, severedArm, severedHead, meatChunk, makeLamp, stump, makeLift } from './props.js';
 import { canvas } from './textures.js';
 
-export const CUTSCENES = ['rope', 'exit', 'grinder', 'fan', 'eaten'];
+export const CUTSCENES = ['rope', 'exit', 'grinder', 'fan', 'eaten', 'rack'];
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const ease = (x) => { x = clamp01(x); return x * x * (3 - 2 * x); };
@@ -859,6 +860,322 @@ export class Cutscene {
       if (t > 5.1) { const hp = this.headPos(); this.cam.position.lerp(hp, ease((t - 5.1) / 1.4) * 0.55); this.cam.lookAt(hp); this.fear = 1; }
     }
     this.at(6.8, 'black', () => (this.blackout = 1));
+  }
+
+  // ---------- the ending: clocking out ----------
+  // The lift climbs the last floors; the gate goes up on dawn in the loading bay; you walk out; you stop and
+  // look back, and he's standing in the lift, in the dark, watching you go. He doesn't follow. You walk into the light.
+  endingBuild() {
+    this.dur = 31;
+    const s = this.scene, m = this.mats;
+    s.background = new THREE.Color(0x1a1c20);
+    s.fog = new THREE.FogExp2(0x3a3e44, 0.03);
+    // the loading bay: concrete, a long way across, a roller door half up at the far end on to the morning
+    const conc = new THREE.MeshLambertMaterial({ color: 0x55534e });
+    const floor = mesh(new THREE.PlaneGeometry(16, 26), m.floors[0], false);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, -11);
+    floor.receiveShadow = true;
+    s.add(floor);
+    const wallM = m.walls[1];
+    for (const [x, z, ry, w] of [[-8, -11, Math.PI / 2, 26], [8, -11, -Math.PI / 2, 26], [0, 2, Math.PI, 16]]) { const wl = mesh(new THREE.PlaneGeometry(w, 6), wallM, false); wl.position.set(x, 3, z); wl.rotation.y = ry; s.add(wl); }
+    const ceil = mesh(new THREE.PlaneGeometry(16, 26), conc, false);
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(0, 6, -11);
+    s.add(ceil);
+    // the far wall, with the roller door in it
+    for (const [x, w] of [[-5.25, 5.5], [5.25, 5.5]]) { const wl = mesh(new THREE.PlaneGeometry(w, 6), wallM, false); wl.position.set(x, 3, -24); s.add(wl); }
+    const over = mesh(new THREE.PlaneGeometry(5, 1.6), wallM, false); over.position.set(0, 5.2, -24); s.add(over);
+    const door = mesh(new THREE.BoxGeometry(5, 0.7, 0.12), m.rust[1]); door.position.set(0, 4.05, -24); s.add(door); // rolled most of the way up
+    // outside: the morning, too bright to see into
+    this.sky = new THREE.MeshBasicMaterial({ color: 0xeef2f6, fog: false });
+    const sky = mesh(new THREE.PlaneGeometry(30, 14), this.sky, false); sky.position.set(0, 2, -30); s.add(sky);
+    const ground = mesh(new THREE.PlaneGeometry(30, 12), new THREE.MeshBasicMaterial({ color: 0xb8bcb4, fog: false }), false); ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0.01, -30); s.add(ground);
+    this.sun = new THREE.DirectionalLight(0xfff0dc, 0);
+    this.sun.position.set(2, 6, -34);
+    this.sun.target.position.set(0, 0, -6);
+    s.add(this.sun, this.sun.target);
+    this.dayFill = new THREE.HemisphereLight(0xb8c4d0, 0x302a24, 0);
+    s.add(this.dayFill);
+    // the morning coming in at the door, a long pale wash across the floor
+    this.doorLight = new THREE.PointLight(0xe8eef4, 0, 34, 1.1);
+    this.doorLight.position.set(0, 2.6, -22.5);
+    s.add(this.doorLight);
+    this.doorSpot = new THREE.SpotLight(0xfff4e4, 0, 40, 0.5, 0.6, 1);
+    this.doorSpot.position.set(0, 3, -26);
+    this.doorSpot.target.position.set(0, 0, -4);
+    s.add(this.doorSpot, this.doorSpot.target);
+    // stuff in the bay: pallets, a dead forklift's worth of crates, drag marks to the door
+    for (let i = 0; i < 6; i++) { const c = mesh(new THREE.BoxGeometry(1.2, 0.5 + Math.random() * 0.8, 1), new THREE.MeshLambertMaterial({ color: 0x6a5238 })); c.position.set((Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 3), 0.4, -6 - Math.random() * 14); s.add(c); }
+    s.add(decal(m.drag, 3, 0.4, -12, Math.PI / 2, 0.012));
+    s.add(decal(m.drag, 3, 0.4, -16, Math.PI / 2, 0.012));
+    // the lift: you start inside it, in the dark, at the back of the bay
+    this.lift = makeLift(m, 0);
+    this.lift.position.set(0, 0, 0);
+    this.lift.rotation.y = Math.PI;
+    s.add(this.lift);
+    this.bars = this.lift.userData.bars;
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.2, 6, 2.4), new THREE.MeshBasicMaterial({ color: 0x020202, side: THREE.BackSide }));
+    shaft.position.set(0, 3, 0.3);
+    s.add(shaft);
+    const mouth = mesh(new THREE.PlaneGeometry(16, 6), m.walls[1], false); // the wall either side of the lift mouth
+    void mouth;
+    // light running past the gate as the floors go by
+    this.pass = new THREE.PointLight(0xffc890, 0, 5, 1.5);
+    s.add(this.pass);
+    this.liftLamp = new THREE.PointLight(0xffd8b0, 2.5, 4, 1.5);
+    this.liftLamp.position.set(0, 2.6, 0.3);
+    s.add(this.liftLamp);
+    // him: in the lift behind you when you look back
+    this.him.root.position.set(0, 0, 0.35);
+    this.him.root.rotation.y = Math.PI;
+    this.him.root.visible = false;
+    this.eyeLight = new THREE.PointLight(0xff2a10, 0, 1.2, 2);
+    s.add(this.eyeLight);
+    this.audio.liftMotor(true);
+  }
+  endingUpdate(dt) {
+    const t = this.t, cam = this.cam;
+    const walk = (z0, z1, k) => { const z = lerp(z0, z1, k); cam.position.set(Math.sin(t * 4.4) * 0.03, 1.62 + Math.abs(Math.sin(t * 4.4)) * 0.035, z); };
+    if (t < 6) {
+      // the ride up: the cage shaking, light sliding past the gate, a floor at a time
+      this.pose({ mode: 'walk' });
+      cam.position.set(Math.sin(t * 31) * 0.01, 1.62 + Math.sin(t * 23) * 0.012, 0.6);
+      cam.lookAt(0, 1.5, -3);
+      const floorK = (t * 1.6) % 1;
+      this.pass.position.set(0, 4 - floorK * 6, -1.1);
+      this.pass.intensity = 6 * Math.sin(floorK * Math.PI);
+      this.at(0.2, 'motor', () => this.audio.liftMotor(true));
+      for (let i = 0; i < 9; i++) this.at(i * 0.62, 'f' + i, () => this.audio.click({ x: 0, y: 2, z: 0 }));
+      this.sun.intensity = 0;
+      this.fear = 0.25;
+    } else if (t < 9.5) {
+      // it stops; the gate goes up on grey light
+      this.at(6, 'stop', () => { this.audio.liftMotor(false); this.audio.clank({ x: 0, y: 1, z: -1 }, 1); this.shake = 0.6; });
+      this.at(6.6, 'gate', () => this.audio.gateSlide({ x: 0, y: 1, z: -1 }));
+      const k = ease((t - 6.6) / 2.2);
+      this.bars.position.y = k * 2.6;
+      this.pass.intensity = 0;
+      this.sun.intensity = k * 2.2;
+      this.dayFill.intensity = k * 1.2;
+      this.doorLight.intensity = k * 60;
+      this.doorSpot.intensity = k * 120;
+      cam.position.set(0, 1.62, 0.6);
+      cam.lookAt(0, 1.5 + k * 0.1, -6);
+      this.fear = 0.15;
+      this.at(8.6, 'dawn', () => this.audio.dawn());
+    } else if (t < 17.5) {
+      // out across the bay toward the light
+      const k = (t - 9.5) / 8;
+      walk(-0.2, -12, ease(k));
+      cam.lookAt(Math.sin(t * 0.7) * 0.4, 1.5, -30);
+      this.sun.intensity = 2.2 + k * 0.6;
+      this.dayFill.intensity = 1.2 + k * 0.3;
+      this.doorLight.intensity = 60 + k * 30;
+      this.doorSpot.intensity = 120 + k * 60;
+      this.fear = 0;
+      this.him.root.visible = true; // he's there now, behind you; you haven't looked
+      this.pose({ mode: 'walk', jaw: 0.05 });
+    } else if (t < 19.5) {
+      // you stop. You turn round.
+      const k = ease((t - 17.5) / 1.8);
+      cam.position.set(0, 1.62, -12);
+      const yaw = lerp(0, Math.PI, k);
+      cam.lookAt(Math.sin(yaw) * 10, 1.5, -12 - Math.cos(yaw) * 10);
+      this.at(18.4, 'turn', () => this.audio.creak({ x: 0, y: 1, z: 0 }));
+      this.pose({ mode: 'walk', jaw: 0.05 });
+    } else if (t < 27) {
+      // he's standing in the lift. In the dark. He doesn't come out. He just watches you.
+      const k = (t - 19.5) / 7.5;
+      cam.position.set(0, 1.62, -12 + k * 1.2);
+      const hp = this.headPos();
+      cam.lookAt(hp.x, hp.y - 0.15 + (1 - k) * 0.1, hp.z);
+      cam.fov = lerp(70, 30, ease(k)); // the slow push in on his face
+      cam.updateProjectionMatrix();
+      this.pose({ mode: 'walk', jaw: 0.1 + k * 0.15, twitch: { x: 0, y: 0, z: k * 0.35, r: Math.sin(t * 0.8) * 0.15 } });
+      this.him.neck.rotation.x = -0.2;
+      this.eyeLight.position.copy(hp).add(V(0, 0, -0.3));
+      this.eyeLight.intensity = 0.6;
+      this.liftLamp.intensity = 0.6 * (Math.sin(t * 17) + Math.sin(t * 5.3) > -1.3 ? 1 : 0.05); // the cage light failing; he stands in the dark
+      this.at(21, 'breath', () => this.audio.growl(this.headPos(), 0.4));
+      this.at(25.5, 'click', () => this.audio.click(this.headPos()));
+      this.fear = 0.35 + k * 0.3;
+    } else {
+      // and you turn your back on him and walk out into it
+      const k = ease((t - 27) / 1.2);
+      cam.fov = lerp(30, 70, k);
+      cam.updateProjectionMatrix();
+      const yaw = lerp(Math.PI, Math.PI * 2, k);
+      cam.position.set(0, 1.62, -10.8 - Math.max(0, t - 28) * 1.3);
+      cam.lookAt(Math.sin(yaw) * 10, 1.5, cam.position.z - Math.cos(yaw) * 10);
+      this.flash = Math.max(this.flash, clamp01((t - 28.6) / 2.2)); // into the white
+      this.fear = 0;
+    }
+  }
+
+  // ---------- 6: the rack (third person) ----------
+  rackBuild() {
+    this.dur = 9.5;
+    const s = this.scene, m = this.mats;
+    room(s, m, 10, 10, 10);
+    s.fog.density = 0.05;
+    // the table: a heavy wooden slab on steel legs, blood soaked into the grain
+    const wood = new THREE.MeshPhongMaterial({ color: 0x3a2414, shininess: 20 });
+    const slab = mesh(new THREE.BoxGeometry(2.6, 0.14, 0.8), wood);
+    slab.position.set(0, 0.85, 0);
+    s.add(slab);
+    for (const [x, z] of [[-1.15, -0.32], [1.15, -0.32], [-1.15, 0.32], [1.15, 0.32]]) { const l = mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), m.darkMetal); l.position.set(x, 0.4, z); s.add(l); }
+    s.add(decal(m.pool[0], 2.4, 0, 0.2, 0.4));
+    // the winch at the head end: a drum on a frame, and the wheel he turns
+    const frame = mesh(new THREE.BoxGeometry(0.2, 1.4, 1.0), m.darkMetal);
+    frame.position.set(-1.75, 0.7, 0);
+    s.add(frame);
+    this.drum = new THREE.Group();
+    this.drum.position.set(-1.62, 1.05, 0);
+    const dr = mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.7, 12), m.rust[2]);
+    dr.rotation.x = Math.PI / 2;
+    this.drum.add(dr);
+    for (let i = 0; i < 6; i++) { const peg = mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), wood, false); peg.rotation.z = (i * Math.PI) / 3; peg.position.z = 0.4; this.drum.add(peg); }
+    s.add(this.drum);
+    // the post at the foot end
+    const post = mesh(new THREE.BoxGeometry(0.2, 1.3, 0.6), m.darkMetal);
+    post.position.set(1.6, 0.65, 0);
+    s.add(post);
+    // you, on your back, arms over your head
+    this.you = makeWorker(m);
+    this.you.root.position.set(0.15, 1.05, 0);
+    orient(this.you.root, V(-1, 0, 0), V(0, 1, 0));
+    this.you.arms.forEach((a, i) => a.rotation.set(0, 0, (i ? 1 : -1) * 2.95));
+    this.you.legs.forEach((l, i) => l.rotation.set(0, 0, (i ? -1 : 1) * 0.12));
+    s.add(this.you.root);
+    // chains: wrists to the drum, ankles to the post
+    this.chains = [0, 1, 2, 3].map(() => { const c = mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 5), m.chain, false); s.add(c); return c; });
+    this.torn = [false, false, false, false]; // right arm, left arm, right leg, left leg
+    // him, at the wheel
+    this.him.root.position.set(-1.9, 0, 0.75);
+    this.him.root.rotation.y = Math.PI * 0.7;
+    const lamp = makeLamp(m, 'bulb');
+    lamp.position.set(0, 3, 0);
+    s.add(lamp);
+    const l = new THREE.PointLight(0xffd2a8, 30, 9, 1.2);
+    l.position.set(0.2, 2.3, 0.3);
+    l.castShadow = true;
+    s.add(l);
+    const over = new THREE.SpotLight(0xfff0dc, 40, 6, 0.6, 0.5, 1.2); // straight down on the table
+    over.position.set(0, 2.6, 0.2);
+    over.target.position.set(0, 0.9, 0);
+    s.add(over, over.target);
+    const rim = new THREE.PointLight(0xff3020, 9, 8, 1.5);
+    rim.position.set(-2.5, 1.4, -2);
+    s.add(rim);
+    const fill = new THREE.PointLight(0xc8d0ff, 5, 10, 1.5);
+    fill.position.set(2.5, 1.8, 2.5);
+    s.add(fill);
+  }
+  // the world position of a hand or a foot
+  rackEnd(i, out = new THREE.Vector3()) {
+    this.you.root.updateMatrixWorld(true);
+    if (i < 2) return this.you.arms[i].userData.hand.getWorldPosition(out);
+    return this.you.legs[i - 2].userData.boot.getWorldPosition(out);
+  }
+  rackUpdate(dt) {
+    const t = this.t, you = this.you, f = this.him;
+    // the crank: slow, then faster, then he leans into it
+    const crank = t < 1.5 ? 0.8 : t < 4 ? 1.6 + (t - 1.5) * 0.6 : 3.5;
+    if (t < 6.8) this.drum.rotation.z -= dt * crank;
+    const pull = clamp01((t - 0.8) / 3.4); // how far you've been stretched before things start to give
+    // stretched: every limb a little longer, the body taut, the head thrown back screaming
+    you.arms.forEach((a, i) => { if (!this.torn[i]) a.scale.y = 1 + pull * 0.32; });
+    you.legs.forEach((l, i) => { if (!this.torn[2 + i]) l.scale.y = 1 + pull * 0.22; });
+    you.torso.scale.y = 1 + pull * 0.08;
+    you.head.rotation.x = -0.4 - pull * 0.4 + Math.sin(t * 13) * 0.08 * (1 - clamp01((t - 6.3) / 0.5));
+    you.jaw.rotation.x = 0.3 + pull * 0.6;
+    if (t < 6.4) you.root.position.x = 0.15 + Math.sin(t * 17) * 0.015 * pull; // straining
+    // him turning the wheel, both hands on the pegs
+    this.pose({ mode: 'walk', jaw: 0.25 + pull * 0.3, twitch: this.twitch(0.12) });
+    const ph = -this.drum.rotation.z;
+    f.torso.rotation.x = 0.6 + pull * 0.25;
+    f.arms[0].sh.rotation.set(-1.2 + Math.sin(ph) * 0.45, 0, 0.3);
+    f.arms[1].sh.rotation.set(-1.2 + Math.sin(ph + 0.6) * 0.45, 0, -0.1);
+    f.arms.forEach((a) => (a.el.rotation.x = -0.5 + Math.cos(ph) * 0.3));
+    // the chains run from each wrist and ankle to the drum or the post
+    const anchors = [V(-1.55, 1.05, 0.12), V(-1.55, 1.05, -0.12), V(1.5, 1.0, 0.12), V(1.5, 1.0, -0.12)];
+    const e = V();
+    this.chains.forEach((c, i) => {
+      const a = anchors[i];
+      if (this.torn[i]) { // slack: hanging off the anchor
+        c.position.set(a.x + (i < 2 ? 0.05 : -0.05), a.y - 0.25, a.z);
+        c.quaternion.identity();
+        c.scale.y = 0.5;
+        return;
+      }
+      this.rackEnd(i, e);
+      c.position.copy(a).add(e).multiplyScalar(0.5);
+      const d = e.clone().sub(a);
+      c.scale.y = d.length();
+      c.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+    });
+    // and then they give, one after another
+    const tear = (i, at, key) => this.at(at, key, () => {
+      const p = this.rackEnd(i);
+      this.torn[i] = true;
+      const limb = i < 2 ? you.arms[i] : you.legs[i - 2];
+      limb.visible = false;
+      const st = stump(this.mats, i < 2 ? 0.05 : 0.07);
+      st.position.copy(limb.position);
+      st.rotation.z = i < 2 ? 0 : Math.PI;
+      (i < 2 ? you.torso : you.root).add(st);
+      this.audio.crack();
+      this.audio.squelch(1.6);
+      this.audio.tear();
+      this.shake = 1.2;
+      this.flash = 0.25;
+      const piece = i < 2 ? severedArm(this.mats, Math.random) : severedArm(this.mats, Math.random);
+      if (i >= 2) piece.scale.set(1.3, 1.3, 1.3);
+      const toward = (i < 2 ? V(-1, 0.5, 0) : V(1, 0.5, 0));
+      this.gore.burst(p, 10, 3, 0.7, [piece]);
+      this.gore.spray(p, toward.clone().negate().add(V(0, 0.8, 0)), 120, 4, 0.5);
+      this.gore.spray(p, V(0, 1, 0), 60, 3, 0.8);
+      this.scene.add(decal(this.mats.splat[(Math.random() * 4) | 0], 1.2, p.x + (Math.random() - 0.5) * 0.5, p.z + (Math.random() - 0.5) * 0.5, Math.random() * 6, 0.012));
+    });
+    this.at(1.2, 'creak1', () => this.audio.creak({ x: -1.6, y: 1, z: 0 }));
+    this.at(2.3, 'scream', () => this.audio.scream());
+    this.at(2.8, 'creak2', () => this.audio.chainRattle({ x: 0, y: 1, z: 0 }));
+    this.at(3.6, 'creak3', () => this.audio.creak({ x: 0, y: 1, z: 0 }));
+    tear(0, 4.2, 't0');
+    tear(3, 5.0, 't3');
+    tear(1, 5.7, 't1');
+    tear(2, 6.2, 't2');
+    if (t > 6.2) { // what's left drops onto the slab, and keeps bleeding
+      you.root.position.y = Math.max(0.98, you.root.position.y - dt * 0.6);
+      if (Math.random() < dt * 8) this.gore.spray(you.root.getWorldPosition(V()), V(0, -0.4, 0.4), 6, 1, 0.6);
+    }
+    if (t > 4.2 && t < 7 && Math.random() < dt * 10) {
+      const i = (Math.random() * 4) | 0;
+      if (this.torn[i]) this.gore.spray(this.rackEnd(i), V(0, 0.6, 0), 10, 2, 0.6);
+    }
+    // camera: from the foot of the table, slowly coming in; then low and close; then onto his face
+    if (t < 4) {
+      const k = t / 4;
+      this.cam.position.set(lerp(2.4, 1.6, k), lerp(2.1, 1.9, k), lerp(2.1, 1.5, k));
+      this.cam.lookAt(-0.3, 1.0, 0);
+    } else if (t < 6.8) {
+      const k = (t - 4) / 2.8;
+      this.cam.position.set(lerp(1.5, 0.9, k), lerp(1.45, 1.6, k), lerp(1.9, 1.7, k));
+      this.cam.lookAt(-0.3, 1.0, 0);
+    } else {
+      // he stops, and turns to look at you
+      const look = ease((t - 6.8) / 0.3);
+      f.root.rotation.y = lerp(Math.PI * 0.7, Math.atan2(this.cam.position.x - f.root.position.x, this.cam.position.z - f.root.position.z), look);
+      f.torso.rotation.x = lerp(0.85, 0.4, look);
+      f.jaw.rotation.x = 0.95;
+      this.at(6.8, 'stare', () => { this.audio.jumpscare(0.7); this.flash = 0.4; });
+      const hp = this.headPos();
+      this.cam.position.lerp(hp, ease((t - 6.9) / 1.4) * 0.5);
+      this.cam.lookAt(hp);
+    }
+    this.fear = 0.55 + pull * 0.45;
+    this.at(8.6, 'black', () => (this.blackout = 1));
   }
 
   // ---------- 5: eaten (third person) ----------

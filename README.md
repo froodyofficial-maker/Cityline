@@ -24,7 +24,7 @@ npm start            # serves the project at http://localhost:8080
 
 The repo also holds **OFFAL**, a separate first-person horror game. You work the night shift at the Hollow Pines Meatworks, a slaughterhouse that goes down further than the plans say.
 
-**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse. It goes fullscreen on your first click; **F11**, the *Fullscreen* button on the menu and pause screens, or the setting turns it on and off. Alt+Tab works in fullscreen too, and switching away pauses the shift.
+**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse. It goes fullscreen on your first click; **F11** or the Fullscreen setting turns it on and off. Alt+Tab works in fullscreen too, and switching away pauses the shift.
 
 **Music:** the heavy drone plays on the menu and under the death screen, always at its own pitch. On the floors it sits far back under a soft pad and a music box, and during a chase it drops out for your heartbeat.
 
@@ -39,13 +39,26 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
    - **Sealed shutter:** part of the floor is shut off. The code is scrawled in blood on the walls; type it into the keypad. A wrong code sets off an alarm.
    - **Jammed counterweight:** cuts of meat hang around the floor, tagged in kilograms. You can carry two. Make the freight scale by the lift read the exact weight.
    - **Steam on the brake:** find the release order, then turn the hissing valves in it. The wrong valve vents everything, loudly.
+   - **Drain the sump** (the drains): open three sluice gates (hold **E**). Until they're open the tunnels are knee deep, wading is slow, and every step splashes loudly.
+   - **Management only** (administration): search the managers' desks for the keycard. Every desk rattles.
+   - **The cage key** (the deep freeze): cut open the plastic-wrapped carcasses until you find the key. One of them isn't meat. The cold also slows how fast you get your breath back.
    - **Workers on ice** (morgue floors): an intake log lists which freezer drawers hold the missing workers (bank and number, like C-7). Look at the drawer and hold **E** to pull it out. The wrong drawer holds somebody else, it moves, and it slams shut loudly.
 3. Feed the tags to the lift, pull the lever and survive the three seconds while the gate grinds shut.
 4. B10, *The Line*, is the finale: pull three kill switches to stop the line, then run for the lift with both of them hunting you.
 
 **Crouchways:** low crawl tunnels with hazard-striped frames and plastic strips over the mouth. Every dead-end room and corridor gets one out the back, and each floor has a few more as escape routes. Press **C** to crouch and crawl in (you can't get in standing, or stand up inside). The Foreman can't fit, can't see you in there and ignores what he hears from them: crawl in mid-chase and he gives up and walks off to the far side of the floor. Hold **Q** and the red arrow will route you through them.
 
-**Morgue floors** (B3 *The Morgue* and B7 *The Cold Room*, and sometimes in Overtime) are cold and blue: glazed tile walls with frost, freezer rooms lined with banks of body drawers (some hanging open), and autopsy tables.
+**Kinds of floor.** Each has its own layout, surfaces, furniture, light and job:
+
+| Floor | Kind | Layout | What it looks like |
+| --- | --- | --- | --- |
+| B1, B2, B5, B9, B10 | The meatworks | Rooms joined by narrow corridors | Tiled kill rooms, meat on rails, butcher tables, the pit |
+| B3, B7 | Hospital wing (morgue) | Long two-tile halls with rows of rooms off them, joined by stairwell passages | Small white tiles over green paint, chequered lino, drop ceilings with missing panels; wards with beds, curtains and drips; autopsy rooms with instrument carts, sinks and specimen jars; records rooms; freezer rooms of body drawers |
+| B4 | The drains | Ragged, winding tunnels between cisterns and pump rooms | Victorian brick with a slime line, cobbles, dark water you wade through, pipes, outflows, ladders, and his nest of bones and rags |
+| B6 | Administration | Big open-plan offices of cubicles, joined by two-tile corridors | Wallpaper over wood panelling, carpet tiles, drop ceilings; desks with dead terminals, meeting rooms, a break room with a glowing vending machine, copier rooms, whiteboards (the headcount is going down) |
+| B8 | Deep freeze | A few huge rooms joined by wide aisles | Frosted insulated panels, painted floors, rows of pallet racking with boxes and shrink-wrapped meat, forklifts, coolers with icicles, people frozen standing up |
+
+Overtime mixes all five kinds at random from B2.
 
 **Difficulty** is picked when you start a story or an Overtime run:
 
@@ -72,11 +85,18 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 
 **Lockers:** getting in or out is a short camera move, not a cut, and your own locker door is never muffled. Holding your breath lasts about 20 s on Easy, 12.5 s on Normal, 7.7 s on Hard and 6.7 s on Extreme.
 
-**Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random (the third-person ones keep blood off the screen, since the camera isn't you):
+**The bolt gun:** three parts of a captive-bolt gun (the barrel, the firing spring, the grip) turn up one per floor from B2 until you have them all. Press **TAB** to see what you're carrying and put the gun together. Bolts are scarce: a box or two per floor once you have most of the gun, at most 6 carried. **Left click** fires; a hit drops the Foreman to his knees for **20 s on Easy, 15 on Normal, 10 on Hard, 5 on Extreme**, then he comes looking. Firing is the loudest thing you can do. A story shift keeps what you carry from floor to floor (as it was at the start of the floor you're on).
+
+**Keepsakes and the Collection:** each floor has a keepsake or two lying about: a photo, a ring, a tape, a toy, a tooth. They do nothing for you; each is a few lines about somebody who worked there. There are 26, kept for good once found. **Collection** on the menu shows the keepsakes you've found (pick one to read it) and lets you watch any death scene you've seen again, and the ending.
+
+**The ending:** a film. The lift climbs the last floors with light sliding past the gate, the gate goes up on dawn in the loading bay, you walk out toward the open door, then stop and turn round. He is standing in the lift, in the dark, watching you go. He doesn't follow. You walk out into the white.
+
+**Dying:** one hit from his hook kills you. He grabs you, and then one of six deaths plays at random (the third-person ones keep blood off the screen, since the camera isn't you):
 - strung up over a fire pit (real-looking fire: flickering tongues, glowing coals, charred logs, sparks and smoke)
 - an EXIT door that opens onto a sheer drop
 - the meat grinder (third person): he drags you across the floor by the ankle, hoists you over the hopper and drops you in
 - the ceiling fan (third person): he holds you up by the throat under the blades, then shoves you into them
+- the rack (third person): chained by the wrists and ankles to a winch table; he cranks until your arms and legs come away, one at a time
 - eaten on the floor (third person)
 
 A full stamina bar is about 9.5 seconds of sprinting, and it refills in about 6 seconds standing still. Syringes (**R**) give you a few seconds of running that never runs out.

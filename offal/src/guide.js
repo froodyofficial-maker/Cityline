@@ -17,6 +17,9 @@ const BRIEF = {
   scale: 'The lift’s counterweight is jammed. The freight scale beside the lift has to read an exact weight.\n\nCuts of meat hang around the floor, each tagged in kilograms. You can carry two at a time. Work out which ones add up exactly.',
   valves: 'Steam pressure has locked the lift’s brake. Somewhere on this floor is a note with the release order.\n\nFind it, then turn the hissing valves in exactly that order. The wrong valve vents everything, very loudly.',
   drawers: 'This is the morgue. Some of the missing workers were filed away in the freezer banks.\n\nFind the intake log, then pull out the drawers it lists (look straight at the drawer and hold E). Leave every other drawer shut. Not everything in them is finished.',
+  sluices: 'The drains. The lift sits in a flooded sump, and it will not move until it is drained.\n\nFind the three sluice gates and wrench them open (hold E). Wading is loud: every step in the water splashes. It gets quieter as the water goes down.',
+  keycard: 'Administration. The lift up here only answers to management.\n\nOne of the managers’ desks has a keycard in it. Go through the drawers (hold E). Every desk you search rattles.',
+  meatkey: 'The deep freeze. The lift cage is padlocked, and the key was hung up with the meat.\n\nCut open the wrapped carcasses (hold E) until you find it. It is cold enough down here that you get your breath back slower.',
   breakers: 'This is the bottom. The line is still running.\n\nPull the three kill switches to stop it. The first one sets off the alarm. When the line stops, both of them will come for you. Get back to the lift and go UP.',
 };
 

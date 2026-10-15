@@ -255,3 +255,29 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
   .sub { margin: 30px 0 24px; letter-spacing: .25em; }
   .menu-nav.row { flex-direction: column; gap: 10px; }
 }
+
+/* ---------- inventory ---------- */
+.gunline { color: var(--bone); }
+.inv-panel { width: min(640px, 92vw); background: rgba(8,3,3,.94); border: 1px solid #3a0a06; box-shadow: 0 20px 80px #000; padding: 28px 32px; }
+.inv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0 18px; }
+.inv-slot { border: 1px solid #3a0a06; background: #0c0606; padding: 14px 12px; min-height: 110px; font-size: 12px; line-height: 1.5; color: var(--dim); }
+.inv-slot b { display: block; font-family: var(--serif); font-weight: 400; letter-spacing: .25em; font-size: 13px; color: var(--bone); margin-bottom: 6px; }
+.inv-slot.missing { opacity: .45; border-style: dashed; }
+.inv-slot.missing b { color: var(--dim); }
+.inv-gun { margin: 6px 0 16px; font-size: 13px; letter-spacing: .12em; color: var(--bone); min-height: 1.4em; }
+.inv-gun button { font-size: 16px; letter-spacing: .3em; color: var(--fresh); border: 1px solid var(--fresh); padding: 8px 18px; margin-top: 6px; }
+.inv-gun button:hover { background: rgba(160,10,0,.25); }
+.inv-row { font-size: 12px; letter-spacing: .2em; color: var(--dim); }
+.inv-help { margin-top: 18px; font-size: 11px; letter-spacing: .2em; }
+/* ---------- collection ---------- */
+.coll-panel { width: min(760px, 94vw); max-height: 88vh; overflow-y: auto; }
+.coll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 5px; margin: 8px 0 10px; }
+.coll-item { text-align: left; border: 1px solid rgba(40,30,20,.45); padding: 5px 8px; font-size: 11px; line-height: 1.35; color: #2a2017; background: rgba(255,250,235,.25); }
+.coll-item.locked { opacity: .45; font-style: italic; }
+.coll-item:not(.locked):hover, .coll-item.sel { background: rgba(120,10,6,.15); outline: 1px solid #6a0805; }
+.coll-read { min-height: 3.2em; font-size: 13px; line-height: 1.55; color: #2a2017; border-left: 3px solid #6a0805; padding: 4px 12px; margin-bottom: 14px; }
+.coll-cuts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 8px 0 14px; }
+.coll-cut { border: 1px solid #2a1a10; background: #1a0c08; color: var(--bone); padding: 8px 10px; font-size: 11px; letter-spacing: .12em; text-align: left; line-height: 1.4; }
+.coll-cut b { display: block; font-family: var(--serif); font-weight: 400; letter-spacing: .25em; font-size: 13px; color: var(--fresh); }
+.coll-cut.locked { opacity: .4; pointer-events: none; }
+.coll-cut:not(.locked):hover { background: #3a0c08; }

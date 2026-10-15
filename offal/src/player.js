@@ -165,11 +165,14 @@ export class Player {
       if (this.stamina <= 0) { this.exhausted = true; w.say('Your lungs are on fire.', 2); }
     } else {
       this.sinceRun += dt;
-      if (this.sinceRun > 0.6) this.stamina = Math.min(100, this.stamina + dt * (moving ? 12 : 20));
+      if (this.sinceRun > 0.6) this.stamina = Math.min(100, this.stamina + dt * (moving ? 12 : 20) * (w.D.theme === 'freezer' ? 0.6 : 1)); // the cold takes your breath
       if (this.stamina > 25) this.exhausted = false;
     }
     let speed = running ? (this.boostT > 0 ? 5.7 : 5.1) : crouching ? 1.35 : 2.6;
     if (w.slowT > 0) speed *= 0.5;
+    // wading: the drains are knee deep until the sluices are open
+    this.wading = !!(L.water && L.water[toTile(this.pos.z) * L.W + toTile(this.pos.x)] && (w.waterLevel ?? 1) > 0.2);
+    if (this.wading) speed *= 0.82;
     if (w.listening) speed = Math.min(speed, 1.3); // you can't listen and hurry
     const len = Math.hypot(ix, iz) || 1;
     const s = Math.sin(this.yaw), c = Math.cos(this.yaw);
@@ -190,8 +193,10 @@ export class Player {
       this.stepAcc = 0;
       const wet = B.bloodTiles[toTile(this.pos.z) * L.W + toTile(this.pos.x)] === 1;
       const kind = running ? 'run' : crouching ? 'crouch' : 'walk';
-      audio.step(kind, wet);
-      w.noise(this.pos, running ? 15 : crouching ? 1.8 : wet ? 7.5 : 5.5, running, running ? 'run' : crouching ? 'crouch' : 'walk');
+      audio.step(kind, wet || this.wading);
+      if (this.wading) audio.splash(running ? 1 : crouching ? 0.4 : 0.7);
+      const base = running ? 15 : crouching ? 1.8 : wet ? 7.5 : 5.5;
+      w.noise(this.pos, this.wading ? base * 1.7 * (w.waterLevel ?? 1) + base * 0.3 : base, running, running ? 'run' : crouching ? 'crouch' : 'walk');
     }
     // breathing: from running, from being hurt, from being afraid
     const pant = Math.max((100 - this.stamina) / 100, this.exhausted ? 1 : 0, w.fear * 0.5, this.hp < 50 ? 0.4 : 0);

@@ -4,7 +4,7 @@ import { WALL_H } from './config.js';
 
 const cache = {};
 // geometry shared between floors; the level teardown leaves these alone
-const geo = (key, make) => cache[key] || (cache[key] = Object.assign(make(), { userData: { shared: true } }));
+export const geo = (key, make) => cache[key] || (cache[key] = Object.assign(make(), { userData: { shared: true } }));
 
 export function mesh(g, m, cast = true) {
   const o = new THREE.Mesh(g, m);
@@ -12,10 +12,10 @@ export function mesh(g, m, cast = true) {
   o.receiveShadow = true;
   return o;
 }
-const box = (w, h, d) => geo(`b${w}_${h}_${d}`, () => new THREE.BoxGeometry(w, h, d));
-const sph = (r, s = 10) => geo(`s${r}_${s}`, () => new THREE.SphereGeometry(r, s, Math.max(6, s * 0.7 | 0)));
-const cyl = (r0, r1, h, s = 8) => geo(`c${r0}_${r1}_${h}_${s}`, () => new THREE.CylinderGeometry(r0, r1, h, s));
-const cap = (r, len) => geo(`k${r}_${len}`, () => new THREE.CapsuleGeometry(r, len, 3, 8));
+export const box = (w, h, d) => geo(`b${w}_${h}_${d}`, () => new THREE.BoxGeometry(w, h, d));
+export const sph = (r, s = 10) => geo(`s${r}_${s}`, () => new THREE.SphereGeometry(r, s, Math.max(6, s * 0.7 | 0)));
+export const cyl = (r0, r1, h, s = 8) => geo(`c${r0}_${r1}_${h}_${s}`, () => new THREE.CylinderGeometry(r0, r1, h, s));
+export const cap = (r, len) => geo(`k${r}_${len}`, () => new THREE.CapsuleGeometry(r, len, 3, 8));
 
 // a limb hanging from its joint: the group's origin is the joint, the limb runs down -Y
 export function limb(mat, len, r) {
@@ -27,7 +27,7 @@ export function limb(mat, len, r) {
 }
 
 // the wet red cap on anything that was cut off
-function stump(mats, r) {
+export function stump(mats, r) {
   const g = new THREE.Group();
   const flesh = mesh(cyl(r * 1.02, r * 1.02, 0.02, 10), mats.meat, false);
   const bone = mesh(cyl(r * 0.35, r * 0.35, 0.05, 6), mats.bone, false);
@@ -670,7 +670,7 @@ export function makeLift(mats, slots) {
 
 // ---------- the morgue ----------
 // a body on a drawer tray, feet toward you, the way they always come out
-function trayBody(mats, rng) {
+export function trayBody(mats, rng) {
   const g = new THREE.Group();
   if (rng() < 0.45) { // under a sheet
     const t = mesh(cap(0.17, 1.3), mats.sheet);

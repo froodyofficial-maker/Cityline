@@ -15,17 +15,19 @@ import { Guide } from './guide.js';
 import { Cutscene, CUTSCENES } from './cutscenes.js';
 import * as UI from './ui.js';
 import * as P from './props.js';
-import { floorInfo, difficulty, WALL_H, STORY_FLOORS, DIFFS } from './config.js';
+import { floorInfo, difficulty, WALL_H, STORY_FLOORS, DIFFS, THEMES } from './config.js';
 import { animateFlies } from './props.js';
+import { Gun, PARTS, PART_KEYS, AMMO_MAX, freshInv, cloneInv, missingParts } from './gun.js';
+import { KEEPSAKES, CUTSCENE_INFO } from './collection.js';
 
 // ---------- save ----------
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0 }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, settings: { ...fresh.settings, ...s.settings } };
+    if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
   } catch {}
   return fresh;
 })();
@@ -47,6 +49,7 @@ scene.add(new THREE.AmbientLight(0x2a1c1a, 0.4));
 const mats = makeMaterials();
 const audio = new AudioEngine();
 const player = new Player(camera);
+let gun = null; // made once G exists
 const blood = new UI.ScreenBlood(UI.$('blood'));
 
 // a small pool of real lights handed to whichever ceiling lamps are nearest
@@ -76,6 +79,8 @@ const G = {
   onHit(h) { hurt(h); },
   onGrab(h, lk) { startDeath(h, 'locker', lk); },
 };
+G.inv = freshInv();
+gun = new Gun(G, camera, mats, audio);
 const director = new Director(G, mats);
 const guide = new Guide(G);
 
@@ -216,11 +221,14 @@ function loadFloor(depth, seed) {
   const B = buildLevel(L, mats);
   Object.assign(G, { L, B, D, depth, info: floorInfo(depth, G.mode), floorTime: 0, lampKill: 0, torchKill: 0, frenzy: false, frenzyT: 0 });
   G.puzzles = new Puzzles(G, D.puzzles, seed + 17);
+  placeLoot(depth, seed);
   scene.add(B.group);
-  if (D.theme === 'morgue' && G.info.theme !== 'morgue') Object.assign(G.info, { lamp: 0xbfd8ff, fog: 0x01030a, theme: 'morgue' }); // overtime's random cold floors
+  // each kind of floor brings its own light and colour (overtime picks kinds at random)
+  const TH = THEMES[D.theme] || THEMES.plant;
+  if (D.theme !== 'plant' && G.info.theme !== D.theme) Object.assign(G.info, { lamp: TH.lamp, fog: TH.fog, theme: D.theme, name: G.mode === 'overtime' ? TH.label : G.info.name });
   scene.fog.color.setHex(G.info.fog);
   scene.background.setHex(G.info.fog);
-  post.u.tint.value.set(...(D.theme === 'morgue' ? [0.72, 0.9, 1.22] : [1, 1, 1])); // the morgue is cold
+  post.u.tint.value.set(...TH.tint);
   scene.fog.density = 0.085 + D.fogBoost + Math.min(depth, 10) * 0.003;
   for (const l of lampLights) l.color.setHex(G.info.lamp);
   G.hunters = B.hunterSpawns.map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
@@ -235,9 +243,30 @@ function loadFloor(depth, seed) {
   player.inLift = true;
   G.lift = { phase: 'arrive', t: 0 };
   G.liftSealed = true;
+  G.waterLevel = 1;
   director.reset();
   guide.reset();
   audio.setDepth(depth);
+}
+
+// what lies about on a floor that depends on the run: the next gun part you're missing, a few bolts, keepsakes
+function placeLoot(depth, seed) {
+  const B = G.B;
+  if (depth >= 2) {
+    const miss = missingParts(G.inv);
+    if (miss.length) B.addPickup('part', { part: miss[0] });
+    if (G.inv.built || miss.length <= 1) for (let i = 0; i < ({ easy: 3, normal: 2, hard: 2, extreme: 1 }[G.diff] || 2); i++) B.addPickup('ammo');
+  }
+  // keepsakes you haven't found yet (a resumed floor gets back exactly the ones it had)
+  let keeps = G.floorKeeps;
+  if (!keeps) {
+    const left = KEEPSAKES.filter((k) => !save.collection.keep.includes(k.id));
+    keeps = [];
+    const n = Math.min(left.length, 1 + (seed % 2));
+    for (let i = 0; i < n; i++) keeps.push(left.splice((seed + i * 7) % left.length, 1)[0].id);
+  }
+  G.floorKeeps = keeps;
+  for (const id of keeps) { const k = KEEPSAKES.find((x) => x.id === id); if (k) B.addPickup('keepsake', { id, kind: k.kind }); }
 }
 
 function inAlcove() {
@@ -255,7 +284,9 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   blood.clear();
   G.mode = mode;
   const st = save.story;
-  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal' });
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv() });
+  // what you're carrying: a story shift keeps it from floor to floor (as it was when you started the floor)
+  G.inv = mode === 'story' ? cloneInv(st.inv) : freshInv();
   G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
   if (diff) save.settings.lastDiff = diff;
   if (mode === 'story' && (fresh || st.floor === 1)) guide.newRun();
@@ -302,8 +333,11 @@ function updateTransition(dt) {
       st.tags = G.runTags;
       writeSave();
     }
+    if (tr.snap) { G.inv = cloneInv(tr.snap.invStart); G.floorKeeps = tr.snap.keeps || []; } else G.floorKeeps = null;
     loadFloor(tr.next, seed);
     player.tags = 0;
+    G.invStart = cloneInv(G.inv);
+    if (G.mode === 'story' && !tr.snap) { save.story.inv = cloneInv(G.inv); writeSave(); }
     if (tr.snap) restoreSnapshot(tr.snap);
     const info = G.info;
     UI.$('cardB').textContent = info.label;
@@ -463,6 +497,7 @@ function updateDeath(dt) {
       camera.updateProjectionMatrix();
       G.flash = 1;
       G.cutscene = new Cutscene(d.scene, { mats, audio, blood, aspect: camera.aspect });
+      noteCutscene(d.scene);
       audio.setMode('ending');
     }
     const cs = G.cutscene;
@@ -536,7 +571,6 @@ function showDeath() {
 
 // ---------- the end ----------
 function startEnding() {
-  G.state = 'ending';
   try { document.exitPointerLock(); } catch {}
   const st = save.story;
   const time = Math.round(G.runTime);
@@ -544,37 +578,71 @@ function startEnding() {
   st.bestTime = st.bestTime ? Math.min(st.bestTime, time) : time;
   st.active = false;
   save.snap = null;
-  const deaths = st.deaths;
+  G.endInfo = { time, deaths: st.deaths, tags: G.runTags };
+  noteCutscene('ending');
   writeSave();
   UI.prompt(null);
-  UI.$('fade').classList.add('on');
   audio.siren(false);
+  audio.lineRunning(false);
+  // the way out, as a film: see cutscenes.js endingBuild
+  G.state = 'endcine';
+  setTimeout(() => {
+    if (G.state !== 'endcine') return;
+    disposeLevel();
+    G.B = null;
+    audio.liftMotor(false);
+    G.cutscene = new Cutscene('ending', { mats, audio, blood, aspect: camera.aspect });
+    UI.$('fade').classList.remove('on');
+    UI.only();
+  }, 1500);
+  UI.$('fade').classList.add('on');
+}
+function updateEndCine(dt) {
+  const cs = G.cutscene;
+  if (!cs) return;
+  const done = cs.update(dt);
+  const u = post.u;
+  u.fear.value = cs.fear; u.flash.value = cs.flash; u.blackout.value = cs.blackout; u.damage.value = 0; u.health.value = 1; u.hidden.value = 0;
+  u.tear.value = Math.max(0, cs.fear - 0.55) * 2;
+  u.tint.value.set(1, 1, 1);
+  u.warm.value = 0;
+  post.render(cs.scene, cs.cam);
+  const skippable = cs.t > 1.5;
+  UI.$('skip').classList.toggle('on', skippable);
+  if (done || (skippable && (tapped('Space') || tapped('Enter')))) {
+    cs.dispose();
+    G.cutscene = null;
+    UI.$('skip').classList.remove('on');
+    endingText();
+  }
+}
+// after the film: the card, white, with the last lines and what it cost
+function endingText() {
+  G.state = 'ending';
+  const { time, deaths, tags } = G.endInfo;
   const fmt = (s) => `${(s / 3600) | 0}h ${String(((s / 60) | 0) % 60).padStart(2, '0')}m`;
   const lines = [
-    'B9 \u2026 B7 \u2026 B4 \u2026 B2 \u2026 B1 \u2026',
-    'The motor screams the whole way up. Nothing follows you.',
-    'The gate opens onto grey light.',
     '06:00. Somewhere outside, birds.',
-    'The car park is empty except for your car. You don\u2019t look back at the building.',
+    'The car park is empty except for your car. You don\u2019t look back at the building again.',
     'In your pocket, your time card has been stamped.',
   ];
-  const host = UI.$('endLines');
-  host.innerHTML = '';
   UI.$('endStamp').classList.remove('on');
   UI.$('endStats').classList.remove('on');
   UI.$('endNav').classList.remove('on');
-  setTimeout(() => { if (G.state !== 'ending') return; disposeLevel(); G.B = null; audio.liftMotor(false); UI.only('ending'); audio.dawn(); }, 2500);
+  UI.only('ending');
+  const host = UI.$('endLines');
+  host.innerHTML = '';
   lines.forEach((l, i) => setTimeout(() => {
     if (G.state !== 'ending') return;
     const p = document.createElement('p');
     host.appendChild(p);
     UI.typewrite(p, l, 32, () => Math.random() < 0.4 && audio.tick());
-  }, 3500 + i * 4200));
-  const tEnd = 3500 + lines.length * 4200;
+  }, 800 + i * 4200));
+  const tEnd = 800 + lines.length * 4200;
   setTimeout(() => { if (G.state === 'ending') { UI.$('endStamp').classList.add('on'); audio.clank({ x: 0, z: 0 }, 1); } }, tEnd);
   setTimeout(() => {
     if (G.state !== 'ending') return;
-    UI.$('endStats').innerHTML = `<span>TIME ON SHIFT</span><b>${fmt(time)}</b><span>TIMES PROCESSED</span><b>${deaths}</b><span>TAGS CUT</span><b>${G.runTags}</b><span>NEXT SHIFT</span><b class="rec">TONIGHT, 22:00</b>`;
+    UI.$('endStats').innerHTML = `<span>TIME ON SHIFT</span><b>${fmt(time)}</b><span>TIMES PROCESSED</span><b>${deaths}</b><span>TAGS CUT</span><b>${tags}</b><span>KEEPSAKES</span><b>${save.collection.keep.length}/${KEEPSAKES.length}</b><span>NEXT SHIFT</span><b class="rec">TONIGHT, 22:00</b>`;
     UI.$('endStats').classList.add('on');
     UI.$('endNav').classList.add('on');
   }, tEnd + 2500);
@@ -594,7 +662,7 @@ function refreshMenu() {
 // Everything that isn't rebuilt from the floor's seed: where you are and what you've done, what each
 // puzzle is up to, where they are, the clocks. Written every few seconds, on pause, and as the window goes.
 function snapshot() {
-  if (!G.B || !['play', 'paused'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
+  if (!G.B || !['play', 'paused', 'inv'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
   const B = G.B;
   return {
     v: 1, mode: G.mode, diff: G.diff, depth: G.depth, seed: G.floorSeed, at: Date.now(),
@@ -607,6 +675,7 @@ function snapshot() {
     hunters: G.hunters.map((h) => [h.pos.x, h.pos.z, h.yaw]),
     puzzles: G.puzzles.save(),
     shown: [...guide.shown],
+    inv: cloneInv(G.inv), invStart: cloneInv(G.invStart), keeps: G.floorKeeps || [],
   };
 }
 function saveSnapshot() {
@@ -642,6 +711,7 @@ function restoreSnapshot(s) {
   if (lk) player.pos.set(lk.pos.x + lk.facing.x * 0.75, 0, lk.pos.z + lk.facing.z * 0.75); // you were hiding: you're right outside it
   s.hunters.forEach(([x, z, yaw], i) => { const h = G.hunters[i]; if (h) { h.pos.set(x, 0, z); h.yaw = yaw; h.obj.position.copy(h.pos); } });
   guide.shown = new Set(s.shown);
+  if (s.inv) G.inv = cloneInv(s.inv);
   player.inLift = inAlcove();
 }
 addEventListener('pagehide', saveSnapshot);
@@ -756,6 +826,41 @@ function handleInteract(dt) {
         UI.message('A syringe of something red. Press R when you need to run and keep running.', 3);
       }
       break;
+    case 'part':
+      UI.prompt(`<kbd>E</kbd>&nbsp; TAKE THE ${PARTS[it.p.part].name}`);
+      if (tapE) {
+        it.p.taken = true;
+        it.p.obj.visible = false;
+        G.inv.parts[it.p.part] = true;
+        audio.pickup();
+        const have = PART_KEYS.length - missingParts(G.inv).length;
+        UI.message(have >= PART_KEYS.length ? 'That’s every part of a captive-bolt gun. Press TAB and put it together.' : `${PARTS[it.p.part].desc} (${have}/${PART_KEYS.length} gun parts — TAB to look)`, 4.5);
+      }
+      break;
+    case 'ammo':
+      UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE BOLTS');
+      if (tapE) {
+        it.p.taken = true;
+        it.p.obj.visible = false;
+        const got = Math.min(2, AMMO_MAX - G.inv.ammo);
+        G.inv.ammo += got;
+        audio.pickup();
+        UI.message(got ? `A box of blank cartridges for a captive-bolt gun. ${got} you can use.${G.inv.built ? '' : ' Useless without the gun.'}` : 'You can’t carry any more.', 3.5);
+      }
+      break;
+    case 'keepsake': {
+      const k = KEEPSAKES.find((x) => x.id === it.p.id);
+      UI.prompt(`<kbd>E</kbd>&nbsp; PICK UP THE ${k.name.toUpperCase()}`);
+      if (tapE) {
+        it.p.taken = true;
+        it.p.obj.visible = false;
+        if (!save.collection.keep.includes(k.id)) save.collection.keep.push(k.id);
+        writeSave();
+        audio.tick();
+        UI.note(k.name.toUpperCase(), '', k.text + `\n\nKEEPSAKE ${save.collection.keep.length}/${KEEPSAKES.length} — see COLLECTION on the menu`, 7);
+      }
+      break;
+    }
     case 'puzzle': {
       const p = it.p;
       if (p.hold) {
@@ -957,6 +1062,10 @@ function updateSwingers(dt, t) {
   }
 }
 
+function updateWater(dt) {
+  const w = G.B && G.B.water;
+  if (w) { w.material.map.offset.x += dt * 0.02; w.material.map.offset.y += dt * 0.035; }
+}
 function updateLockers(dt) {
   for (const lk of G.B.lockers) {
     lk.open += (lk.target - lk.open) * Math.min(1, dt * (lk.target ? 10 : 6));
@@ -968,6 +1077,7 @@ function updateGame(dt, t) {
   const B = G.B;
   G.runTime += dt;
   G.floorTime += dt;
+  updateWater(dt);
   audio.setMuffle(!!player.hidden); // follows you in and out, whatever path got you there
   // walking up to a crouchway standing: say how to get in (once in a while, not every time)
   G.crawlHintT = Math.max(0, (G.crawlHintT || 0) - dt);
@@ -1045,9 +1155,11 @@ function updateGame(dt, t) {
   audio.ambienceTick(dt, player.pos);
   audio.listen(camera.position, player.forward(_fwd));
   UI.stamina(player.stamina, player.exhausted, player.boostT > 0);
+  gun.update(dt, player);
   UI.hud({
     floor: `${G.info.label} · ${G.info.name}`, have: player.tags, fed: B.lift.inserted, need: G.D.tags, battery: player.battery,
     breath: player.breath, hidden: !!player.hidden, breathUrgent: player.breathUrgent, adrenaline: player.adrenaline,
+    gun: G.inv.built ? `CLICK · BOLT GUN ${G.inv.ammo}/${AMMO_MAX}` : missingParts(G.inv).length < PART_KEYS.length ? `TAB · GUN PARTS ${PART_KEYS.length - missingParts(G.inv).length}/${PART_KEYS.length}` : '',
   });
 }
 
@@ -1074,7 +1186,7 @@ document.addEventListener('fullscreenchange', () => {
   const LOCK = ['KeyW', 'KeyR', 'KeyT', 'KeyN', 'KeyQ', 'KeyF', 'KeyS', 'KeyP', 'KeyH', 'KeyD', 'KeyG', 'KeyA', 'KeyE', 'KeyC'];
   try { if (document.fullscreenElement && navigator.keyboard) navigator.keyboard.lock(LOCK); else if (navigator.keyboard) navigator.keyboard.unlock(); } catch {}
 });
-// fullscreen: F11, the menu and pause buttons, or the setting (which also puts you there on your first click)
+// fullscreen: F11, or the setting (which also puts you there on your first click)
 function setFullscreen(on) {
   try {
     if (on && !document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
@@ -1140,7 +1252,12 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'overtimeContinue' && save.snap) startRun('overtime', false, save.snap.diff, { resume: save.snap });
   else if (act === 'howto') UI.only('howto');
+  else if (act === 'collection') openCollection();
+  else if (act === 'build') buildGun();
+  else if (act === 'replay') startReplay(b.dataset.cut);
+  else if (act === 'keep') readKeepsake(b.dataset.id, b);
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
+  else if (act === 'back' && G.state === 'menu' && UI.$('collection').classList.contains('on')) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
   else if (act === 'fullscreen') setFullscreen(!document.fullscreenElement);
@@ -1173,6 +1290,110 @@ for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHEC
     applySettings();
     writeSave();
   });
+}
+
+// ---------- inventory and the bolt gun ----------
+function openInventory() {
+  if (G.state !== 'play' || player.hidden) return;
+  G.state = 'inv';
+  try { document.exitPointerLock(); } catch {}
+  drawInventory();
+  UI.only('inv', 'hud');
+  UI.$('brief').classList.remove('on');
+}
+function closeInventory() {
+  if (G.state !== 'inv') return;
+  G.state = 'play';
+  UI.only('hud');
+  lockPointer();
+}
+function drawInventory() {
+  const inv = G.inv;
+  UI.$('invParts').innerHTML = PART_KEYS.map((k) => inv.parts[k] || inv.built
+    ? `<div class="inv-slot"><b>${PARTS[k].name}</b>${PARTS[k].desc}</div>`
+    : `<div class="inv-slot missing"><b>${PARTS[k].name}</b>Not found yet. Somewhere further down.</div>`).join('');
+  const have = PART_KEYS.filter((k) => inv.parts[k]).length;
+  UI.$('invGun').innerHTML = inv.built
+    ? `CAPTIVE-BOLT GUN — ${inv.ammo}/${AMMO_MAX} BOLTS<br><span class="dim">CLICK to fire. A hit drops him for ${G.D ? G.D.stun : 15} seconds. Everything on the floor hears it.</span>`
+    : have >= PART_KEYS.length ? '<button data-act="build">PUT THE GUN TOGETHER</button>' : `${have}/${PART_KEYS.length} PARTS OF A CAPTIVE-BOLT GUN${inv.ammo ? ` · ${inv.ammo} BOLTS` : ''}`;
+  UI.$('invMisc').textContent = `TAGS ${player.tags} · SYRINGES ${player.adrenaline} · TORCH ${Math.round(player.battery)}% · KEEPSAKES ${save.collection.keep.length}/${KEEPSAKES.length}`;
+}
+function buildGun() {
+  if (missingParts(G.inv).length) return;
+  G.inv.built = true;
+  audio.clank(player.pos, 0.6);
+  setTimeout(() => audio.clank(player.pos, 0.4), 250);
+  drawInventory();
+  UI.message(G.inv.ammo ? 'It goes together with a heavy click. It is loaded.' : 'It goes together with a heavy click. Now you need bolts for it.', 4);
+}
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button !== 0 || G.state !== 'play' || document.pointerLockElement !== canvas) return;
+  if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
+});
+G.onStunned = (h) => {
+  if (!G.stunTold) { G.stunTold = true; UI.message(`The bolt goes in and he drops to his knees. You have about ${G.D.stun} seconds.`, 4); }
+  else UI.message('He drops.', 1.5);
+  void h;
+};
+addEventListener('keydown', (e) => {
+  if (e.code === 'Tab') {
+    e.preventDefault();
+    if (G.state === 'play') openInventory(); else if (G.state === 'inv') closeInventory();
+  } else if (e.code === 'Escape' && G.state === 'inv') closeInventory();
+});
+
+// ---------- the collection ----------
+function openCollection() {
+  const c = save.collection;
+  UI.$('collCount').textContent = `${c.keep.length}/${KEEPSAKES.length}`;
+  UI.$('collKeep').innerHTML = KEEPSAKES.map((k) => c.keep.includes(k.id)
+    ? `<button class="coll-item" data-act="keep" data-id="${k.id}">${k.name}</button>`
+    : '<button class="coll-item locked">not yet found</button>').join('');
+  UI.$('collRead').textContent = c.keep.length ? 'Pick one to read it.' : 'Nothing yet. They’re lying about on the floors, things the workers left behind. They won’t help you. They’re just theirs.';
+  UI.$('collCuts').innerHTML = Object.keys(CUTSCENE_INFO).map((id) => c.cuts.includes(id)
+    ? `<button class="coll-cut" data-act="replay" data-cut="${id}"><b>${CUTSCENE_INFO[id].name}</b>${CUTSCENE_INFO[id].text}</button>`
+    : `<button class="coll-cut locked"><b>? ? ?</b>${id === 'ending' ? 'Finish the shift.' : 'Not yet.'}</button>`).join('');
+  UI.only('collection');
+}
+function readKeepsake(id, btn) {
+  const k = KEEPSAKES.find((x) => x.id === id);
+  document.querySelectorAll('.coll-item.sel').forEach((b) => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  UI.$('collRead').innerHTML = `<b>${k.name}.</b> ${k.text}`;
+}
+function noteCutscene(id) {
+  if (!save.collection.cuts.includes(id)) { save.collection.cuts.push(id); writeSave(); }
+}
+// watching one again from the collection
+function startReplay(id) {
+  audio.init();
+  audio.setMode('ending');
+  G.replay = new Cutscene(id, { mats, audio, blood, aspect: camera.aspect, replay: true });
+  G.state = 'replay';
+  blood.clear();
+  UI.only();
+}
+function updateReplay(dt) {
+  const cs = G.replay;
+  const done = cs.update(dt);
+  const u = post.u;
+  u.fear.value = cs.fear; u.flash.value = cs.flash; u.blackout.value = cs.blackout; u.damage.value = 0; u.health.value = 1; u.hidden.value = 0;
+  u.tear.value = Math.max(0, cs.fear - 0.55) * 2;
+  u.tint.value.set(1, 1, 1);
+  u.warm.value = cs.fire ? 1 : 0;
+  post.render(cs.scene, cs.cam);
+  const skippable = cs.t > 0.15;
+  UI.$('skip').classList.toggle('on', skippable && cs.blackout < 1);
+  if (done || (skippable && (tapped('Space') || tapped('Escape') || tapped('Enter')))) {
+    cs.dispose();
+    G.replay = null;
+    UI.$('skip').classList.remove('on');
+    blood.clear();
+    G.state = 'menu';
+    audio.setMode('menu');
+    audio.setDepth(0);
+    openCollection();
+  }
 }
 
 // ---------- boot ----------
@@ -1214,8 +1435,14 @@ function frame(now) {
     case 'dying':
       updateDeath(dt);
       break;
+    case 'replay':
+      updateReplay(dt);
+      break;
+    case 'endcine':
+      updateEndCine(dt);
+      break;
   }
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'play' || G.state === 'paused' || G.state === 'inv' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
@@ -1238,6 +1465,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, audio, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, gun, updateEndCine, openInventory, closeInventory, buildGun, openCollection, startReplay, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };
