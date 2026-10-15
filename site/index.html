@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Froody Games</title>
+<meta name="description" content="Download Ember City and OFFAL for Windows, or play them in your browser.">
+<meta property="og:title" content="Froody Games">
+<meta property="og:description" content="Ember City, an open-world crime game, and OFFAL, a slaughterhouse horror game. Free for Windows and the browser.">
+<meta property="og:image" content="assets/shots/ember-city-skyline.webp">
+<meta name="theme-color" content="#0a0910">
+<link rel="icon" href="assets/ember-city.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+/* Layout: a console "select game" screen (two cabinet covers), then one full-width band per game,
+   each band dressed in its own game's visual identity. Deliberately dark-only, like a game launcher. */
+@font-face{font-family:'Press Start 2P';src:url(assets/press-start-2p-latin-400-normal.woff2) format('woff2');font-display:swap}
+:root{
+  color-scheme:dark;
+  /* launcher chrome */
+  --void:#0a0910;
+  --deck:#13111b;
+  --rule:#2a2635;
+  --text:#ecebf2;
+  --mute:#9d99ab;
+  --cursor:#ffc94a;
+  /* Ember City */
+  --ec-night:#0b0b1f;
+  --ec-pink:#ff3fd0;
+  --ec-cyan:#44e6ff;
+  --ec-gold:#ffc94a;
+  --ec-ember:#ff6a2b;
+  /* OFFAL */
+  --of-bg:#060303;
+  --of-bone:#d8cdb8;
+  --of-dim:#80736a;
+  --of-blood:#8a0909;
+  --of-fresh:#d11a14;
+  --of-paper:#cdbf9f;
+  --of-ink:#2a2017;
+  /* type */
+  --pixel:'Press Start 2P','Courier New',monospace;
+  --ui:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+  --serif:'Times New Roman','Liberation Serif',Georgia,serif;
+  --mono:'Courier Prime','Courier New',Courier,monospace;
+  --gutter-l:max(16px,env(safe-area-inset-left,0px));
+  --gutter-r:max(16px,env(safe-area-inset-right,0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--void);color:var(--text);font:400 16px/1.6 var(--ui);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+:focus-visible{outline:3px solid var(--cursor);outline-offset:3px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r)}
+
+/* ---------- top bar ---------- */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(10,9,16,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:400 12px/1 var(--pixel);letter-spacing:.06em}
+.brand i{width:10px;height:10px;background:var(--cursor);box-shadow:0 0 12px var(--cursor);animation:blink 1.2s steps(1) infinite}
+.bar nav{display:flex;gap:6px;flex-wrap:wrap}
+.bar nav a{font:600 13px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:var(--mute);padding:9px 12px;border:1px solid transparent}
+.bar nav a:hover{color:var(--text);border-color:var(--rule)}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- select screen ---------- */
+.select{padding-block:40px 64px;position:relative}
+.select::before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+.select-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.select-head h1{font:400 clamp(18px,3.2vw,28px)/1.3 var(--pixel);letter-spacing:.04em}
+.select-head h1 span{color:var(--cursor)}
+.select-head p{color:var(--mute);font-size:15px}
+.select-head kbd{font:600 12px/1 var(--ui);border:1px solid var(--rule);border-bottom-width:2px;padding:3px 7px;color:var(--text)}
+.covers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.cover{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:min(560px,72vw);padding:26px;text-decoration:none;overflow:hidden;isolation:isolate;border:2px solid var(--rule);transition:transform .25s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .25s}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform 6s ease-out,filter .3s}
+.cover::after{content:"";position:absolute;inset:0;z-index:-1}
+.cover:hover,.cover:focus-visible{transform:translateY(-6px);border-color:var(--cursor);box-shadow:0 0 0 4px rgba(255,201,74,.18),0 30px 60px rgba(0,0,0,.6);outline:none}
+.cover:hover img,.cover:focus-visible img{transform:scale(1.06)}
+.cover .tag{position:absolute;top:18px;left:18px;font:400 10px/1 var(--pixel);letter-spacing:.08em;padding:8px 10px;background:var(--cursor);color:#1a1206;opacity:0;transform:translateX(-8px);transition:.2s}
+.cover:hover .tag,.cover:focus-visible .tag{opacity:1;transform:none}
+.cover .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.cover .meta span{font:600 12px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;padding:7px 10px;border:1px solid currentColor}
+.cover .blurb{margin-top:12px;max-width:40ch;font-size:16px}
+
+.cover.ec{color:#fff}
+.cover.ec::after{background:linear-gradient(180deg,rgba(11,11,31,.05) 25%,rgba(11,11,31,.92) 82%)}
+.cover.ec .meta span{color:var(--ec-cyan)}
+.ec-logo{font:400 clamp(30px,5.4vw,58px)/1 var(--pixel);letter-spacing:.02em}
+.ec-logo b{display:block;font-weight:400;color:var(--ec-pink);text-shadow:4px 4px 0 var(--ec-cyan)}
+.ec-logo small{display:block;margin-top:14px;font-size:.55em;letter-spacing:.42em;color:var(--ec-cyan);text-shadow:3px 3px 0 var(--ec-pink)}
+
+.cover.of{color:var(--of-bone);background:var(--of-bg)}
+.cover.of img{object-position:30% 50%;filter:saturate(.9)}
+.cover.of::after{background:linear-gradient(180deg,rgba(6,3,3,0) 35%,rgba(6,3,3,.94) 85%)}
+.cover.of .meta span{color:var(--of-dim);font-family:var(--mono);font-weight:700}
+.of-logo{font:400 clamp(52px,8.4vw,104px)/.9 var(--serif);color:var(--of-blood);letter-spacing:.02em;filter:url(#rough);text-shadow:0 0 30px rgba(209,26,20,.35)}
+.of-sub{font:400 12px/1.4 var(--mono);letter-spacing:.38em;color:var(--of-dim);margin-top:10px}
+.cover.of .blurb{font-family:var(--mono);font-size:15px}
+
+/* ---------- shared game band ---------- */
+.band{padding-block:72px;position:relative;overflow:hidden}
+.band-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:44px;align-items:start}
+.band-grid>*{min-width:0}
+.lede{font-size:18px;max-width:58ch}
+.stack{display:flex;flex-direction:column;gap:22px}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.shots figure{margin:0}
+.shots img{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.shots figcaption{font-size:13px;margin-top:6px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer;border:0;font:700 15px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;padding:15px 20px;transition:transform .12s,filter .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:18px;height:18px;flex:none}
+.keys{width:100%;border-collapse:collapse;font-size:14px}
+.keys td{padding:7px 0;vertical-align:top;border-bottom:1px solid var(--line-c)}
+.keys td:first-child{width:46%;padding-right:12px}
+.feats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 26px}
+.feats li{min-width:0}
+.feats b{display:block;margin-bottom:3px}
+.specs{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line-c)}
+.specs div{flex:1 1 120px;padding:12px 14px;border-right:1px solid var(--line-c)}
+.specs div:last-child{border-right:0}
+.specs dt{font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.75}
+.specs dd{margin:4px 0 0;font-weight:700;font-variant-numeric:tabular-nums}
+.label{font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+.dl-list{list-style:none;margin:0;padding:0}
+.dl-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line-c)}
+.dl-row:last-child{border-bottom:0}
+.dl-row .what{font-weight:700}
+.dl-row .file{font-size:13px;opacity:.75;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.dl-row .btn{padding:11px 14px;font-size:13px}
+.dl-row.off .btn{pointer-events:none;opacity:.45}
+.note{font-size:13px;opacity:.8}
+.warn{font-size:14px}
+
+/* ---------- Ember City band ---------- */
+.band.ec{--line-c:rgba(68,230,255,.22);background:var(--ec-night);color:#e9e7ff}
+.band.ec::before{content:"";position:absolute;inset:0 0 auto 0;height:420px;background:url(assets/shots/ember-city-skyline.webp) center 30%/cover;opacity:.32;mask-image:linear-gradient(#000,transparent);-webkit-mask-image:linear-gradient(#000,transparent);pointer-events:none}
+.band.ec .wrap{position:relative}
+.band.ec h2{font:400 clamp(26px,4.6vw,46px)/1.15 var(--pixel);color:var(--ec-pink);text-shadow:4px 4px 0 var(--ec-cyan);margin-bottom:18px}
+.band.ec .quote{font:400 clamp(11px,1.4vw,13px)/1.9 var(--pixel);color:var(--ec-gold);margin-bottom:22px}
+.band.ec h3{font:400 12px/1.4 var(--pixel);color:var(--ec-cyan);letter-spacing:.04em;margin-bottom:14px}
+.band.ec .feats b{color:var(--ec-gold)}
+.band.ec .feats span,.band.ec .shots figcaption,.band.ec .note{color:#b3b0d6}
+.band.ec .btn.primary{background:var(--ec-gold);color:#1b1206;box-shadow:4px 4px 0 var(--ec-pink)}
+.band.ec .btn.ghost{background:transparent;color:var(--ec-cyan);box-shadow:inset 0 0 0 2px var(--ec-cyan)}
+.band.ec .dl{background:rgba(9,9,26,.85);border:2px solid var(--ec-cyan);box-shadow:6px 6px 0 rgba(255,63,208,.55);padding:20px 22px}
+.band.ec .dl .label{color:var(--ec-cyan)}
+.band.ec .dl-row .btn{background:var(--ec-gold);color:#1b1206}
+.band.ec .dl-row .btn.alt{background:transparent;color:var(--ec-gold);box-shadow:inset 0 0 0 2px var(--ec-gold)}
+.band.ec .ver{font:400 10px/1 var(--pixel);color:var(--ec-gold);padding:6px 8px;border:1px solid var(--ec-gold)}
+.band.ec .keys td:first-child{color:var(--ec-cyan);font-weight:600}
+.band.ec .shots img{border:2px solid rgba(68,230,255,.4)}
+
+/* ---------- OFFAL band ---------- */
+.band.of{--line-c:rgba(216,205,184,.16);background:var(--of-bg);color:var(--of-bone);font-family:var(--mono)}
+.band.of::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.band.of::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 40%,rgba(0,0,0,.75) 100%)}
+.band.of .wrap{position:relative;z-index:1}
+.band.of h2{font:400 clamp(64px,11vw,130px)/.9 var(--serif);color:var(--of-blood);filter:url(#rough);text-shadow:0 0 34px rgba(209,26,20,.3)}
+.drips{display:flex;gap:7%;padding-left:3%;height:44px;margin-bottom:6px}
+.drips i{width:4px;background:linear-gradient(var(--of-blood),#4a0505);border-radius:0 0 3px 3px;animation:drip 5s ease-in infinite}
+@keyframes drip{0%{height:2px}70%{height:var(--h)}100%{height:var(--h);opacity:.6}}
+.band.of .sub{font-size:13px;letter-spacing:.38em;color:var(--of-dim);margin-bottom:24px}
+.band.of .lede{font-size:17px}
+.band.of h3{font:700 13px/1.4 var(--mono);letter-spacing:.32em;text-transform:uppercase;color:var(--of-fresh);margin-bottom:14px}
+.band.of .feats b{color:var(--of-bone)}
+.band.of .feats span,.band.of .shots figcaption,.band.of .note{color:var(--of-dim)}
+.band.of .btn{font-family:var(--mono);letter-spacing:.24em}
+.band.of .btn.primary{background:var(--of-blood);color:var(--of-bone);box-shadow:0 0 0 1px #b81410,0 10px 30px rgba(138,9,9,.35)}
+.band.of .btn.ghost{background:transparent;color:var(--of-bone);box-shadow:inset 0 0 0 1px var(--of-dim)}
+.band.of .warn{border:1px solid var(--of-blood);padding:14px 16px;color:var(--of-bone)}
+.band.of .warn b{color:var(--of-fresh);letter-spacing:.3em;display:block;font-size:12px;margin-bottom:4px}
+.band.of .shots img{filter:contrast(1.05);border:1px solid var(--line-c)}
+.band.of .keys td:first-child{color:var(--of-bone);font-weight:700}
+.band.of .keys td{color:var(--of-dim)}
+/* the time card */
+.timecard{--line-c:rgba(42,32,23,.35);background:var(--of-paper);color:var(--of-ink);padding:22px 22px 18px;transform:rotate(-1.2deg);box-shadow:0 24px 60px rgba(0,0,0,.7);position:relative;background-image:radial-gradient(circle at 88% 12%,rgba(138,9,9,.45) 0 28px,transparent 46px),radial-gradient(circle at 12% 96%,rgba(80,50,20,.18) 0 60px,transparent 90px)}
+.timecard header{border-bottom:2px solid var(--of-ink);padding-bottom:10px;margin-bottom:4px}
+.timecard header strong{display:block;font-size:17px;letter-spacing:.14em}
+.timecard header span{font-size:12px;letter-spacing:.2em;opacity:.75}
+.timecard .dl-row{border-bottom:1px dashed var(--line-c)}
+.timecard .dl-row .btn{background:var(--of-ink);color:var(--of-paper);letter-spacing:.18em}
+.timecard .dl-row .btn.alt{background:transparent;color:var(--of-ink);box-shadow:inset 0 0 0 1px var(--of-ink)}
+.timecard .stamp{position:absolute;right:16px;bottom:-14px;transform:rotate(-6deg);font-weight:700;letter-spacing:.24em;font-size:12px;color:var(--of-blood);border:2px solid var(--of-blood);padding:5px 9px;background:var(--of-paper)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--rule);padding-block:34px 40px;color:var(--mute);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+footer .brand{color:var(--text);margin-bottom:10px}
+footer p{max-width:60ch}
+
+@media (max-width:880px){
+  /* one column: flatten both stacks so the downloads sit right under the intro */
+  .band-grid{grid-template-columns:minmax(0,1fr);gap:26px}
+  .band-grid>.stack{display:contents}
+  .band-grid .stack>*{order:3}
+  .band-grid .stack>.intro{order:1}
+  .band-grid .stack>.dl-panel{order:2}
+  .band-grid .stack>.controls{order:4}
+  .timecard{transform:none}
+}
+@media (max-width:640px){
+  .covers{grid-template-columns:minmax(0,1fr)}
+  .cover{min-height:420px;padding:20px}
+  .feats{grid-template-columns:minmax(0,1fr)}
+  .bar nav a{padding:8px 8px;font-size:12px}
+  .band{padding-block:52px}
+  .dl-row{grid-template-columns:minmax(0,1fr)}
+  .dl-row .btn{justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="8"/></filter>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+</svg>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top"><i></i>FROODY GAMES</a>
+    <nav aria-label="Games">
+      <a href="#ember-city">Ember City</a>
+      <a href="#offal">OFFAL</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="select wrap" aria-labelledby="select-title">
+    <div class="select-head">
+      <h1 id="select-title"><span>&#9654;</span> SELECT GAME</h1>
+      <p>Both games are free. Grab the Windows app or play right here in your browser. <kbd>&larr;</kbd> <kbd>&rarr;</kbd> to browse</p>
+    </div>
+    <div class="covers">
+      <a class="cover ec" href="#ember-city" data-cover>
+        <img src="assets/shots/ember-city-skyline.webp" alt="Ember City at night: lit towers, the river and downtown streets" width="1600" height="900">
+        <span class="tag">PRESS START</span>
+        <div class="ec-logo"><b>EMBER</b><small>CITY</small></div>
+        <p class="blurb">Six years inside. One last night to settle everything. An open-world crime game with eleven story chapters and online multiplayer.</p>
+        <div class="meta"><span>Open world</span><span>Story</span><span>Online</span></div>
+      </a>
+      <a class="cover of" href="#offal" data-cover>
+        <img src="assets/shots/offal-carcasses.webp" alt="Carcasses hanging on hooks in the dark of the meatworks" width="1280" height="720">
+        <span class="tag">CLOCK IN</span>
+        <div class="of-logo">OFFAL</div>
+        <p class="of-sub">HOLLOW PINES MEATWORKS &middot; NIGHT SHIFT</p>
+        <p class="blurb">Ten floors down a slaughterhouse that goes deeper than the plans say. The Foreman is still on shift.</p>
+        <div class="meta"><span>Horror</span><span>First person</span><span>18+</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===================== EMBER CITY ===================== -->
+  <section class="band ec" id="ember-city" aria-labelledby="ec-title">
+    <div class="wrap band-grid">
+      <div class="stack">
+        <div class="intro">
+          <h2 id="ec-title">EMBER CITY</h2>
+          <p class="quote">Six years inside.<br>One last night to settle everything.</p>
+          <p class="lede">An open-world crime game in a neon city of nine districts. Play the story from <em>Homecoming</em> to <em>Ember Falls</em>, or go off on your own: rob the jewellery counter at the mall, crack the vault at the top of Ember Tower, sell hot cars at the chop shop, and ride the Ferris wheel on the pier. Rosy, your golden retriever, comes everywhere with you.</p>
+        </div>
+        <dl class="specs">
+          <div><dt>Story</dt><dd>11 chapters</dd></div>
+          <div><dt>Endings</dt><dd>2</dd></div>
+          <div><dt>Map</dt><dd>780 &times; 730 m</dd></div>
+          <div><dt>Online</dt><dd>Up to 8 players</dd></div>
+        </dl>
+        <div class="cta">
+          <a class="btn primary" href="games/ember-city.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-play"/></svg>Play in browser</a>
+          <a class="btn ghost" href="games/ember-city-trailer.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-film"/></svg>Watch trailer</a>
+        </div>
+        <p class="note">The trailer is rendered live in the game engine and contains strong violence.</p>
+        <div class="shots">
+          <figure><img src="assets/shots/ember-city-title.webp" alt="Ember City main menu over the live city" loading="lazy" width="1280" height="720"><figcaption>The main menu, drawn live over the city.</figcaption></figure>
+          <figure><img src="assets/shots/ember-city-skyline.webp" alt="Downtown Ember City and the river at night" loading="lazy" width="1600" height="900"><figcaption>Downtown, the river and Ember Heights at night.</figcaption></figure>
+        </div>
+        <div>
+          <h3>WHAT'S IN IT</h3>
+          <ul class="feats">
+            <li><b>Story mode</b><span>Fully staged cutscenes, player choices and two endings. Progress saves on its own.</span></li>
+            <li><b>Greater Ember City</b><span>Downtown, the Heights, Palm Grove, the Foundry, Port Ember, the beach and the airport.</span></li>
+            <li><b>Online with friends</b><span>Host your world and share a 6-letter join code. Chat, optional PvP, shared cars and aircraft.</span></li>
+            <li><b>Rosy</b><span>She fights for you, plays fetch, learns tricks at the Bark Park and wears whatever collar you buy her.</span></li>
+            <li><b>Cars, helicopters, planes</b><span>Buy a ride at Ember Motors or take one. Aircraft unlock as the story goes on.</span></li>
+            <li><b>Side jobs and turf</b><span>Properties, gang turf wars, weather, and 24 hidden Ember Tokens to find.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="dl dl-panel" id="ec-downloads">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px">
+            <span class="label">Downloads</span><span class="ver" data-ver>v2.5.0</span>
+          </div>
+          <ul class="dl-list" data-dl="ember-city">
+            <li class="dl-row"><div><div class="what">Windows app</div><div class="file">EmberCity-2.5.0-portable.exe &middot; 81.7 MB</div></div><a class="btn" href="https://github.com/froodyofficial-maker/Cityline/releases/download/v2.5.0/EmberCity-2.5.0-portable.exe"><svg aria-hidden="true"><use href="#i-down"/></svg>.exe</a></li>
+            <li class="dl-row"><div><div class="what">Windows app (zip)</div><div class="file">EmberCity-2.5.0-win-x64.zip &middot; 125.8 MB</div></div><a class="btn alt" href="https://github.com/froodyofficial-maker/Cityline/releases/download/v2.5.0/EmberCity-2.5.0-win-x64.zip"><svg aria-hidden="true"><use href="#i-down"/></svg>.zip</a></li>
+            <li class="dl-row"><div><div class="what">Browser version</div><div class="file">EmberCity.html &middot; 1.2 MB &middot; any OS</div></div><a class="btn alt" href="games/ember-city.html" download="EmberCity.html"><svg aria-hidden="true"><use href="#i-down"/></svg>.html</a></li>
+          </ul>
+          <p class="note" style="margin-top:12px">The Windows app needs no install: double-click the .exe. If Windows SmartScreen appears, choose <em>More info</em>, then <em>Run anyway</em>. The browser version is one file that runs from your Downloads folder in Chrome, Edge or Firefox.</p>
+        </div>
+        <div class="controls">
+          <h3>CONTROLS</h3>
+          <table class="keys">
+            <tr><td>W A S D</td><td>Move / drive</td></tr>
+            <tr><td>Shift</td><td>Sprint</td></tr>
+            <tr><td>Mouse</td><td>Look, shoot, scope</td></tr>
+            <tr><td>F</td><td>Enter or exit a vehicle</td></tr>
+            <tr><td>E</td><td>Interact, pet Rosy</td></tr>
+            <tr><td>Q</td><td>Throw Rosy's ball</td></tr>
+            <tr><td>N</td><td>Host or join online</td></tr>
+            <tr><td>M</td><td>Map</td></tr>
+            <tr><td>F11</td><td>Fullscreen</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== OFFAL ===================== -->
+  <section class="band of" id="offal" aria-labelledby="of-title">
+    <div class="wrap band-grid">
+      <div class="stack">
+        <div class="intro">
+          <h2 id="of-title">OFFAL</h2>
+          <div class="drips" aria-hidden="true"><i style="--h:30px"></i><i style="--h:42px;animation-delay:1.3s"></i><i style="--h:18px;animation-delay:.6s"></i><i style="--h:36px;animation-delay:2.4s"></i><i style="--h:24px;animation-delay:3.1s"></i></div>
+          <p class="sub">HOLLOW PINES MEATWORKS &middot; NIGHT SHIFT</p>
+          <p class="lede">You work the night shift at a slaughterhouse that goes down further than the plans say. Every dead worker swallowed a brass ID tag, and the freight lift only goes deeper when you feed it tags. Cut them out. It is slow, and it is loud. The Foreman hunts by sound and by light, and one hit from his hook kills you.</p>
+        </div>
+        <p class="warn"><b>CONTENT WARNING</b>Graphic gore, mutilated bodies, sudden loud noises and flashing images. Play with headphones and the lights off. Needs a keyboard and mouse.</p>
+        <dl class="specs">
+          <div><dt>Story</dt><dd>10 floors</dd></div>
+          <div><dt>Length</dt><dd>2.5 h+</dd></div>
+          <div><dt>Difficulty</dt><dd>4 modes</dd></div>
+          <div><dt>Deaths</dt><dd>5 ways</dd></div>
+        </dl>
+        <div class="cta">
+          <a class="btn primary" href="games/offal.html" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-play"/></svg>Clock in</a>
+          <a class="btn ghost" href="#offal-timecard">Downloads</a>
+        </div>
+        <div class="shots">
+          <figure><img src="assets/shots/offal-receiving.webp" alt="A tiled corridor on B1 with blood on the wall and a shift briefing note" loading="lazy" width="1280" height="720"><figcaption>B1, Receiving. Your first shift briefing.</figcaption></figure>
+          <figure><img src="assets/shots/offal-title.webp" alt="OFFAL title screen with the blood-red logo and an employee time card" loading="lazy" width="1280" height="720"><figcaption>The main menu keeps your time card.</figcaption></figure>
+        </div>
+        <div>
+          <h3>ON THE FLOOR</h3>
+          <ul class="feats">
+            <li><b>Puzzles on every floor</b><span>Dead power, sealed shutters with codes in blood, a jammed counterweight, steam valves, and freezer drawers in the morgue.</span></li>
+            <li><b>The Foreman</b><span>Crouch in the dark and he can't see you. Shine your torch in his face and he will. From B5 there are two of him.</span></li>
+            <li><b>Lockers</b><span>Hide, and hold your breath when he comes close. If he watched you climb in, he will open it.</span></li>
+            <li><b>Overtime</b><span>The endless mode. Random floors, random puzzles, and your deepest floor goes on your time card.</span></li>
+            <li><b>Saves the exact moment</b><span>Where you stand, what you carry, every half-cut body. Continue puts you right back.</span></li>
+            <li><b>All of it made in code</b><span>Textures, models, gore and every sound are generated, with positional HRTF audio.</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="timecard dl-panel" id="offal-timecard">
+          <header><strong>HOLLOW PINES MEATWORKS</strong><span>EMPLOYEE TIME CARD &middot; DOWNLOADS &middot; <span data-ver>v1.0.0</span></span></header>
+          <ul class="dl-list" data-dl="offal">
+            <li class="dl-row off" data-placeholder><div><div class="what">Windows app</div><div class="file">OFFAL-portable.exe &middot; not posted yet</div></div><a class="btn" aria-disabled="true" tabindex="-1"><svg aria-hidden="true"><use href="#i-down"/></svg>.exe</a></li>
+            <li class="dl-row"><div><div class="what">Browser version</div><div class="file">OFFAL.html &middot; 0.7 MB &middot; any OS</div></div><a class="btn alt" href="games/offal.html" download="OFFAL.html"><svg aria-hidden="true"><use href="#i-down"/></svg>.html</a></li>
+          </ul>
+          <p class="note" style="margin-top:12px;color:var(--of-ink);opacity:.8">The browser version is a single file. Save it anywhere and open it in Chrome, Edge or Firefox. Saves stay in that browser.</p>
+          <span class="stamp">NIGHT SHIFT</span>
+        </div>
+        <div class="controls">
+          <h3>Controls</h3>
+          <table class="keys">
+            <tr><td>W A S D</td><td>Move</td></tr>
+            <tr><td>Shift</td><td>Run (loud)</td></tr>
+            <tr><td>C</td><td>Crouch (quiet)</td></tr>
+            <tr><td>F</td><td>Torch on/off</td></tr>
+            <tr><td>E</td><td>Cut, search, hide, pull</td></tr>
+            <tr><td>Q (hold)</td><td>Listen for the flies</td></tr>
+            <tr><td>Space</td><td>Hold your breath</td></tr>
+            <tr><td>R</td><td>Syringe</td></tr>
+            <tr><td>Esc</td><td>Pause</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="brand"><i></i>FROODY GAMES</div>
+      <p>Both games run on <a href="https://threejs.org">three.js</a>. Ember City uses the Press Start 2P font (SIL Open Font License).</p>
+    </div>
+    <p><a href="https://github.com/froodyofficial-maker/Cityline/releases">All releases on GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+// Arrow keys move between the two covers, like a console menu.
+(function () {
+  const covers = [...document.querySelectorAll('[data-cover]')];
+  addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const t = document.activeElement;
+    if (t && /INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+    const i = covers.indexOf(t);
+    if (i < 0 && covers[0].getBoundingClientRect().bottom < 0) return;
+    e.preventDefault();
+    const n = i < 0 ? 0 : (i + (e.key === 'ArrowRight' ? 1 : covers.length - 1)) % covers.length;
+    covers[n].focus();
+  });
+})();
+
+// Pull the newest Windows builds from GitHub Releases so the buttons stay current.
+// If GitHub can't be reached, the links already in the page (v2.5.0) are used.
+(async function () {
+  const REPO = 'froodyofficial-maker/Cityline';
+  const games = {
+    'ember-city': { match: /^EmberCity-.*\.(exe|zip)$/i },
+    'offal': { match: /^OFFAL-.*\.(exe|zip)$/i }
+  };
+  const mb = b => (b / 1048576).toFixed(1) + ' MB';
+  const icon = '<svg aria-hidden="true"><use href="#i-down"/></svg>';
+  let releases;
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases?per_page=30', { headers: { Accept: 'application/vnd.github+json' } });
+    if (!r.ok) return;
+    releases = (await r.json()).filter(x => !x.draft && !x.prerelease);
+  } catch (_) { return; }
+  for (const [id, g] of Object.entries(games)) {
+    const rel = releases.find(x => x.assets.some(a => g.match.test(a.name)));
+    if (!rel) continue;
+    const list = document.querySelector('[data-dl="' + id + '"]');
+    const section = list.closest('section');
+    const assets = rel.assets.filter(a => g.match.test(a.name)).sort((a, b) => /\.exe$/i.test(a.name) ? -1 : /\.exe$/i.test(b.name) ? 1 : 0);
+    list.querySelectorAll('.dl-row').forEach(row => { if (row.hasAttribute('data-placeholder') || /github\.com/.test(row.querySelector('a').getAttribute('href') || '')) row.remove(); });
+    const first = list.firstElementChild;
+    assets.forEach((a, i) => {
+      const exe = /\.exe$/i.test(a.name);
+      const li = document.createElement('li');
+      li.className = 'dl-row';
+      li.innerHTML = '<div><div class="what"></div><div class="file"></div></div><a class="btn' + (i ? ' alt' : '') + '">' + icon + (exe ? '.exe' : '.zip') + '</a>';
+      li.querySelector('.what').textContent = exe ? 'Windows app' : 'Windows app (zip)';
+      li.querySelector('.file').textContent = a.name + ' · ' + mb(a.size);
+      li.querySelector('a').href = a.browser_download_url;
+      list.insertBefore(li, first);
+    });
+    const v = (rel.tag_name.match(/\d+\.\d+\.\d+/) || [rel.tag_name])[0];
+    section.querySelectorAll('[data-ver]').forEach(el => el.textContent = 'v' + v);
+  }
+})();
+</script>
+</body>
+</html>

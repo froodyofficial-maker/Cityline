@@ -20,6 +20,14 @@ npm start            # serves the project at http://localhost:8080
 
 `npm start` needs only Node 18 or newer. It has no dependencies. Any static file server works too, so the repo can be hosted on GitHub Pages as is. Opening `index.html` from disk won't work, because browsers block ES modules on `file://`. Use the dist file for that.
 
+## Website
+
+`site/` is the download page for all the games: Ember City and OFFAL. Each game has Windows downloads, a browser download, and a button to play it straight away. The Windows buttons read the newest GitHub Release, so a new release shows up on the site without editing it. A release whose files are named `OFFAL-*.exe` or `OFFAL-*.zip` appears under OFFAL.
+
+- **Preview:** run `npm start` and open `http://localhost:8080/site/`.
+- **Publish:** the *Website* workflow deploys `site/` to GitHub Pages on every push to `main` that touches it. Turn Pages on once under Settings → Pages → Source: *GitHub Actions*.
+- **Update a game:** copy its new single-file build over the one in `site/games/` (`ember-city.html`, `ember-city-trailer.html`, `offal.html`).
+
 ## Build
 
 ```bash
@@ -51,7 +59,8 @@ src/story/engine.js     mission runner, cinematic camera, NPC actors, saves
 src/story/chapters.js   the story: all cutscenes, dialogue and missions
 tools/                  dev server, single-file builder, syntax checker
 desktop/                Electron wrapper + Windows/Linux/macOS packaging (electron-builder)
-.github/workflows/      desktop build on GitHub's Windows runners
+.github/workflows/      desktop build on GitHub's Windows runners; website deploy to GitHub Pages
+site/                   the games website (download page for Ember City and OFFAL)
 ```
 
 The game scripts share one global scope. `boot.js` concatenates them in manifest order and runs them as a single classic script, which is the same thing the bundled build does. A new file goes in `src/manifest.js`.
