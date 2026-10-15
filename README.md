@@ -52,6 +52,8 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 | Hard | A little faster than yours | Footsteps, cutting, lockers and machinery carry further | One floor back, from its start |
 | Extreme | Faster than yours, even with a syringe | Everything carries much further | Back to B1 |
 
+A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extreme death) ends the shift: the next one starts fresh, with a new layout.
+
 **Saving:** the game saves the exact moment you leave. That happens when you pause, quit, close the window or switch away, plus every few seconds. It covers where you're standing and looking, the tags you carry, which bodies are cut (and how far), every puzzle's progress, pickups, battery, stamina, where the Foreman is, and the clock. **Continue** puts you back exactly there. On easy and normal, a story floor also keeps its layout after a death, so what you learned still helps. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the next body, puzzle piece, or the lift. An objective line at the top always says what's next, and on the first floors a shift briefing explains each thing as it comes up.
 
 **Overtime:** the endless version. Floors are random, puzzles are random from B2, and where a death sends you depends on the difficulty. Your deepest floor goes on your time card.
@@ -67,6 +69,7 @@ Syringes (**R**) give you a few seconds of running that never runs out.
 
 **The Foreman** hunts by sound and by light:
 - Running, cutting, puzzles and a gasping breath all carry. Crouching is nearly silent.
+- Crouched with the torch off, he can't see you unless he's right on top of you (about 2.5 m).
 - Shining your torch in his face gives you away.
 - If you hear the hook dragging, he's patrolling. If it goes quiet, he's running, and all you'll hear is your heart.
 - Hide in lockers. If he comes close, hold **Space** to hold your breath. If he watched you climb in, he will open it.

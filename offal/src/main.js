@@ -474,7 +474,8 @@ function showDeath() {
     save.story.deaths++;
     save.story.time = Math.round(G.runTime);
     if (back !== floor) { save.story.floor = back; save.story.seed = 0; }
-    if (back === 1) save.story.tags = 0;
+    // back to B1 is not a checkpoint: the shift is over, and the next one starts from scratch
+    if (back === 1) Object.assign(save.story, { active: false, floor: 1, seed: 0, tags: 0 });
   } else {
     save.best = Math.max(save.best, floor);
     save.totalTags += G.runTags;
@@ -491,13 +492,13 @@ function showDeath() {
     <span>FLOOR</span><b>${G.info.label} OF B${STORY_FLOORS}</b>
     <span>DEATHS THIS SHIFT</span><b>${save.story.deaths}</b>
     <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
-    <span>CHECKPOINT</span><b>START OF B${back}</b>` : `
+    <span>CHECKPOINT</span><b>${back === 1 ? 'NONE \u2014 A NEW SHIFT' : 'START OF B' + back}</b>` : `
     <span>DEEPEST FLOOR</span><b class="${record ? 'rec' : ''}">B${floor}${record ? ' \u2014 NEW RECORD' : ''}</b>
     <span>TAGS CUT</span><b>${G.runTags}</b>
     <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
     <span>SHIFT</span><b>#${G.shift}</b>
     <span>WORKERS PROCESSED</span><b>${save.deaths}</b>`;
-  UI.$('btnRetry').textContent = back === floor ? `Try ${G.info.label} again` : back === 1 ? 'Back to B1' : `Back to B${back}`;
+  UI.$('btnRetry').textContent = story && back === 1 ? 'Start a new shift' : back === floor ? `Try ${G.info.label} again` : back === 1 ? 'Back to B1' : `Back to B${back}`;
   UI.$('deathStats').insertAdjacentHTML('beforeend', `<span>DIFFICULTY</span><b>${(DIFFS[G.diff] || DIFFS.normal).label}</b>`);
   UI.only('death');
   blood.clear();
@@ -1065,7 +1066,10 @@ document.addEventListener('click', (e) => {
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
   else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff);
-  else if (act === 'retry') startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
+  else if (act === 'retry') {
+    if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff); // a brand new shift, same difficulty
+    else startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
+  }
   else if (act === 'overtimeContinue' && save.snap) startRun('overtime', false, save.snap.diff, { resume: save.snap });
   else if (act === 'howto') UI.only('howto');
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }

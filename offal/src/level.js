@@ -548,6 +548,27 @@ export function collide(L, B, p, r, hunter = false) {
   return hit;
 }
 
+// can something of radius r walk straight from a to b? walls and solid furniture (tables, gurneys) both count
+export function pathClear(L, B, ax, az, bx, bz, r = 0.36) {
+  if (!lineOfSight(L, ax, az, bx, bz)) return false;
+  const dx = bx - ax, dz = bz - az;
+  for (const c of B.colliders) {
+    if (c.off || !c.hunters) continue;
+    // slab test against the box grown by r
+    let t0 = 0, t1 = 1;
+    for (const [o, d, lo, hi] of [[ax, dx, c.x0 - r, c.x1 + r], [az, dz, c.z0 - r, c.z1 + r]]) {
+      if (Math.abs(d) < 1e-9) { if (o < lo || o > hi) { t0 = 2; break; } continue; }
+      let a = (lo - o) / d, b = (hi - o) / d;
+      if (a > b) [a, b] = [b, a];
+      t0 = Math.max(t0, a);
+      t1 = Math.min(t1, b);
+      if (t0 > t1) break;
+    }
+    if (t0 <= t1) return false;
+  }
+  return true;
+}
+
 export function lineOfSight(L, ax, az, bx, bz) {
   const dx = bx - ax, dz = bz - az, n = Math.ceil(Math.hypot(dx, dz) / 0.25);
   for (let i = 1; i < n; i++) {

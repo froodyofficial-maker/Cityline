@@ -2,7 +2,7 @@
 // It hunts by sound and by light, searches where it lost you, and opens lockers.
 import * as THREE from 'three';
 import { limb, mesh } from './props.js';
-import { lineOfSight, findPath, collide, randomFloorNear } from './level.js';
+import { lineOfSight, pathClear, findPath, collide, randomFloorNear } from './level.js';
 
 const V = new THREE.Vector3();
 
@@ -238,6 +238,7 @@ export class Hunter {
     if (d > 26) return false;
     if (!lineOfSight(this.w.L, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) return false;
     if (d < 2.2) return true;
+    if (pl.crouch && !pl.lightOn) return d < 2.6; // crouched, torch off: only right up close
     const facing = (Math.sin(this.yaw) * dx + Math.cos(this.yaw) * dz) / d;
     // the torch in its eyes gives you away from anywhere
     const lookAt = pl.lightOn && pl.facingDot(this.pos, 1.9) > 0.94 && d < 16;
@@ -340,7 +341,8 @@ export class Hunter {
         }
         let tgt = this.lastSeen || pl.pos;
         if (!sees && this.lastVel) tgt = tgt.clone().addScaledVector(this.lastVel, Math.min(this.lostT, 1.2));
-        if (sees && dP < 7) { goal = pl.pos; this.path = null; } else if (!this.path || this.pathT > 0.35) this.pathTo(tgt);
+        if (sees && dP < 7 && this.unstickT <= 0 && pathClear(L, w.B, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) { goal = pl.pos; this.path = null; }
+        else if (!this.path || this.pathT > 0.35) this.pathTo(tgt);
         if (sees && dP < 1.55) { this.setState('attack'); w.audio.growl(this.pos, 1); }
         break;
       }
@@ -399,7 +401,7 @@ export class Hunter {
 
     // steering
     if (!goal && this.path && this.path.length) {
-      while (this.path.length > 1 && lineOfSight(L, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z) && this.pos.distanceTo(this.path[0]) < 3) this.path.shift();
+      while (this.path.length > 1 && pathClear(L, w.B, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z) && this.pos.distanceTo(this.path[0]) < 3) this.path.shift();
       goal = this.path[0];
       if (this.pos.distanceTo(goal) < 0.45) { this.path.shift(); goal = this.path[0] || null; }
     }
@@ -420,9 +422,11 @@ export class Hunter {
 
     // unstick
     this.stuck.t += dt;
+    this.unstickT = (this.unstickT || 0) - dt;
     if (this.stuck.t > 1.5) {
       const moved = Math.hypot(this.pos.x - this.stuck.x, this.pos.z - this.stuck.z);
-      if (moved < 0.15 && speed > 0.5) { this.path = null; if (this.state === 'patrol') this.pickPatrol(); }
+      // wedged on something: follow the grid path for a bit instead of pushing straight
+      if (moved < 0.15 && speed > 0.5) { this.path = null; this.unstickT = 1.5; if (this.state === 'patrol') this.pickPatrol(); }
       this.stuck = { t: 0, x: this.pos.x, z: this.pos.z };
     }
 
