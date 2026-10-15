@@ -157,13 +157,13 @@ export class Player {
     const wantRun = (keys.has('ShiftLeft') || keys.has('ShiftRight')) && moving && iz <= 0 && !crouching && !w.listening;
     const running = wantRun && !this.exhausted;
     if (running) {
-      if (this.boostT <= 0) this.stamina = Math.max(0, this.stamina - dt * 19);
+      if (this.boostT <= 0) this.stamina = Math.max(0, this.stamina - dt * 10.5); // about 9.5 s of sprint from full
       this.sinceRun = 0;
       if (this.stamina <= 0) { this.exhausted = true; w.say('Your lungs are on fire.', 2); }
     } else {
       this.sinceRun += dt;
-      if (this.sinceRun > 0.7) this.stamina = Math.min(100, this.stamina + dt * (moving ? 9 : 16));
-      if (this.stamina > 35) this.exhausted = false;
+      if (this.sinceRun > 0.6) this.stamina = Math.min(100, this.stamina + dt * (moving ? 12 : 20));
+      if (this.stamina > 25) this.exhausted = false;
     }
     let speed = running ? (this.boostT > 0 ? 5.7 : 5.1) : crouching ? 1.35 : 2.6;
     if (w.slowT > 0) speed *= 0.5;

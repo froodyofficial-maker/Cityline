@@ -1206,6 +1206,7 @@ function frame(now) {
     u.flash.value = G.flash;
     u.hidden.value = player.hidden ? 1 : 0;
     u.blackout.value = G.state === 'dying' ? G.blackout : 0;
+    u.warm.value = G.cutscene && G.cutscene.fire ? 1 : 0;
     u.health.value = G.state === 'dying' ? 1 : u.health.value;
     if (G.cutscene) post.render(G.cutscene.scene, G.cutscene.cam);
     else if (G.B) post.render(scene, camera);

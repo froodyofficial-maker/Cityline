@@ -6,7 +6,7 @@ import * as THREE from 'three';
 const frag = /* glsl */ `
 uniform sampler2D tDiffuse;
 uniform vec2 res;
-uniform float time, fear, damage, health, blackout, bright, tear, flash, hidden;
+uniform float time, fear, damage, health, blackout, bright, tear, flash, hidden, warm;
 uniform vec3 tint;
 varying vec2 vUv;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -40,6 +40,7 @@ void main(){
   // bleach everything except blood
   float l = dot(col, vec3(0.299, 0.587, 0.114));
   float red = clamp((col.r - max(col.g, col.b)) * 4.0, 0.0, 1.0);
+  red = max(red, warm * clamp((col.r - col.b) * 2.2 - 0.1, 0.0, 1.0)); // fire: keep oranges and yellows too
   col = mix(vec3(l) * vec3(1.0, 0.96, 0.86), col, 0.3 + 0.7 * red);
   col *= mix(tint, vec3(1.0), red); // a floor's colour cast; blood stays red
   col = mix(col, vec3(dot(col, vec3(0.333))), (1.0 - health) * 0.6);
@@ -68,7 +69,7 @@ export class Post {
     this.u = {
       tDiffuse: { value: this.rt.texture }, res: { value: new THREE.Vector2(4, 4) }, time: { value: 0 }, fear: { value: 0 }, damage: { value: 0 },
       health: { value: 1 }, blackout: { value: 0 }, bright: { value: 1 }, tear: { value: 0 }, flash: { value: 0 }, hidden: { value: 0 },
-      tint: { value: new THREE.Vector3(1, 1, 1) },
+      tint: { value: new THREE.Vector3(1, 1, 1) }, warm: { value: 0 },
     };
     this.mat = new THREE.ShaderMaterial({ uniforms: this.u, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader: frag, depthTest: false, depthWrite: false });
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat);

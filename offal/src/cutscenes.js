@@ -129,17 +129,244 @@ function room(scene, mats, w, d, wallIdx = 4) {
   scene.add(ceil);
 }
 
-function flameTex() {
+// ---------- fire ----------
+// Flames are camera-facing quads running a noise shader: tongues that rise, split and lick, white-yellow at
+// the root, through orange to a dull red at the tips. Under them a bed of coals with glowing cracks that
+// breathe, charred logs, sparks spiralling up and dark smoke rolling off the top.
+const flameFrag = `
+uniform float time, seed, heat, fade;
+varying vec2 vUv;
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * n2(p); p = p * 2.03 + 1.7; a *= 0.5; } return v; }
+void main(){
+  float y = vUv.y, x = (vUv.x - 0.5) * 2.0;
+  float t = time * 2.2 + seed * 7.0;
+  // turbulence: sideways licks that grow toward the top
+  float n = fbm(vec2(x * 1.6 + seed, y * 2.6 - t));
+  float m = fbm(vec2(x * 3.5 - seed, y * 5.0 - t * 1.6));
+  float xs = x + (n - 0.5) * 1.1 * y + (m - 0.5) * 0.25;
+  float width = mix(0.7, 0.1, pow(y, 0.75));
+  float body = 1.0 - smoothstep(width * 0.55, width, abs(xs));
+  // the top breaks up into separate tongues
+  float top = smoothstep(0.95, 0.35, y + (n - 0.45) * 0.75 + (m - 0.5) * 0.3);
+  float rx = abs(xs) / max(width, 0.05);
+  float base = smoothstep(0.0, 0.16, y - rx * rx * 0.14 + (n - 0.5) * 0.05); // round at the root, not cut flat
+  float f = body * top * base * smoothstep(1.0, 0.7, y) * (1.0 - smoothstep(0.7, 0.98, abs(x)));
+  float hot = clamp(f * (1.05 - y) * heat * 0.9 + (m - 0.5) * 0.2, 0.0, 1.0);
+  vec3 c = mix(vec3(0.45, 0.03, 0.0), vec3(1.0, 0.32, 0.02), smoothstep(0.08, 0.45, hot));
+  c = mix(c, vec3(1.0, 0.72, 0.25), smoothstep(0.45, 0.75, hot));
+  c = mix(c, vec3(1.0, 0.95, 0.8), smoothstep(0.78, 1.0, hot));
+  float a = f * smoothstep(0.02, 0.25, hot);
+  a *= fade;
+  gl_FragColor = vec4(c * a * 0.75, a);
+}`;
+const crownFrag = `
+uniform float time, seed;
+varying vec2 vUv;
+float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * n2(p); p = p * 2.03 + 1.7; a *= 0.5; } return v; }
+void main(){
+  vec2 c = (vUv - 0.5) * 2.0;
+  float r = length(c);
+  // domain-warped noise drifting outward from the middle: no seams, no rays
+  vec2 q = vec2(fbm(c * 2.0 + vec2(seed, time * 0.5)), fbm(c * 2.0 - vec2(time * 0.4, seed)));
+  float n = fbm(c * 3.0 + q * 1.8 - normalize(c + 0.0001) * time * 0.6);
+  float m = fbm(c * 5.0 + q * 2.5 + vec2(seed, -time * 1.6));
+  float f = smoothstep(1.0, 0.25, r + (n - 0.5) * 0.7) * smoothstep(0.35, 0.75, n * 0.7 + m * 0.5);
+  float hot = clamp(f * (1.2 - r * 0.6), 0.0, 1.0);
+  vec3 col = mix(vec3(0.45, 0.04, 0.0), vec3(1.0, 0.35, 0.03), smoothstep(0.1, 0.5, hot));
+  col = mix(col, vec3(1.0, 0.75, 0.3), smoothstep(0.55, 0.9, hot));
+  gl_FragColor = vec4(col * f * 0.7, f * 0.85);
+}`;
+function coalsTex() {
+  const S = 256, { c, g } = canvas(S, S);
+  g.fillStyle = '#050201';
+  g.fillRect(0, 0, S, S);
+  // glow under everything, showing through the gaps
+  const gr = g.createRadialGradient(S / 2, S / 2, 10, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, 'rgba(255,150,50,1)');
+  gr.addColorStop(0.5, 'rgba(200,55,8,0.95)');
+  gr.addColorStop(1, 'rgba(50,6,0,0.7)');
+  g.fillStyle = gr;
+  g.beginPath(); g.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); g.fill();
+  // packed chunks of charcoal: small, angular, dark, with the glow coming through the seams between them
+  for (let i = 0; i < 1700; i++) {
+    const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * S * 0.49, x = S / 2 + Math.cos(a) * d, y = S / 2 + Math.sin(a) * d, r = 3 + Math.random() * 6;
+    const hotLump = Math.random() < 0.1, ash = Math.random() < 0.3, v = 10 + Math.random() * 25 | 0;
+    g.fillStyle = hotLump ? `rgba(${170 + Math.random() * 80 | 0},${40 + Math.random() * 60 | 0},8,0.9)` : ash ? `rgba(${v + 30},${v + 22},${v + 18},0.9)` : `rgba(${v},${v * 0.45 | 0},${v * 0.3 | 0},0.93)`;
+    g.beginPath();
+    const k = 5 + (Math.random() * 3 | 0), r0 = Math.random() * 6;
+    for (let j = 0; j < k; j++) { const aa = r0 + (j / k) * Math.PI * 2, rr = r * (0.6 + Math.random() * 0.5); g[j ? 'lineTo' : 'moveTo'](x + Math.cos(aa) * rr, y + Math.sin(aa) * rr); }
+    g.closePath();
+    g.fill();
+  }
+  // white ash
+  for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(150,140,130,${Math.random() * 0.25})`; g.fillRect(Math.random() * S, Math.random() * S, 1.5, 1.5); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+// charcoal: black, split into scales, with the burning showing through the splits
+function logPaint(glow) {
+  const { c, g } = canvas(64, 128);
+  g.fillStyle = glow ? '#000' : '#141010';
+  g.fillRect(0, 0, 64, 128);
+  for (let y = 0; y < 128; y += 6 + Math.random() * 6) for (let x = 0; x < 64; x += 8 + Math.random() * 10) {
+    if (glow) { if (Math.random() < 0.45) { g.fillStyle = `rgb(${160 + Math.random() * 90 | 0},${30 + Math.random() * 50 | 0},4)`; g.fillRect(x, y, 6 + Math.random() * 6, 1.5); } }
+    else { const v = 12 + Math.random() * 30 | 0; g.fillStyle = `rgb(${v},${v * 0.8 | 0},${v * 0.7 | 0})`; g.fillRect(x + 1, y + 1, 7 + Math.random() * 6, 4 + Math.random() * 4); }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const logTex = () => logPaint(false), logGlowTex = () => logPaint(true);
+function softTex() {
   const { c, g } = canvas(64, 64);
-  const gr = g.createRadialGradient(32, 36, 2, 32, 32, 30);
-  gr.addColorStop(0, 'rgba(255,240,180,1)');
-  gr.addColorStop(0.3, 'rgba(255,150,40,0.9)');
-  gr.addColorStop(0.7, 'rgba(200,40,0,0.4)');
-  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)');
+  gr.addColorStop(0.5, 'rgba(255,255,255,0.45)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = gr;
   g.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(c);
 }
+const _x = new THREE.Vector3(), _y = new THREE.Vector3(), _z = new THREE.Vector3(), _m = new THREE.Matrix4();
+export class Fire {
+  constructor(scene, mats, radius = 1.5) {
+    this.scene = scene;
+    this.r = radius;
+    this.t = 0;
+    // the coal bed
+    this.coalMat = new THREE.MeshBasicMaterial({ map: coalsTex(), color: 0xffffff });
+    const coals = new THREE.Mesh(new THREE.CircleGeometry(radius * 1.03, 28), this.coalMat);
+    coals.rotation.x = -Math.PI / 2;
+    coals.position.y = 0.1;
+    scene.add(coals);
+    // charred logs across it, glowing where they're burning through
+    const logMat = new THREE.MeshLambertMaterial({ color: 0x777777, map: logTex(), emissive: 0xffffff, emissiveMap: logGlowTex() });
+    for (let i = 0; i < 4; i++) {
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.05 + Math.random() * 0.03, 0.065, radius * (0.9 + Math.random() * 0.7), 7), logMat);
+      log.rotation.order = 'YXZ';
+      log.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.3, (i / 4) * Math.PI + Math.random() * 0.5, 0); // crossed every which way
+      log.position.set((Math.random() - 0.5) * radius * 0.6, 0.16 + Math.random() * 0.06, (Math.random() - 0.5) * radius * 0.6);
+      scene.add(log);
+    }
+    this.logMat = logMat;
+    // the flames
+    this.flames = [];
+    const geo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0);
+    for (let i = 0; i < 40; i++) {
+      const u = { time: { value: 0 }, seed: { value: Math.random() * 10 }, heat: { value: 0.9 + Math.random() * 0.4 }, fade: { value: 1 } };
+      const mat = new THREE.ShaderMaterial({ uniforms: u, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: flameFrag,
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+      const q = new THREE.Mesh(geo, mat);
+      const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * radius * 0.85;
+      const big = 1 - d / radius;
+      q.position.set(Math.cos(a) * d, 0.11, Math.sin(a) * d);
+      q.userData = { u, h: 0.45 + big * 0.75 + Math.random() * 0.35, w: 0.25 + big * 0.35 + Math.random() * 0.2, ph: Math.random() * 6 };
+      q.renderOrder = 2;
+      scene.add(q);
+      this.flames.push(q);
+    }
+    // looking down into it: flat sheets of churning flame just over the coals
+    this.crowns = [0, 1, 2, 3].map((i) => {
+      const u = { time: { value: 0 }, seed: { value: i * 3.7 } };
+      const mat = new THREE.ShaderMaterial({ uniforms: u, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: crownFrag });
+      const c = new THREE.Mesh(new THREE.CircleGeometry(radius * (0.98 - i * 0.16), 32), mat);
+      c.rotation.x = -Math.PI / 2;
+      c.rotation.z = i * 1.3;
+      c.position.y = 0.14 + i * 0.16;
+      c.renderOrder = 1;
+      scene.add(c);
+      return u;
+    });
+    // sparks
+    const N = 160;
+    this.sp = new Float32Array(N * 3);
+    this.sv = new Float32Array(N * 3);
+    this.sl = new Float32Array(N);
+    for (let i = 0; i < N; i++) this.spawnSpark(i, Math.random() * 2);
+    this.sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(this.sp, 3)),
+      new THREE.PointsMaterial({ color: 0xffb050, size: 0.012, map: softTex(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    this.sparks.frustumCulled = false;
+    scene.add(this.sparks);
+    // smoke
+    const st = softTex();
+    this.smoke = [];
+    for (let i = 0; i < 18; i++) {
+      const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: st, color: 0x0c0806, transparent: true, depthWrite: false, opacity: 0 }));
+      sm.userData = { life: Math.random(), x: 0, z: 0, rot: Math.random() * 6 };
+      scene.add(sm);
+      this.smoke.push(sm);
+    }
+    // the light: several sources flickering on smooth noise, not a strobe
+    this.lights = [0, 1, 2].map((i) => {
+      const l = new THREE.PointLight(i ? 0xff5a18 : 0xff8a30, 14, 16, 1.4);
+      l.position.set(Math.cos(i * 2.1) * 0.5, 0.7 + i * 0.45, Math.sin(i * 2.1) * 0.5 - (i === 2 ? 0.8 : 0)); // the last one reaches up the far side, onto him
+      scene.add(l);
+      return l;
+    });
+  }
+  spawnSpark(i, life = 0) {
+    const a = Math.random() * Math.PI * 2, d = Math.random() * this.r * 0.8;
+    this.sp.set([Math.cos(a) * d, 0.2 + Math.random() * 0.4, Math.sin(a) * d], i * 3);
+    this.sv.set([(Math.random() - 0.5) * 0.4, 1.2 + Math.random() * 2.2, (Math.random() - 0.5) * 0.4], i * 3);
+    this.sl[i] = life || 0.6 + Math.random() * 1.8;
+  }
+  update(dt, cam) {
+    const t = (this.t += dt);
+    const flick = (k) => 0.75 + 0.12 * Math.sin(t * 7.3 + k) + 0.08 * Math.sin(t * 13.1 + k * 2) + 0.05 * Math.sin(t * 23.7 + k * 3);
+    this.lights.forEach((l, i) => (l.intensity = (i ? 26 : 60) * flick(i * 2)));
+    this.coalMat.color.setScalar(0.85 + 0.15 * flick(5));
+    this.logMat.emissive.setScalar(0.7 + 0.3 * flick(7));
+    for (const u of this.crowns) u.time.value = t;
+    for (const q of this.flames) {
+      const d = q.userData;
+      d.u.time.value = t;
+      // stand up and turn to face the camera: from overhead they foreshorten, as real flames do
+      _z.subVectors(cam.position, q.position);
+      // seen from straight above a tongue is edge-on: let it go and the sheets below carry the view
+      d.u.fade.value = 1 - Math.min(1, Math.max(0, (Math.abs(_z.y) / _z.length() - 0.55) / 0.3));
+      _z.setY(0);
+      if (_z.lengthSq() < 1e-6) _z.set(0, 0, 1);
+      _z.normalize();
+      _y.set(0, 1, 0);
+      _x.crossVectors(_y, _z);
+      q.quaternion.setFromRotationMatrix(_m.makeBasis(_x, _y, _z));
+      const s = 0.85 + 0.25 * Math.sin(t * 3.1 + d.ph) + 0.1 * Math.sin(t * 8.3 + d.ph * 2);
+      q.scale.set(d.w * (0.9 + 0.1 * Math.sin(t * 5 + d.ph)), d.h * s, 1);
+    }
+    const p = this.sp, v = this.sv;
+    for (let i = 0; i < this.sl.length; i++) {
+      this.sl[i] -= dt;
+      if (this.sl[i] <= 0) { this.spawnSpark(i); continue; }
+      // rise, swirl, slow
+      v[i * 3] += Math.sin(t * 3 + i) * dt * 1.5;
+      v[i * 3 + 2] += Math.cos(t * 2.6 + i * 1.3) * dt * 1.5;
+      v[i * 3 + 1] *= 1 - dt * 0.4;
+      p[i * 3] += v[i * 3] * dt; p[i * 3 + 1] += v[i * 3 + 1] * dt; p[i * 3 + 2] += v[i * 3 + 2] * dt;
+    }
+    this.sparks.geometry.attributes.position.needsUpdate = true;
+    for (const sm of this.smoke) {
+      const d = sm.userData;
+      d.life += dt * 0.22;
+      if (d.life > 1) { d.life = 0; d.x = (Math.random() - 0.5) * this.r; d.z = (Math.random() - 0.5) * this.r; }
+      const k = d.life;
+      sm.position.set(d.x + Math.sin(t * 0.7 + d.rot) * 0.3 * k, 1.6 + k * 2.2, d.z);
+      sm.scale.setScalar(0.8 + k * 2.4);
+      sm.material.opacity = Math.sin(k * Math.PI) * 0.55;
+      sm.material.rotation = d.rot + t * 0.2;
+    }
+  }
+}
+
 function signTex(text, color) {
   const { c, g } = canvas(256, 96);
   g.fillStyle = '#0a0a0a';
@@ -224,20 +451,8 @@ export class Cutscene {
     pit.material.side = THREE.DoubleSide;
     pit.position.y = 0.2;
     s.add(pit);
-    const coals = new THREE.Mesh(new THREE.CircleGeometry(1.55, 16), new THREE.MeshBasicMaterial({ color: 0xff5010 }));
-    coals.rotation.x = -Math.PI / 2;
-    coals.position.y = 0.1;
-    s.add(coals);
-    const ft = flameTex();
-    this.flames = [];
-    for (let i = 0; i < 46; i++) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ft, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, color: 0xffffff }));
-      s.add(sp);
-      this.flames.push({ sp, life: Math.random(), x: 0, z: 0 });
-    }
-    this.fireLight = new THREE.PointLight(0xff6020, 40, 16, 1.4);
-    this.fireLight.position.set(0, 0.8, 0);
-    s.add(this.fireLight);
+    this.fire = new Fire(s, m, 1.55);
+    s.add(new THREE.AmbientLight(0x401808, 0.6));
     // he stands on the edge, eye level with you
     this.him.root.position.set(0, 0.5, -2.4);
     const ledge = mesh(new THREE.BoxGeometry(2, 0.5, 1.4), m.darkMetal);
@@ -251,14 +466,7 @@ export class Cutscene {
   }
   ropeUpdate(dt) {
     const t = this.t, s = this.scene;
-    for (const f of this.flames) {
-      f.life += dt * (1 + Math.random());
-      if (f.life > 1) { f.life = 0; f.x = (Math.random() - 0.5) * 2.4; f.z = (Math.random() - 0.5) * 2.4; }
-      const k = f.life;
-      f.sp.position.set(f.x * (1 - k * 0.6), 0.15 + k * 1.6, f.z * (1 - k * 0.6));
-      f.sp.scale.setScalar((1 - k) * 0.9 + 0.2);
-    }
-    this.fireLight.intensity = 26 + Math.random() * 14;
+    this.fire.update(dt, this.cam);
     // swinging on the rope
     const sway = Math.sin(t * 1.3) * 0.08;
     let y = 2.25;

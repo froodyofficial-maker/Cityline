@@ -67,13 +67,13 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 **Overtime:** the endless version. Floors are random, puzzles are random from B2, and where a death sends you depends on the difficulty. Your deepest floor goes on your time card.
 
 **Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random (the third-person ones keep blood off the screen, since the camera isn't you):
-- strung up over a fire pit
+- strung up over a fire pit (real-looking fire: flickering tongues, glowing coals, charred logs, sparks and smoke)
 - an EXIT door that opens onto a sheer drop
 - the meat grinder (third person): he drags you across the floor by the ankle, hoists you over the hopper and drops you in
 - the ceiling fan (third person): he holds you up by the throat under the blades, then shoves you into them
 - eaten on the floor (third person)
 
-Syringes (**R**) give you a few seconds of running that never runs out.
+A full stamina bar is about 9.5 seconds of sprinting, and it refills in about 6 seconds standing still. Syringes (**R**) give you a few seconds of running that never runs out.
 
 **The Foreman** hunts by sound and by light:
 - Running, cutting, puzzles and a gasping breath all carry. Crouching is nearly silent.
