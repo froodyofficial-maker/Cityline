@@ -41,6 +41,7 @@
       <button data-act="story" id="btnStory">Clock in</button>
       <button data-act="newstory" id="btnNew" hidden>Start a new shift</button>
       <button data-act="overtime">Overtime <small>endless</small></button>
+      <button data-act="overtimeContinue" id="btnOvertimeContinue" hidden>Continue overtime</button>
       <button data-act="howto">Orientation</button>
       <button data-act="settings">Settings</button>
     </nav>
@@ -69,6 +70,19 @@
       <tr><td><kbd>Q</kbd> (hold)</td><td>listen: show the way</td><td><kbd>R</kbd></td><td>syringe: sprint</td></tr>
       <tr><td><kbd>ESC</kbd></td><td>pause</td><td><kbd>F11</kbd></td><td>fullscreen</td></tr>
     </table>
+    <button class="back" data-act="back">Back</button>
+  </div>
+</section>
+
+<section id="difficulty" class="screen panel-screen">
+  <div class="diff-in">
+    <h2 id="diffTitle" class="diff-title">HOW HARD IS THIS SHIFT?</h2>
+    <div class="diff-cards">
+      <button class="diff-card" data-act="diff" data-diff="easy"><b>EASY</b><span class="pace">You can outrun him</span><span>Walking, crouching, hiding and working the puzzles make no sound. Cutting and running are quieter.</span></button>
+      <button class="diff-card" data-act="diff" data-diff="normal"><b>NORMAL</b><span class="pace">He&rsquo;s almost as fast as you</span><span>You&rsquo;re still a little faster. Everything that makes noise makes noise.</span></button>
+      <button class="diff-card" data-act="diff" data-diff="hard"><b>HARD</b><span class="pace">He&rsquo;s a little faster than you</span><span>Footsteps, cutting, lockers and machinery carry further. He hears you breathe sooner.</span></button>
+      <button class="diff-card" data-act="diff" data-diff="extreme"><b>EXTREME</b><span class="pace">He is faster than you</span><span>You will not outrun him. Everything is loud. Hide, or don&rsquo;t be seen.</span></button>
+    </div>
     <button class="back" data-act="back">Back</button>
   </div>
 </section>

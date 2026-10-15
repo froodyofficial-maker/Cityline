@@ -177,6 +177,14 @@ class Fuses {
   line() { return this.solved ? null : `FUSES ${this.inserted + this.carry}/${this.n}`; }
   title() { return `RESTORE POWER — FUSES <b>${this.inserted}/${this.n}</b>`; }
   liftMsg() { return 'NO POWER — THE FUSE BOX IS EMPTY'; }
+  save() { return { carry: this.carry, inserted: this.inserted, searched: this.bags.map((b) => b.searched) }; }
+  load(s) {
+    s.searched.forEach((v, i) => { const b = this.bags[i]; if (v && b) { b.searched = true; b.obj.scale.y = 0.5; } });
+    this.carry = s.carry;
+    for (let i = 0; i < s.inserted; i++) this.sockets[i].material = new THREE.MeshBasicMaterial({ color: 0xffb040, fog: false });
+    this.inserted = s.inserted;
+    if (this.solved) { this.lamp.material.color.setHex(0x40ff60); for (const l of this.ctx.G.B.lamps) if (l.state === 'dead') l.state = 'flicker'; }
+  }
 }
 
 class Keypad {
@@ -282,6 +290,19 @@ class Keypad {
   line() { return this.opened ? null : `SHUTTER CODE ${this.known.map((k) => (k === null ? '_' : k)).join(' ')}`; }
   title() { return 'FIND THE SHUTTER CODE'; }
   liftMsg() { return null; }
+  save() { return { read: this.notes.map((n) => n.read), opened: this.opened }; }
+  load(s) {
+    s.read.forEach((r, i) => { const n = this.notes[i]; if (r && n) { n.read = true; this.known[n.i] = this.code[n.i]; } });
+    if (s.opened) {
+      this.opened = true;
+      this.lift = 1;
+      this.shutter.position.y = WALL_H - 0.15;
+      this.padLed.material.color.setHex(0x30ff50);
+      this.door.closed = false;
+      const L = this.ctx.G.L;
+      L.block[this.door.y * L.W + this.door.x] = 0;
+    }
+  }
 }
 
 class Scale {
@@ -418,6 +439,17 @@ class Scale {
   }
   title() { return `BALANCE THE SCALE — EXACTLY <b>${this.target} KG</b>`; }
   liftMsg() { return `THE COUNTERWEIGHT IS JAMMED — THE SCALE MUST READ ${this.target} KG`; }
+  save() { return { on: this.on.map((c) => this.cuts.indexOf(c)), carry: this.carry.map((c) => this.cuts.indexOf(c)), done: this.done }; }
+  load(s) {
+    const take = (c) => { c.cut.visible = false; c.obj.children[c.obj.children.length - 1].visible = false; };
+    this.on = s.on.map((i) => this.cuts[i]).filter(Boolean);
+    this.carry = s.carry.map((i) => this.cuts[i]).filter(Boolean);
+    this.on.forEach((c) => { c.where = 'scale'; take(c); });
+    this.carry.forEach((c) => { c.where = 'hand'; take(c); });
+    this.done = s.done;
+    this.restack();
+    this.paint();
+  }
 }
 
 class Valves {
@@ -512,6 +544,12 @@ class Valves {
   line() { return this.solved ? null : this.known ? `VALVES ${this.glyphs()}` : 'VALVES: FIND THE RELEASE ORDER'; }
   title() { return 'RELEASE THE STEAM PRESSURE'; }
   liftMsg() { return 'THE BRAKE IS LOCKED BY STEAM — TURN THE VALVES IN ORDER'; }
+  save() { return { known: this.known, progress: this.progress }; }
+  load(s) {
+    this.known = s.known;
+    for (let k = 0; k < s.progress; k++) { const v = this.valves[this.order[k]]; v.turned = true; v.wheel.rotation.z = Math.PI * 1.5; v.hiss.stop(); }
+    this.progress = s.progress;
+  }
   dispose() { for (const v of this.valves) v.hiss.stop(); }
 }
 
@@ -580,10 +618,144 @@ class Breakers {
   line() { return this.solved ? null : `KILL SWITCHES ${this.pulled}/${this.switches.length}`; }
   title() { return `STOP THE LINE — KILL SWITCHES <b>${this.pulled}/${this.switches.length}</b>`; }
   liftMsg() { return 'THE LIFT WON’T MOVE WHILE THE LINE IS RUNNING'; }
+  save() { return { pulled: this.switches.map((s) => s.pulled) }; }
+  load(st) {
+    const G = this.ctx.G;
+    st.pulled.forEach((p, i) => { const s = this.switches[i]; if (p && s) { s.pulled = true; s.lever.rotation.z = -0.6; s.lamp.material.color.setHex(0x30ff50); this.pulled++; } });
+    if (this.pulled > 0) G.audio.siren(true);
+    if (this.solved) { G.audio.lineRunning(false); G.frenzy = true; }
+  }
   dispose() { this.ctx.G.audio.lineRunning(false); this.ctx.G.audio.siren(false); }
 }
 
-const KINDS = { fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers };
+// the morgue: an intake log says which drawers the missing workers are in
+class Drawers {
+  constructor(ctx) {
+    const { G, B, rng } = ctx;
+    this.kind = 'drawers';
+    this.gates = true;
+    this.ctx = ctx;
+    const letters = ['A', 'B', 'C', 'D'];
+    this.banks = [];
+    const usedRooms = new Set();
+    const freezer = (ri) => G.L.rooms[ri] && G.L.rooms[ri].type === 'freezer';
+    for (const letter of letters) {
+      const spot = B.takeWall(([x, y, , ri]) => !B.inWing(x, y) && freezer(ri) && !usedRooms.has(ri))
+        || B.takeWall(([x, y, , ri]) => !B.inWing(x, y) && freezer(ri))
+        || B.takeWall(([x, y]) => !B.inWing(x, y));
+      if (!spot) continue;
+      usedRooms.add(spot[3]);
+      const tex = plainTex(256, 294, (g) => {
+        g.font = 'bold 34px "Courier New", monospace';
+        g.textAlign = 'center';
+        g.fillStyle = '#1a2026';
+        g.fillText('BANK ' + letter, 128, 30);
+        g.font = 'bold 15px "Courier New", monospace';
+        for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+          const num = (2 - r) * 3 + c + 1, x = (c - 1) * 0.63, y = 0.42 + r * 0.66;
+          const px = (x + 1) * 128, py = (2.3 - (y + 0.33)) * 128;
+          g.fillStyle = '#d8dde0';
+          g.fillRect(px - 18, py - 11, 36, 15);
+          g.fillStyle = '#1a2026';
+          g.fillText(letter + '-' + num, px, py + 1);
+        }
+      }).tex;
+      const bank = B.placeBank(spot[0], spot[1], spot[2], tex, 1);
+      bank.letter = letter;
+      bank.drawers.forEach((d, i) => { const r = Math.floor(i / 3), c = i % 3; d.num = (2 - r) * 3 + c + 1; d.tried = false; });
+      this.banks.push(bank);
+    }
+    const n = Math.min(this.banks.length * 2, G.depth >= 6 ? 4 : 3);
+    const all = this.banks.flatMap((b) => b.drawers.map((d) => ({ b, d })));
+    rng.shuffle(all);
+    // spread the answers across banks where we can
+    this.answers = [];
+    for (const pick of all) {
+      if (this.answers.length >= n) break;
+      if (this.answers.some((a) => a.b === pick.b) && this.answers.length < this.banks.length) continue;
+      this.answers.push({ ...pick, id: String(1000 + ((rng() * 8999) | 0)).padStart(4, '0'), found: false });
+    }
+    for (const pick of all) if (this.answers.length < n && !this.answers.some((a) => a.d === pick.d)) this.answers.push({ ...pick, id: String((rng() * 9999) | 0).padStart(4, '0'), found: false });
+    this.known = false;
+    const spot = B.takeWall(([x, y]) => !B.inWing(x, y)) || B.takeWall();
+    const w = onWall(spot[0], spot[1], spot[2], 1.45);
+    this.lines = this.answers.map((a) => `#${a.id} .... ${a.b.letter}-${a.d.num}`);
+    const paper = plane(0.4, 0.5, new THREE.MeshPhongMaterial({ map: paperTex(['WORKERS ON ICE', ...this.lines], { title: 'INTAKE LOG', seed: 91 }), shininess: 5 }));
+    paper.position.copy(w.pos);
+    paper.rotation.y = w.yaw;
+    ctx.add(paper);
+    this.log = w.pos;
+  }
+  get found() { return this.answers.filter((a) => a.found).length; }
+  get solved() { return this.found >= this.answers.length; }
+  interactables() {
+    if (this.solved) return [];
+    const out = [];
+    if (!this.known) out.push({ pos: this.log, range: 1.8, minFacing: 0.5, tap: true, label: 'READ THE INTAKE LOG', use: () => {
+      this.known = true;
+      this.ctx.G.audio.tick();
+      UI.note('INTAKE LOG \u2014 WORKERS ON ICE', this.lines.map((l) => l.replace(/ \.+ /, ' \u2192 ')).join('   '), 'Find their drawers in the freezer banks and pull them out. Leave the others shut.');
+    } });
+    for (const b of this.banks) for (const d of b.drawers) {
+      if (d.tried) continue;
+      out.push({ pos: d.pos, range: 2, minFacing: 0.95, aim: true, hold: 0.9, tick: 'clank', noise: 6, label: `HOLD \u2014 PULL OUT DRAWER ${b.letter}-${d.num}`, use: () => this.pull(b, d) });
+    }
+    return out;
+  }
+  pull(b, d) {
+    const G = this.ctx.G, a = this.answers.find((x) => x.d === d);
+    d.tried = true;
+    d.target = 1.35;
+    G.audio.clank(d.pos, 0.7);
+    G.audio.burst(G.audio.sfx, { type: 'highpass', f: 3000, dur: 0.6, vol: 0.15, a: 0.05 }); // the cold coming out
+    if (a) {
+      a.found = true;
+      G.audio.squelch(0.5);
+      UI.message(this.solved ? 'That\u2019s every name on the log. The release is signed in somebody\u2019s blood.' : `Worker #${a.id}. The toe tag matches. ${this.answers.length - this.found} more on the log.`, 3.5);
+      if (this.solved) { G.audio.powerOn(d.pos); G.noise(d.pos, 22, true, 'work'); }
+      return;
+    }
+    // the wrong drawer. whoever is in it isn't finished
+    setTimeout(() => {
+      if (G.state !== 'play') return;
+      G.audio.jumpscare(0.45);
+      G.audio.moan(d.pos);
+      G.scare = 1;
+      G.flash = 0.4;
+      G.player.shake = 0.8;
+      d.target = 0;
+      setTimeout(() => G.audio.clank(d.pos, 1), 250);
+      G.noise(d.pos, 18, true, 'other');
+      UI.message('Wrong drawer. Not a name on the log \u2014 and it moved. It slams itself shut.', 3.5);
+    }, 650);
+  }
+  update(dt) {
+    for (const b of this.banks) for (const d of b.drawers) {
+      d.open += (d.target - d.open) * Math.min(1, dt * (d.target ? 5 : 14));
+      d.grp.position.z = d.open;
+    }
+  }
+  goals() {
+    if (this.solved) return [];
+    if (!this.known) return [this.log];
+    return this.answers.filter((a) => !a.found).map((a) => a.d.pos);
+  }
+  line() {
+    if (this.solved) return null;
+    if (!this.known) return 'DRAWERS: FIND THE INTAKE LOG';
+    return 'DRAWERS ' + this.answers.map((a) => (a.found ? '\u2713' : `${a.b.letter}-${a.d.num}`)).join(' ');
+  }
+  title() { return `FIND THE WORKERS ON ICE \u2014 <b>${this.found}/${this.answers.length}</b>`; }
+  liftMsg() { return 'THE MORGUE RELEASE ISN\u2019T SIGNED \u2014 FIND THE WORKERS IN THE INTAKE LOG'; }
+  save() { return { known: this.known, found: this.answers.map((a) => a.found), tried: this.banks.map((b) => b.drawers.map((d) => d.tried)) }; }
+  load(s) {
+    this.known = s.known;
+    s.tried.forEach((row, bi) => row.forEach((t, di) => { const d = this.banks[bi] && this.banks[bi].drawers[di]; if (d) d.tried = t; }));
+    s.found.forEach((f, i) => { const a = this.answers[i]; if (f && a) { a.found = true; a.d.target = a.d.open = 1.35; a.d.grp.position.z = 1.35; } });
+  }
+}
+
+const KINDS = { fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers, drawers: Drawers };
 
 export class Puzzles {
   constructor(G, kinds, seed) {
@@ -605,4 +777,6 @@ export class Puzzles {
   update(dt) { for (const p of this.list) if (p.update) p.update(dt); }
   dispose() { for (const p of this.list) if (p.dispose) p.dispose(); }
   get(kind) { return this.list.find((p) => p.kind === kind); }
+  save() { return this.list.map((p) => ({ kind: p.kind, s: p.save() })); }
+  load(arr) { for (const { kind, s } of arr || []) { const p = this.get(kind); if (p && s) p.load(s); } }
 }

@@ -298,7 +298,7 @@ export class Hunter {
     const D = w.D;
     switch (this.state) {
       case 'patrol':
-        speed = 1.25;
+        speed = 1.25 * D.speedMul;
         if (!this.path || !this.path.length || this.pathT > 25) this.pickPatrol();
         break;
       case 'alert': // stops dead, head twitching toward you
@@ -308,12 +308,12 @@ export class Hunter {
         if (this.stateT > 1.1) { this.setState('investigate'); }
         break;
       case 'investigate':
-        speed = 2.5;
+        speed = 2.5 * D.speedMul;
         if (!this.path || this.pathT > 2) this.pathTo(this.target);
         if (this.pos.distanceTo(this.target) < 1.2 || (this.path && !this.path.length)) this.setState('search');
         break;
       case 'search':
-        speed = 1.7;
+        speed = 1.7 * D.speedMul;
         if (this.stateT > 14) { this.setState('patrol'); this.awareness = 0; this.checked.clear(); break; }
         if (!this.path || !this.path.length) {
           // check a locker near where it lost you
@@ -363,7 +363,7 @@ export class Hunter {
       case 'locker': {
         const lk = this.lockerTarget;
         const front = lk.pos.clone().addScaledVector(lk.facing, 0.9);
-        speed = pl.hidden === lk && pl.hiddenSeenBy.has(this) ? D.chaseSpeed * 0.8 : 1.9;
+        speed = pl.hidden === lk && pl.hiddenSeenBy.has(this) ? D.chaseSpeed * 0.8 : 1.9 * D.speedMul;
         turn = 5;
         if (this.pos.distanceTo(front) > 0.5) {
           if (!this.path || this.pathT > 1) this.pathTo(front);

@@ -188,7 +188,7 @@ export class Player {
       const wet = B.bloodTiles[toTile(this.pos.z) * L.W + toTile(this.pos.x)] === 1;
       const kind = running ? 'run' : crouching ? 'crouch' : 'walk';
       audio.step(kind, wet);
-      w.noise(this.pos, running ? 15 : crouching ? 1.8 : wet ? 7.5 : 5.5, running);
+      w.noise(this.pos, running ? 15 : crouching ? 1.8 : wet ? 7.5 : 5.5, running, running ? 'run' : crouching ? 'crouch' : 'walk');
     }
     // breathing: from running, from being hurt, from being afraid
     const pant = Math.max((100 - this.stamina) / 100, this.exhausted ? 1 : 0, w.fear * 0.5, this.hp < 50 ? 0.4 : 0);

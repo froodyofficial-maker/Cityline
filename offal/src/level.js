@@ -133,11 +133,14 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
   grid[ay * W + ax] = 1;
 
   // room jobs
-  const pool = ['cold', 'butcher', 'lockers', 'morgue', 'pit'];
+  // a morgue floor is mostly freezers
+  const morgue = D.theme === 'morgue';
+  const pool = morgue ? ['freezer', 'freezer', 'lockers', 'morgue', 'freezer', 'butcher'] : ['cold', 'butcher', 'lockers', 'morgue', 'pit'];
   const others = rooms.slice(1);
   rng.shuffle(others);
   others.forEach((r, i) => {
     if (i < pool.length) r.type = pool[i];
+    else if (morgue) r.type = rng.pick(['freezer', 'freezer', 'morgue', 'lockers']);
     else r.type = r.w * r.h >= 16 ? rng.pick(['cold', 'cold', 'butcher', 'pit']) : rng.pick(['butcher', 'lockers', 'morgue']);
     if (r.type === 'cold' && r.w * r.h < 12) r.type = 'butcher';
   });
@@ -216,7 +219,7 @@ export function buildLevel(L, mats) {
     buf(floorBufs, fk).quad([x * TILE, 0, (y + 1) * TILE], [TILE, 0, 0], [0, 0, -TILE], [0, 1, 0], rng() < 0.5);
     ceil.quad([x * TILE, WALL_H, y * TILE], [TILE, 0, 0], [0, 0, TILE], [0, -1, 0], false);
   }
-  for (const [k, g] of wallBufs) { const m = P.mesh(g.build(), mats.walls[k], false); group.add(m); }
+  for (const [k, g] of wallBufs) { const m = P.mesh(g.build(), D.theme === 'morgue' ? mats.morgueWalls[Math.floor(k / 3)] : mats.walls[k], false); group.add(m); }
   for (const [k, g] of floorBufs) { const m = P.mesh(g.build(), mats.floors[k], false); group.add(m); }
   group.add(P.mesh(ceil.build(), mats.ceil, false));
 
@@ -244,6 +247,21 @@ export function buildLevel(L, mats) {
     out.lockers.push({ obj: o, pos: new THREE.Vector3(ox, 0, oz), facing: new THREE.Vector3(fx, 0, fz), yaw, camYaw: yaw + Math.PI, open: 0, target: 0 });
   };
 
+  // a drawer bank against the wall of tile (x, y) on side s
+  const placeBank = (x, y, [dx, dy], labelTex, bodies) => {
+    const b = P.drawerBank(mats, rng, labelTex, bodies);
+    const ox = tileCenter(x) + dx * TILE / 2, oz = tileCenter(y) + dy * TILE / 2, yaw = Math.atan2(-dx, -dy);
+    add(b.group, ox, oz, yaw);
+    const ax = Math.abs(dy) * 1, az = Math.abs(dx) * 1; // half-width along the wall
+    collider(ox - ax - Math.abs(dx) * 0.0, oz - az, ox - dx * 0.28 + ax, oz - dy * 0.28 + az);
+    // world positions of each drawer front
+    const cos = Math.cos(yaw), sin = Math.sin(yaw);
+    for (const d of b.drawers) d.pos = new THREE.Vector3(ox + d.local.x * cos + d.local.z * sin, d.local.y, oz - d.local.x * sin + d.local.z * cos);
+    b.pos = new THREE.Vector3(ox - dx * 0.8, 1.2, oz - dy * 0.8);
+    return b;
+  };
+  out.placeBank = placeBank;
+  out.drawerBanks = [];
   const interior = (r) => {
     const t = [];
     for (let y = r.y + 1; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) t.push([x, y]);
@@ -289,6 +307,30 @@ export function buildLevel(L, mats) {
       }
       for (let i = 0; i < 3; i++) out.swingers.push(add(P.hangingChain(mats, rng), rx + 1 + rng() * (rw - 2), rz + 1 + rng() * (rh - 2)));
       for (let i = 0; i < 2; i++) { const b = add(P.bucket(mats), rx + 0.5 + rng() * (rw - 1), rz + 0.5 + rng() * (rh - 1)); b.position.y = 0; }
+    } else if (r.type === 'freezer') {
+      // walls of body drawers, a couple left hanging open, and a slab in the middle
+      const segs = [];
+      for (const [x, y] of allTiles(r)) { const ws = wallSides(x, y); if (ws.length === 1) segs.push([x, y, ws[0]]); }
+      rng.shuffle(segs);
+      let banks = 0;
+      for (const [x, y, s] of segs) {
+        if (banks >= 2) break;
+        if (used.has(x + ',' + y)) continue;
+        used.add(x + ',' + y).add(x + ',' + y + 'L' + s);
+        out.drawerBanks.push(placeBank(x, y, s, null, 0.7));
+        banks++;
+      }
+      for (const b of out.drawerBanks.slice(-banks)) {
+        for (let k = 0; k < 1 + (rng() * 2 | 0); k++) { const d = rng.pick(b.drawers); d.open = d.target = 0.5 + rng() * 0.9; d.grp.position.z = d.open; }
+      }
+      const inner = rng.shuffle(interior(r));
+      if (inner.length) {
+        const [x, y] = inner[0], cx = tileCenter(x), cz = tileCenter(y);
+        add(P.autopsyTable(mats, rng), cx, cz, 0);
+        collider(cx - 1, cz - 0.42, cx + 1, cz + 0.42);
+        L.block[y * W + x] = 1;
+        used.add(x + ',' + y);
+      }
     } else if (r.type === 'morgue') {
       for (const [x, y] of rng.shuffle(allTiles(r)).slice(0, 2 + (rng() * 3 | 0))) {
         if (used.has(x + ',' + y)) continue;

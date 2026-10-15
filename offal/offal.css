@@ -116,6 +116,22 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .back { margin-top: 22px; letter-spacing: .3em; text-transform: uppercase; font-size: 14px; border-bottom: 1px solid currentColor; }
 .back:hover { color: #7a0a06; }
 
+/* ---------- difficulty ---------- */
+.diff-in { width: min(1000px, 94vw); text-align: center; }
+.diff-title { font-family: var(--serif); font-weight: 400; letter-spacing: .3em; color: var(--fresh); font-size: 30px; filter: url(#rough-sm); margin: 0 0 26px; }
+.diff-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.diff-card { text-align: left; padding: 18px 16px 20px; color: var(--ink); background: radial-gradient(circle at 85% 12%, rgba(110,8,4,.35) 0 12px, transparent 24px), var(--paper);
+  box-shadow: 0 14px 34px #000, inset 0 0 26px rgba(80,50,20,.45); transition: transform .15s, box-shadow .15s; font-size: 12px; line-height: 1.55; }
+.diff-card:nth-child(odd) { transform: rotate(-1.2deg); }
+.diff-card:nth-child(even) { transform: rotate(1deg); }
+.diff-card:hover, .diff-card:focus-visible { transform: translateY(-6px) rotate(0); box-shadow: 0 22px 44px #000, 0 0 0 2px var(--fresh), inset 0 0 26px rgba(80,50,20,.45); outline: none; }
+.diff-card b { display: block; font-family: var(--serif); font-weight: 400; font-size: 22px; letter-spacing: .25em; margin-bottom: 10px; }
+.diff-card[data-diff=extreme] b { color: #8a0a07; }
+.diff-card .pace { display: block; font-weight: bold; color: #6a0805; margin-bottom: 8px; letter-spacing: .05em; }
+.diff-card.last::after { content: 'LAST TIME'; display: block; margin-top: 12px; font-size: 10px; letter-spacing: .3em; opacity: .6; }
+.diff-in .back { color: var(--bone); }
+@media (max-width: 760px) { .diff-cards { grid-template-columns: 1fr 1fr; } }
+
 /* ---------- HUD ---------- */
 #hud { pointer-events: none; z-index: 6; }
 .hud-tl { position: absolute; top: 22px; left: 26px; font-size: 12px; letter-spacing: .45em; color: rgba(216,205,184,.55); text-shadow: 0 0 6px #000; }

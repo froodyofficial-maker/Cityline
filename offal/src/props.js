@@ -510,3 +510,84 @@ export function makeLift(mats, slots) {
   g.userData = { bars, lights, lever, panel, bulb };
   return g;
 }
+
+// ---------- the morgue ----------
+// a body on a drawer tray, feet toward you, the way they always come out
+function trayBody(mats, rng) {
+  const g = new THREE.Group();
+  const skin = mats.skinGrey;
+  const covered = rng() < 0.5;
+  const torso = mesh(cap(0.16, 0.5), covered ? mats.sheet : skin);
+  torso.rotation.x = Math.PI / 2;
+  torso.scale.set(1.2, 1, 0.6);
+  torso.position.set(0, 0.12, -0.75);
+  const head = mesh(sph(0.1, 10), covered ? mats.sheet : skin);
+  head.position.set(0, 0.12, -1.35);
+  const legs = mesh(cap(0.12, 0.7), covered ? mats.sheet : skin);
+  legs.rotation.x = Math.PI / 2;
+  legs.scale.set(1.5, 1, 0.55);
+  legs.position.set(0, 0.1, -0.05);
+  g.add(torso, head, legs);
+  for (const s of [-1, 1]) { // bare feet sticking out, always
+    const foot = mesh(box(0.08, 0.14, 0.05), skin);
+    foot.position.set(s * 0.07, 0.15, 0.36);
+    g.add(foot);
+  }
+  const toe = mesh(box(0.05, 0.07, 0.003), mats.sheet, false);
+  toe.position.set(0.09, 0.1, 0.4);
+  g.add(toe);
+  if (!covered) { const cut = mesh(box(0.05, 0.01, 0.4), mats.meat, false); cut.position.set(0, 0.2, -0.8); g.add(cut); } // the Y incision
+  return g;
+}
+
+// a 3x3 bank of body drawers on a wall; origin on the wall at the bottom middle, facing +Z.
+// labels: optional canvas texture for the plates. returns { group, drawers: [{ grp, local: Vector3, open }] }
+export function drawerBank(mats, rng, labelTex, bodies = 0.6) {
+  const group = new THREE.Group();
+  const frame = mesh(box(2, 2.3, 0.26), mats.steel);
+  frame.position.set(0, 1.15, 0.13);
+  group.add(frame);
+  if (labelTex) {
+    const plate = new THREE.Mesh(geo('dbplate', () => new THREE.PlaneGeometry(2, 2.3)), new THREE.MeshBasicMaterial({ map: labelTex, transparent: true }));
+    plate.position.set(0, 1.15, 0.262);
+    group.add(plate);
+  }
+  const drawers = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+    const grp = new THREE.Group();
+    const x = (c - 1) * 0.63, y = 0.42 + r * 0.66;
+    grp.position.set(x, y, 0);
+    const front = mesh(box(0.56, 0.5, 0.05), mats.steel);
+    front.position.z = 0.27;
+    const handle = mesh(box(0.22, 0.03, 0.04), mats.darkMetal, false);
+    handle.position.set(0, -0.12, 0.31);
+    const tray = mesh(box(0.5, 0.03, 1.8), mats.steel, false);
+    tray.position.set(0, -0.2, -0.62);
+    grp.add(front, handle, tray);
+    if (rng() < bodies) { const b = trayBody(mats, rng); b.position.y = -0.2; grp.add(b); }
+    group.add(grp);
+    drawers.push({ grp, local: new THREE.Vector3(x, y, 0.3), open: 0, target: 0 });
+  }
+  return { group, drawers };
+}
+
+// the slab in the middle of the room
+export function autopsyTable(mats, rng) {
+  const g = new THREE.Group();
+  const top = mesh(box(2, 0.06, 0.8), mats.steel);
+  top.position.y = 0.92;
+  const lip = mesh(box(2, 0.05, 0.05), mats.steel, false);
+  lip.position.set(0, 0.97, 0.38);
+  const lip2 = lip.clone();
+  lip2.position.z = -0.38;
+  const ped = mesh(cyl(0.12, 0.2, 0.9, 8), mats.steel);
+  ped.position.y = 0.45;
+  g.add(top, lip, lip2, ped);
+  const body = trayBody(mats, rng);
+  body.rotation.y = Math.PI / 2;
+  body.position.set(-0.4, 0.95, 0);
+  g.add(body);
+  if (rng() < 0.6) { const guts = entrails(mats, rng, new THREE.Vector3(0.2, 1.05, 0.1), 0.5, 7); g.add(guts); }
+  g.add(decal(mats.pool[(rng() * 3) | 0], 1.4, 0, 0, rng() * 6));
+  return g;
+}

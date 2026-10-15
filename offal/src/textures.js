@@ -201,6 +201,52 @@ function wallCanvas(gore, style) {
   return c;
 }
 
+// the morgue: big glazed tiles gone blue with cold, frost creeping down from the ceiling
+function morgueWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(501 + gore * 29);
+  g.fillStyle = '#3a4650';
+  g.fillRect(0, 0, W, H);
+  const ts = 32, band = H - 96;
+  for (let y = 0; y < band; y += ts)
+    for (let x = 0; x < W; x += ts) {
+      const v = rng() * 18 - 9;
+      g.fillStyle = `rgb(${168 + v | 0},${190 + v | 0},${206 + v | 0})`;
+      g.fillRect(x + 1.5, y + 1.5, ts - 3, ts - 3);
+      g.fillStyle = 'rgba(255,255,255,.18)'; // glaze
+      g.fillRect(x + 3, y + 3, ts - 10, 3);
+      if (rng() < 0.04) { g.strokeStyle = 'rgba(30,40,50,.7)'; g.beginPath(); g.moveTo(x + 2, y + rng() * ts); g.lineTo(x + ts - 2, y + rng() * ts); g.stroke(); }
+    }
+  // stainless kick band
+  const gr = g.createLinearGradient(0, band, 0, H);
+  gr.addColorStop(0, '#8a949c');
+  gr.addColorStop(1, '#4a5258');
+  g.fillStyle = gr;
+  g.fillRect(0, band, W, 96);
+  for (let i = 0; i < 120; i++) { g.fillStyle = `rgba(255,255,255,${rng() * 0.05})`; g.fillRect(0, band + rng() * 96, W, 1); }
+  g.fillStyle = '#1a2026';
+  g.fillRect(0, band - 3, W, 4);
+  // frost and condensation
+  for (let i = 0; i < 26; i++) {
+    const x = rng() * W, len = 30 + rng() * 160;
+    const fr = g.createLinearGradient(0, 0, 0, len);
+    fr.addColorStop(0, 'rgba(235,245,255,.5)');
+    fr.addColorStop(1, 'rgba(235,245,255,0)');
+    g.fillStyle = fr;
+    g.fillRect(x, 0, 2 + rng() * 6, len);
+  }
+  blotches(g, W, 60, 70, 4, 22, '240,248,255', 0.2, rng);
+  blotches(g, W, H, 40, 6, 30, '20,30,40', 0.12, rng);
+  const n = [0, 1, 3, 5][gore];
+  for (let i = 0; i < n; i++) {
+    const k = rng(), col = rng() < 0.5 ? BLOOD.dried : BLOOD.dark;
+    if (k < 0.4) handprint(g, rng() * W, 150 + rng() * 150, 18, (rng() - 0.5) * 0.6, rng, col, 60 + rng() * 60);
+    else if (k < 0.7) wallSplat(g, rng() * W, 80 + rng() * 180, 14 + rng() * 20, rng, col);
+    else smear(g, rng() * W, 260, 50, 100, (rng() - 0.5) * 0.3, rng, col);
+  }
+  speckle(g, W, H, 14, rng);
+  return c;
+}
+
 function floorCanvas(kind) {
   const S = 256, { c, g } = canvas(S, S), rng = makeRng(707 + kind * 33);
   g.fillStyle = '#3d3a35';
@@ -407,6 +453,8 @@ export function makeMaterials() {
 
   return {
     walls, // [gore*3 + style]
+    morgueWalls: [0, 1, 2, 3].map((gore) => { const t = tx(morgueWallCanvas(gore)); return phong({ map: t, bumpMap: t, bumpScale: 1, shininess: 70, specular: 0x556677 }); }),
+    frost: phong({ color: 0xcfe0ee, shininess: 90, specular: 0x8899aa }),
     floors,
     ceil,
     meat: phong({ map: meatTex, shininess: 70, specular: 0x552222 }),

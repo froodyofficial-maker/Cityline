@@ -15,7 +15,7 @@ import { Guide } from './guide.js';
 import { Cutscene, CUTSCENES } from './cutscenes.js';
 import * as UI from './ui.js';
 import * as P from './props.js';
-import { floorInfo, difficulty, WALL_H, STORY_FLOORS } from './config.js';
+import { floorInfo, difficulty, WALL_H, STORY_FLOORS, DIFFS } from './config.js';
 import { animateFlies } from './props.js';
 
 // ---------- save ----------
@@ -60,7 +60,12 @@ const G = {
   runTime: 0, runTags: 0, floorTime: 0,
   fear: 0, scare: 0, damage: 0, flash: 0, blackout: 0, torchKill: 0, lampKill: 0, slowT: 0,
   hb: 0, holdT: 0, cutT: 0, lift: { phase: 'arrive', t: 0 }, liftSealed: true, shakeScale: 1,
-  noise(pos, radius, loud) { for (const h of G.hunters) h.hear({ pos: pos.clone ? pos.clone() : new THREE.Vector3(pos.x, 0, pos.z), radius, loud }); },
+  // kind: walk / crouch / run / cut / locker / work / other. The difficulty decides how far each carries (0 = silent)
+  noise(pos, radius, loud, kind = 'other') {
+    const n = (DIFFS[G.diff] || DIFFS.normal).noise, m = n[kind] ?? n.other ?? 1;
+    if (m <= 0) return;
+    for (const h of G.hunters) h.hear({ pos: pos.clone ? pos.clone() : new THREE.Vector3(pos.x, 0, pos.z), radius: radius * m, loud });
+  },
   say(text, secs) { UI.message(text, secs); },
   gasp() {
     audio.gasp();
@@ -186,6 +191,7 @@ function updateMenu(dt) {
   post.u.hidden.value = 0;
   post.u.blackout.value = 0;
   post.u.flash.value = 0;
+  post.u.tint.value.set(1, 1, 1);
 }
 
 // ---------- floors ----------
@@ -204,14 +210,17 @@ function disposeLevel() {
 
 function loadFloor(depth, seed) {
   disposeLevel();
-  const D = difficulty(depth, G.mode);
+  const D = difficulty(depth, G.mode, Math.random, G.diff);
   const L = makeLayout(depth, seed, D);
+  G.floorSeed = seed;
   const B = buildLevel(L, mats);
   Object.assign(G, { L, B, D, depth, info: floorInfo(depth, G.mode), floorTime: 0, lampKill: 0, torchKill: 0, frenzy: false, frenzyT: 0 });
   G.puzzles = new Puzzles(G, D.puzzles, seed + 17);
   scene.add(B.group);
+  if (D.theme === 'morgue' && G.info.theme !== 'morgue') Object.assign(G.info, { lamp: 0xbfd8ff, fog: 0x01030a, theme: 'morgue' }); // overtime's random cold floors
   scene.fog.color.setHex(G.info.fog);
   scene.background.setHex(G.info.fog);
+  post.u.tint.value.set(...(D.theme === 'morgue' ? [0.72, 0.9, 1.22] : [1, 1, 1])); // the morgue is cold
   scene.fog.density = 0.085 + D.fogBoost + Math.min(depth, 10) * 0.003;
   for (const l of lampLights) l.color.setHex(G.info.lamp);
   G.hunters = B.hunterSpawns.map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
@@ -238,14 +247,17 @@ function inAlcove() {
 
 // ---------- run flow ----------
 // mode: 'story' (continue from the saved floor, or fresh) or 'overtime' (endless, from B1)
-function startRun(mode = 'story', fresh = false) {
+// opts.resume: a snapshot to pick up exactly where you left off. opts.floor: overtime's starting floor
+function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   audio.init();
   applySettings();
   player.reset();
   blood.clear();
   G.mode = mode;
   const st = save.story;
-  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0 });
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal' });
+  G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
+  if (diff) save.settings.lastDiff = diff;
   if (mode === 'story' && (fresh || st.floor === 1)) guide.newRun();
   if (mode === 'overtime') guide.newRun();
   save.shifts++;
@@ -254,7 +266,10 @@ function startRun(mode = 'story', fresh = false) {
   G.runTags = mode === 'story' ? st.tags : 0;
   G.fear = G.scare = G.damage = G.flash = G.blackout = 0;
   writeSave();
-  G.trans = { t: 0.8, loaded: false, next: mode === 'story' ? st.floor : 1 };
+  const snap = opts.resume || null;
+  if (snap) { G.diff = snap.diff; G.runTime = snap.runTime; G.runTags = snap.runTags; }
+  else save.snap = null;
+  G.trans = { t: 0.8, loaded: false, next: snap ? snap.depth : mode === 'story' ? st.floor : opts.floor || 1, snap };
   G.state = 'transition';
   UI.$('fade').classList.add('on');
   UI.only();
@@ -277,8 +292,9 @@ function updateTransition(dt) {
     tr.loaded = true;
     audio.liftMotor(true);
     // story: the floor keeps its seed until you clear it, so a retry is the same floor you learned
-    let seed = (Math.random() * 2 ** 30) | 0;
+    let seed = tr.snap ? tr.snap.seed : (Math.random() * 2 ** 30) | 0;
     if (G.mode === 'story') {
+      if (tr.snap) save.story.seed = seed;
       const st = save.story;
       if (st.floor !== tr.next || !st.seed) { st.floor = tr.next; st.seed = seed; }
       seed = st.seed;
@@ -288,6 +304,7 @@ function updateTransition(dt) {
     }
     loadFloor(tr.next, seed);
     player.tags = 0;
+    if (tr.snap) restoreSnapshot(tr.snap);
     const info = G.info;
     UI.$('cardB').textContent = info.label;
     UI.$('cardName').textContent = info.name;
@@ -305,9 +322,19 @@ function updateTransition(dt) {
     UI.$('fade').classList.remove('on');
     audio.liftMotor(false);
     audio.clank(G.B.lift.pos, 1);
-    G.lift = { phase: 'opening', t: 0 };
-    audio.gateSlide(G.B.lift.pos);
+    if (tr.snap && tr.snap.lift.phase === 'open') {
+      // back exactly where you were: the gate already up
+      G.lift = { phase: 'open', t: 0 };
+      G.B.lift.bars.position.y = WALL_H - 0.25;
+      G.B.gate.off = true;
+      G.liftSealed = false;
+      setTimeout(() => G.state === 'play' && UI.message('You pick up exactly where you left off. He did too.', 3.5), 600);
+    } else {
+      G.lift = { phase: 'opening', t: 0 };
+      audio.gateSlide(G.B.lift.pos);
+    }
     G.state = 'play';
+    G.saveT = 5;
     audio.setMode('roam');
     if (G.depth > 1 && G.D.tags) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the way.`, 4.5), 2500);
   }
@@ -315,6 +342,8 @@ function updateTransition(dt) {
 
 function nextFloor() {
   if (G.mode === 'story') { save.story.floor = G.depth + 1; save.story.seed = 0; }
+  save.snap = null; // the new floor's start is the checkpoint now
+  writeSave();
   G.trans = { t: 0, loaded: false, next: G.depth + 1 };
   G.state = 'transition';
   UI.$('fade').classList.add('on');
@@ -436,10 +465,16 @@ function showDeath() {
   const floor = G.depth, story = G.mode === 'story';
   const record = !story && floor > save.best;
   save.deaths++;
+  // where dying sends you: easy/normal this floor, hard one floor back, extreme the very top
+  const back = { easy: floor, normal: floor, hard: Math.max(1, floor - 1), extreme: 1 }[G.diff] || floor;
+  G.retryFloor = back;
+  save.snap = null;
   if (story) {
-    // checkpoint: same floor, same layout, and the time you spent dying still counts
+    // easy/normal: same floor, same layout. the time you spent dying still counts
     save.story.deaths++;
     save.story.time = Math.round(G.runTime);
+    if (back !== floor) { save.story.floor = back; save.story.seed = 0; }
+    if (back === 1) save.story.tags = 0;
   } else {
     save.best = Math.max(save.best, floor);
     save.totalTags += G.runTags;
@@ -456,13 +491,14 @@ function showDeath() {
     <span>FLOOR</span><b>${G.info.label} OF B${STORY_FLOORS}</b>
     <span>DEATHS THIS SHIFT</span><b>${save.story.deaths}</b>
     <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
-    <span>CHECKPOINT</span><b>START OF ${G.info.label}</b>` : `
+    <span>CHECKPOINT</span><b>START OF B${back}</b>` : `
     <span>DEEPEST FLOOR</span><b class="${record ? 'rec' : ''}">B${floor}${record ? ' \u2014 NEW RECORD' : ''}</b>
     <span>TAGS CUT</span><b>${G.runTags}</b>
     <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
     <span>SHIFT</span><b>#${G.shift}</b>
     <span>WORKERS PROCESSED</span><b>${save.deaths}</b>`;
-  UI.$('btnRetry').textContent = story ? `Try ${G.info.label} again` : 'Clock in again';
+  UI.$('btnRetry').textContent = back === floor ? `Try ${G.info.label} again` : back === 1 ? 'Back to B1' : `Back to B${back}`;
+  UI.$('deathStats').insertAdjacentHTML('beforeend', `<span>DIFFICULTY</span><b>${(DIFFS[G.diff] || DIFFS.normal).label}</b>`);
   UI.only('death');
   blood.clear();
   disposeLevel();
@@ -478,6 +514,7 @@ function startEnding() {
   st.done = (st.done || 0) + 1;
   st.bestTime = st.bestTime ? Math.min(st.bestTime, time) : time;
   st.active = false;
+  save.snap = null;
   const deaths = st.deaths;
   writeSave();
   UI.prompt(null);
@@ -516,10 +553,71 @@ function startEnding() {
 
 function refreshMenu() {
   const st = save.story;
-  UI.$('btnStory').textContent = st.active ? `Continue \u2014 B${st.floor} \u00B7 ${floorInfo(st.floor).name}` : st.done ? 'Clock in again' : 'Clock in';
+  UI.$('btnStory').textContent = st.active ? `Continue \u2014 B${st.floor} \u00B7 ${floorInfo(st.floor).name} (${(DIFFS[st.diff] || DIFFS.normal).label.toLowerCase()})` : st.done ? 'Clock in again' : 'Clock in';
   UI.$('btnNew').hidden = !st.active;
+  const ot = save.snap && save.snap.mode === 'overtime' ? save.snap : null;
+  UI.$('btnOvertimeContinue').hidden = !ot;
+  if (ot) UI.$('btnOvertimeContinue').textContent = `Continue overtime \u2014 B${ot.depth}`;
   UI.timecard(save);
 }
+
+// ---------- saving the exact moment ----------
+// Everything that isn't rebuilt from the floor's seed: where you are and what you've done, what each
+// puzzle is up to, where they are, the clocks. Written every few seconds, on pause, and as the window goes.
+function snapshot() {
+  if (!G.B || !['play', 'paused'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
+  const B = G.B;
+  return {
+    v: 1, mode: G.mode, diff: G.diff, depth: G.depth, seed: G.floorSeed, at: Date.now(),
+    runTime: G.runTime, runTags: G.runTags, floorTime: G.floorTime,
+    p: { x: player.pos.x, z: player.pos.z, yaw: player.yaw, pitch: player.pitch, tags: player.tags, battery: player.battery, stamina: player.stamina,
+      adrenaline: player.adrenaline, light: player.lightOn, crouch: player.crouch, locker: player.hidden ? B.lockers.indexOf(player.hidden) : -1 },
+    lift: { inserted: B.lift.inserted, phase: G.lift.phase === 'opening' ? 'open' : G.lift.phase },
+    corpses: B.corpses.map((c) => (c.harvested ? -1 : c.progress)),
+    pickups: B.pickups.map((p) => (p.taken ? 1 : 0)),
+    hunters: G.hunters.map((h) => [h.pos.x, h.pos.z, h.yaw]),
+    puzzles: G.puzzles.save(),
+    shown: [...guide.shown],
+  };
+}
+function saveSnapshot() {
+  const s = snapshot();
+  if (!s) return;
+  save.snap = s;
+  writeSave();
+}
+function restoreSnapshot(s) {
+  const B = G.B;
+  G.runTime = s.runTime;
+  G.runTags = s.runTags;
+  G.floorTime = s.floorTime;
+  s.corpses.forEach((v, i) => {
+    const c = B.corpses[i];
+    if (!c) return;
+    if (v === -1) {
+      c.harvested = true;
+      c.tag.visible = false;
+      c.cavity.scale.multiplyScalar(1.35);
+      c.pool.scale.setScalar(1.4);
+      c.flies.visible = false;
+      if (G.flies[i]) { G.flies[i].stop(); G.flies[i] = null; }
+    } else c.progress = v;
+  });
+  s.pickups.forEach((t, i) => { const p = B.pickups[i]; if (p && t) { p.taken = true; p.obj.visible = false; } });
+  B.lift.inserted = s.lift.inserted;
+  B.lift.lights.forEach((l, i) => { if (i < B.lift.inserted) l.material.color.setHex(0xff3a10); });
+  G.puzzles.load(s.puzzles);
+  Object.assign(player, { yaw: s.p.yaw, pitch: s.p.pitch, tags: s.p.tags, battery: s.p.battery, stamina: s.p.stamina, adrenaline: s.p.adrenaline, lightOn: s.p.light, crouch: s.p.crouch });
+  player.pos.set(s.p.x, 0, s.p.z);
+  const lk = B.lockers[s.p.locker];
+  if (lk) player.pos.set(lk.pos.x + lk.facing.x * 0.75, 0, lk.pos.z + lk.facing.z * 0.75); // you were hiding: you're right outside it
+  s.hunters.forEach(([x, z, yaw], i) => { const h = G.hunters[i]; if (h) { h.pos.set(x, 0, z); h.yaw = yaw; h.obj.position.copy(h.pos); } });
+  guide.shown = new Set(s.shown);
+  player.inLift = inAlcove();
+}
+addEventListener('pagehide', saveSnapshot);
+addEventListener('beforeunload', saveSnapshot);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveSnapshot(); });
 
 function toMenu() {
   G.state = 'menu';
@@ -560,7 +658,7 @@ function findInteract() {
   let best = null, bs = -1e9;
   const consider = (it, pos, d, range, minFacing, bonus = 0) => {
     if (d > range) return;
-    const f = d < 0.6 && it.type !== 'locker' ? 1 : player.flatFacing(pos);
+    const f = it.p && it.p.aim ? player.facingDot(pos) : d < 0.6 && it.type !== 'locker' ? 1 : player.flatFacing(pos);
     if (f < minFacing) return;
     const score = f * 2 - d * 0.4 + bonus;
     if (score > bs) { bs = score; best = it; }
@@ -601,7 +699,7 @@ function handleInteract(dt) {
           audio.squelch(0.9);
           blood.splash(0.25, true);
           player.shake = Math.max(player.shake, 0.22);
-          G.noise(c.pos, 9.5, false);
+          G.noise(c.pos, 9.5, false, 'cut');
         }
         player.vel.multiplyScalar(0.8);
       }
@@ -639,7 +737,7 @@ function handleInteract(dt) {
             if (p.tick === 'squelch') { audio.squelch(0.7); blood.splash(0.15, true); }
             else if (p.tick === 'screech') audio.creak(p.pos);
             else audio.clank(p.pos, 0.4);
-            if (p.noise) G.noise(p.pos, p.noise, false);
+            if (p.noise) G.noise(p.pos, p.noise, false, 'work');
           }
         }
         hold(p.hold, '<kbd>E</kbd>&nbsp; ' + p.label, p.use);
@@ -699,7 +797,7 @@ function harvest(c) {
   player.shake = 0.5;
   player.tags++;
   G.runTags++;
-  G.noise(c.pos, 12, true);
+  G.noise(c.pos, 12, true, 'cut');
   if (G.runTags === 1) director.queue('face', 6 + Math.random() * 5);
   const got = G.B.lift.inserted + player.tags;
   if (got >= G.D.tags) {
@@ -724,7 +822,7 @@ function hide(lk) {
   UI.$('slits').classList.add('on');
   audio.setMuffle(true);
   audio.lockerClose(lk.pos);
-  G.noise(lk.pos, 2.5, false);
+  G.noise(lk.pos, 2.5, false, 'locker');
 }
 function unhide() {
   const lk = player.hidden;
@@ -736,7 +834,7 @@ function unhide() {
   UI.$('slits').classList.remove('on');
   audio.setMuffle(false);
   audio.lockerOpen(lk.pos);
-  G.noise(lk.pos, 5, false);
+  G.noise(lk.pos, 5, false, 'locker');
 }
 
 // ---------- the lift ----------
@@ -827,6 +925,8 @@ function updateGame(dt, t) {
   const B = G.B;
   G.runTime += dt;
   G.floorTime += dt;
+  G.saveT -= dt;
+  if (G.saveT < 0) { G.saveT = 4; saveSnapshot(); }
   G.lampKill -= dt;
   G.torchKill -= dt;
   G.slowT -= dt;
@@ -875,7 +975,7 @@ function updateGame(dt, t) {
     player.breathUrgent = close.length > 0;
     audio.setMuffle(true);
     for (const h of close) {
-      if (!player.holding && h.pos.distanceTo(player.pos) < 4.5 && h.state !== 'locker' && Math.random() < dt * 0.45) {
+      if (!player.holding && h.pos.distanceTo(player.pos) < 4.5 && h.state !== 'locker' && Math.random() < dt * 0.45 * (DIFFS[G.diff] || DIFFS.normal).hear) {
         h.lockerTarget = player.hidden;
         h.setState('locker');
         audio.sniff(h.pos);
@@ -929,6 +1029,7 @@ addEventListener('keydown', (e) => {
 
 function pause() {
   G.state = 'paused';
+  saveSnapshot();
   G.listening = false;
   audio.setListen(false);
   UI.only('pause', 'hud');
@@ -945,18 +1046,30 @@ function resume() {
 }
 
 let settingsFrom = 'menu';
+let diffIntent = { mode: 'story', fresh: true };
+function pickDifficulty(mode, fresh) {
+  diffIntent = { mode, fresh };
+  UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : 'OVERTIME: HOW HARD?';
+  for (const el of document.querySelectorAll('[data-diff]')) el.classList.toggle('last', el.dataset.diff === (save.settings.lastDiff || 'normal'));
+  UI.only('difficulty');
+}
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
   audio.tick();
   const act = b.dataset.act;
-  if (act === 'story') startRun('story');
-  else if (act === 'newstory') startRun('story', true);
-  else if (act === 'overtime') startRun('overtime');
-  else if (act === 'retry') startRun(G.mode);
+  if (act === 'story') {
+    if (save.story.active) startRun('story', false, null, { resume: save.snap && save.snap.mode === 'story' && save.snap.depth === save.story.floor ? save.snap : null });
+    else pickDifficulty('story', true);
+  }
+  else if (act === 'newstory') pickDifficulty('story', true);
+  else if (act === 'overtime') pickDifficulty('overtime', false);
+  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff);
+  else if (act === 'retry') startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
+  else if (act === 'overtimeContinue' && save.snap) startRun('overtime', false, save.snap.diff, { resume: save.snap });
   else if (act === 'howto') UI.only('howto');
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
-  else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else UI.only('menu'); settingsFrom = 'menu'; }
+  else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
   else if (act === 'quit') { if (audio.ctx) audio.ctx.resume(); toMenu(); }
   else if (act === 'menu') toMenu();

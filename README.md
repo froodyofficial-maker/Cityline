@@ -37,12 +37,24 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
    - **Sealed shutter:** part of the floor is shut off. The code is scrawled in blood on the walls; type it into the keypad. A wrong code sets off an alarm.
    - **Jammed counterweight:** cuts of meat hang around the floor, tagged in kilograms. You can carry two. Make the freight scale by the lift read the exact weight.
    - **Steam on the brake:** find the release order, then turn the hissing valves in it. The wrong valve vents everything, loudly.
+   - **Workers on ice** (morgue floors): an intake log lists which freezer drawers hold the missing workers (bank and number, like C-7). Look at the drawer and hold **E** to pull it out. The wrong drawer holds somebody else, it moves, and it slams shut loudly.
 3. Feed the tags to the lift, pull the lever and survive the three seconds while the gate grinds shut.
 4. B10, *The Line*, is the finale: pull three kill switches to stop the line, then run for the lift with both of them hunting you.
 
-Each floor is a checkpoint. Dying restarts that floor with the same layout, so what you learned still helps. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the next body, puzzle piece, or the lift. An objective line at the top always says what's next, and on the first floors a shift briefing explains each thing as it comes up.
+**Morgue floors** (B3 *The Morgue* and B7 *The Cold Room*, and sometimes in Overtime) are cold and blue: glazed tile walls with frost, freezer rooms lined with banks of body drawers (some hanging open), and autopsy tables.
 
-**Overtime:** the endless version. Floors are random, puzzles are random from B2, and dying sends you back to B1. Your deepest floor goes on your time card.
+**Difficulty** is picked when you start a story or an Overtime run:
+
+| | The Foreman's sprint | Noise | When you die |
+| --- | --- | --- | --- |
+| Easy | Much slower than yours: you can outrun him | Walking, crouching, lockers and puzzle work are silent; cutting and running are quieter | Same floor, from its start |
+| Normal | A little slower than yours | Everything that makes noise makes noise | Same floor, from its start |
+| Hard | A little faster than yours | Footsteps, cutting, lockers and machinery carry further | One floor back, from its start |
+| Extreme | Faster than yours, even with a syringe | Everything carries much further | Back to B1 |
+
+**Saving:** the game saves the exact moment you leave. That happens when you pause, quit, close the window or switch away, plus every few seconds. It covers where you're standing and looking, the tags you carry, which bodies are cut (and how far), every puzzle's progress, pickups, battery, stamina, where the Foreman is, and the clock. **Continue** puts you back exactly there. On easy and normal, a story floor also keeps its layout after a death, so what you learned still helps. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the next body, puzzle piece, or the lift. An objective line at the top always says what's next, and on the first floors a shift briefing explains each thing as it comes up.
+
+**Overtime:** the endless version. Floors are random, puzzles are random from B2, and where a death sends you depends on the difficulty. Your deepest floor goes on your time card.
 
 **Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random:
 - strung up over a fire pit
@@ -70,7 +82,7 @@ Everything is procedural: textures, models and gore are painted and built in cod
 | Shift | Run (loud) |
 | C | Crouch on/off (quiet) |
 | F | Torch on/off (the battery drains) |
-| E | Use: cut, search, take, read, hide, turn, feed the lift, pull the lever |
+| E | Use: cut, search, take, read, hide, turn, pull a drawer, feed the lift, pull the lever |
 | Space | Hold your breath (in a locker); skip a death scene |
 | Q (hold) | Listen: show the way to whatever is next |
 | R | Use a syringe (sprint without running out) |
