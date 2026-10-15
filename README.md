@@ -24,7 +24,9 @@ npm start            # serves the project at http://localhost:8080
 
 The repo also holds **OFFAL**, a separate first-person horror game. You work the night shift at the Hollow Pines Meatworks, a slaughterhouse that goes down further than the plans say.
 
-**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse.
+**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse. It goes fullscreen on your first click; **F11**, the *Fullscreen* button on the menu and pause screens, or the setting turns it on and off.
+
+**Music:** the heavy drone plays on the menu and under the death screen, always at its own pitch. On the floors it sits far back under a soft pad and a music box, and during a chase it drops out for your heartbeat.
 
 **Windows launcher (small):** `npm run launcher:win` builds `offal-launcher/OFFAL.exe` (about 2 MB, needs Go). The game is embedded in the launcher. It opens the game in its own window using the Edge that comes with Windows, or Chrome, and saves to `%LOCALAPPDATA%\OFFAL`.
 

@@ -22,7 +22,7 @@ import { animateFlies } from './props.js';
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0 }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0 }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, settings: { ...fresh.settings, ...s.settings } };
@@ -487,6 +487,9 @@ function showDeath() {
   G.state = 'dead';
   try { document.exitPointerLock(); } catch {}
   audio.setMuffle(false);
+  // the menu drone comes back under the death screen, the way it always was
+  audio.setMode('menu');
+  audio.setDepth(0);
   const floor = G.depth, story = G.mode === 'story';
   const record = !story && floor > save.best;
   save.deaths++;
@@ -649,6 +652,7 @@ function toMenu() {
   G.state = 'menu';
   refreshMenu();
   audio.setMode('menu');
+  audio.setDepth(0); // the menu drone at its own pitch, however deep you got
   audio.siren(false);
   audio.lineRunning(false);
   UI.only('menu');
@@ -1047,8 +1051,24 @@ addEventListener('beforeunload', (e) => { if (['play', 'paused', 'transition', '
 document.addEventListener('fullscreenchange', () => {
   try { if (document.fullscreenElement && navigator.keyboard) navigator.keyboard.lock(); else if (navigator.keyboard) navigator.keyboard.unlock(); } catch {}
 });
+// fullscreen: F11, the menu and pause buttons, or the setting (which also puts you there on your first click)
+function setFullscreen(on) {
+  try {
+    if (on && !document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+    else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  } catch {}
+}
+function syncFullscreenUI() {
+  const on = !!document.fullscreenElement;
+  document.querySelectorAll('[data-act=fullscreen]').forEach((b) => (b.textContent = on ? 'Exit fullscreen' : 'Fullscreen'));
+  UI.$('fullscreen').checked = on;
+}
+document.addEventListener('fullscreenchange', () => {
+  syncFullscreenUI();
+  setTimeout(resize, 50);
+});
 addEventListener('keydown', (e) => {
-  if (e.code === 'F11') { e.preventDefault(); if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }
+  if (e.code === 'F11') { e.preventDefault(); setFullscreen(!document.fullscreenElement); }
   // browser shortcuts we can still swallow outside fullscreen (find, save, print, history)
   if ((e.ctrlKey || e.metaKey) && ['KeyF', 'KeyS', 'KeyP', 'KeyH', 'KeyD', 'KeyG'].includes(e.code) && G.state === 'play') e.preventDefault();
 });
@@ -1100,6 +1120,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
+  else if (act === 'fullscreen') setFullscreen(!document.fullscreenElement);
   else if (act === 'quit') { if (audio.ctx) audio.ctx.resume(); toMenu(); }
   else if (act === 'menu') toMenu();
 });
@@ -1114,7 +1135,13 @@ function fillSettings() {
   UI.$('shake').checked = s.shake;
   for (const id of ['fov', 'beam', 'power']) UI.$(id).value = s[id];
   for (const id of ['invert', 'bob', 'hints']) UI.$(id).checked = s[id];
+  syncFullscreenUI();
 }
+UI.$('fullscreen').addEventListener('input', () => {
+  save.settings.fullscreen = UI.$('fullscreen').checked;
+  writeSave();
+  setFullscreen(save.settings.fullscreen);
+});
 const CHECKS = ['shake', 'invert', 'bob', 'hints'];
 for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
@@ -1131,8 +1158,10 @@ refreshMenu();
 if (matchMedia('(pointer: coarse)').matches) UI.$('mobileNote').textContent = '· keyboard and mouse required';
 UI.typewrite(UI.$('warnText'), 'This game contains graphic gore, mutilated bodies, sudden loud noises and flashing images.\n\nPlay it in the dark. Wear headphones.\n\nIf you need to stop, press ESC. The plant will wait for you.', 45);
 UI.$('warn').addEventListener('click', () => {
+  if (save.settings.fullscreen) setFullscreen(true);
   audio.init();
   applySettings();
+  audio.setDepth(0);
   audio.chime();
   audio.setMode('menu');
   G.state = 'menu';
@@ -1185,6 +1214,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };
