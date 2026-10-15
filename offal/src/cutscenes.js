@@ -2,7 +2,7 @@
 //   rope    - strung up over a fire pit; he watches you, you look down at the flames, he cuts the rope
 //   exit    - an EXIT door at last; he's just standing behind you; the door opens onto a sheer drop; he pushes
 //   grinder - (third person) dragged by the ankle and fed into the meat grinder
-//   fan     - lifted up into the blades of a ceiling fan
+//   fan     - (third person) held up by the throat into the blades of a ceiling fan
 //   eaten   - (third person) he takes you apart on the floor and eats you, and then he looks at you
 // Each one builds its own little stage, runs off a timeline, and throws gore around with a small physics pass.
 import * as THREE from 'three';
@@ -21,7 +21,7 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 function makeWorker(mats) {
   let seed = 7;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const b = makeBody(mats, rng, { cloth: mats.coverall, skin: mats.skin });
+  const b = makeBody(mats, rng, { cloth: mats.coverall, skin: mats.skin, dead: false });
   b.jaw.rotation.x = 0.35; // screaming, or trying to
   return b;
 }
@@ -175,6 +175,7 @@ export class Cutscene {
     this.fear = 0.6;
     this.flash = 0;
     this.shake = 0;
+    if (kind !== 'rope' && kind !== 'exit') blood.clear(); // the camera isn't you in these
     this[kind + 'Build']();
   }
   // first person: you're still holding the torch
@@ -459,38 +460,62 @@ export class Cutscene {
     s.add(fill);
     this.you = makeWorker(m);
     s.add(this.you.root);
+    // a work light that travels with the two of you down the room
+    this.follow = new THREE.PointLight(0xffc8a0, 16, 7, 1.4);
+    s.add(this.follow);
+    this.key = new THREE.PointLight(0xffd8b8, 0, 9, 1.2); // on him at the hopper
+    this.key.position.set(2.6, 2.3, -1.9);
+    s.add(this.key);
     this.audio.grinder(true);
   }
   grinderUpdate(dt) {
     const t = this.t, you = this.you, him = this.him.root;
     for (const r of this.rollers) r.rotation.y += dt * (t > 4 ? 14 : 6) * (r.position.x > 0 ? 1 : -1);
     const hand = V();
-    // camera: low, off to the side, the whole thing in shot
-    this.cam.position.set(lerp(3.4, 2.8, t / 8), lerp(1.3, 1.8, t / 8), lerp(2.2, 1.0, t / 8));
-    this.cam.lookAt(0, 1.1, -1.8);
     if (t < 3) {
-      // dragging you by the ankle
-      const z = lerp(4, -1.4, ease(t / 3));
+      // dragging you by the ankle, feet first, your arms trailing over your head. The camera walks alongside.
+      const z = lerp(3.2, -1.3, ease(t / 3));
       him.position.set(0.3, 0, z);
       him.rotation.y = Math.PI;
-      this.pose({ mode: 'walk', gait: t * 5, speed: 1.2 });
-      this.him.arms[1].sh.rotation.set(-0.2, 0, -0.3);
+      this.pose({ mode: 'walk', gait: t * 5.5, speed: 1.4, jaw: 0.3 });
+      this.him.arms[1].sh.rotation.set(0.55, 0, -0.15);
+      this.him.arms[1].el.rotation.x = -0.2;
       this.handPos(1, hand);
-      you.root.position.set(hand.x, 0.18, hand.z + 1.25);
-      orient(you.root, V(0, 0, -1), V(0, 1, 0));
-      you.arms.forEach((a, i) => a.rotation.set(0, 0, (i ? 1 : -1) * 2.6));
+      const leg = 0.92, lift = Math.asin(clamp01((hand.y - 0.13) / leg));
+      you.root.position.set(hand.x, 0.13, hand.z + Math.cos(lift) * leg + Math.sin(t * 11) * 0.02);
+      orient(you.root, V(0, 0, 1), V(0, 1, 0)); // on your back, head trailing
+      you.legs.forEach((l, i) => { l.rotation.set(-lift + (i ? 0 : 0.25), 0, (i ? 0 : 0.18)); l.userData.knee.rotation.x = i ? 0 : 0.5; });
+      you.arms.forEach((a, i) => { a.rotation.set(0, 0, (i ? 1 : -1) * (2.7 + Math.sin(t * 6 + i) * 0.1)); a.userData.el.rotation.z = 0; });
+      you.head.rotation.set(0.3, Math.sin(t * 9) * 0.35, 0);
+      const mid = V(0.3, 0.75, z + 0.75);
+      this.cam.position.set(2.7, 1.05, mid.z + 1.1);
+      this.cam.lookAt(mid);
+      this.follow.position.set(1.2, 2.2, z + 0.8);
       this.at(0.2, 'drag', () => this.audio.drag());
-      if (Math.random() < dt * 8) this.scene.add(decal(this.mats.splat[(Math.random() * 4) | 0], 0.6, hand.x + (Math.random() - 0.5) * 0.2, hand.z + 1.2, Math.random() * 6, 0.011));
-    } else if (t < 4.2) {
+      this.at(1.4, 'drag2', () => this.audio.drag());
+      if (Math.random() < dt * 14) this.scene.add(decal(this.mats.drag || this.mats.splat[0], 0.5, you.root.position.x + (Math.random() - 0.5) * 0.15, you.root.position.z + 0.4, Math.PI / 2, 0.011));
+      return;
+    }
+    you.legs.forEach((l) => { l.rotation.set(0, 0, 0); l.userData.knee.rotation.x = 0; });
+    this.follow.intensity = Math.max(0, this.follow.intensity - dt * 30);
+    // then: off to the side, him in profile at the lip of the hopper, the whole machine in shot
+    const ct = (t - 3) / 5.5;
+    this.cam.position.set(lerp(4.6, 4.2, ct), lerp(1.6, 1.9, ct), lerp(-3.4, -3.6, ct));
+    this.cam.lookAt(0.9, 1.7, -2.0);
+    this.key.intensity = 24;
+    // a step back from the rim while he hoists you, then a step in to drop you over it
+    const step = ease((t - 3.9) / 0.4);
+    him.position.set(lerp(1.95, 1.34, step), 0, lerp(-0.85, -1.52, step));
+    him.rotation.y = -2.41; // facing the mouth of it
+    if (t < 4.2) {
       // up, by one leg, over the mouth of it
       const k = ease((t - 3) / 1);
-      him.position.set(0.3, 0, -1.4);
       this.pose({ mode: 'walk', jaw: 0.5 });
       this.him.arms[1].sh.rotation.set(lerp(-0.2, -2.9, k), 0, -0.2);
       this.handPos(1, hand);
       you.root.position.set(hand.x, hand.y - 1.1, hand.z);
       orient(you.root, V(0, -1, 0), V(0, 0, 1));
-      this.at(3.2, 'growl', () => this.audio.growl({ x: 0, y: 2, z: -1.4 }, 1));
+      this.at(3.2, 'growl', () => this.audio.growl({ x: 0.9, y: 2, z: -2 }, 1));
     } else {
       // in
       const k = clamp01((t - 4.2) / 0.5);
@@ -507,23 +532,24 @@ export class Cutscene {
         this.gore.spray(V(0, 0.8, -1.8), V(0, 0.3, 1), 120, 6, 0.5);
       });
       if (t > 4.5 && t < 7 && Math.random() < dt * 14) { this.gore.burst(mouth, 3, 4, 1); this.gore.spray(V(0, 0.7, -1.7), V(0, 0.2, 1), 25, 5, 0.4); }
-      this.at(4.6, 'lens', () => this.blood.splash(0.9));
-      this.at(5.5, 'lens2', () => this.blood.splash(0.6));
       this.at(7.6, 'black', () => (this.blackout = 1));
       this.fear = 0.9;
     }
   }
 
-  // ---------- 4: the fan ----------
+  // ---------- 4: the fan (third person) ----------
   fanBuild() {
-    this.dur = 7;
+    this.dur = 7.6;
     const s = this.scene, m = this.mats;
     room(s, m, 10, 10, 9);
+    s.fog.density = 0.04;
+    this.fanPos = V(0, 2.85, -0.4);
     this.fan = new THREE.Group();
-    this.fan.position.set(0, 2.85, -0.4);
+    this.fan.position.copy(this.fanPos);
     this.fan.add(mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 10), m.darkMetal));
+    this.bladeMat = m.steel.clone();
     for (let i = 0; i < 4; i++) {
-      const b = mesh(new THREE.BoxGeometry(1.5, 0.025, 0.32), m.steel);
+      const b = mesh(new THREE.BoxGeometry(1.5, 0.025, 0.32), this.bladeMat);
       b.position.x = 0.85;
       const arm = new THREE.Group();
       arm.rotation.y = (i * Math.PI) / 2;
@@ -534,56 +560,97 @@ export class Cutscene {
     rod.position.y = 0.1;
     this.fan.add(rod);
     s.add(this.fan);
+    s.add(decal(m.pool[2], 2.2, 0, -0.4, 0.7));
     // a light above the blades: their shadows sweep the room
     this.light = new THREE.PointLight(0xfff0d0, 14, 14, 1.4);
     this.light.position.set(0, 2.97, -0.4);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(512, 512);
     s.add(this.light);
-    // and a work light below it, so you see the blades coming
-    const under = new THREE.PointLight(0xff8060, 8, 8, 1.5);
-    under.position.set(1.5, 1.2, 1.5);
-    s.add(under);
-    this.torch(70);
-    const face = new THREE.PointLight(0xff5a40, 3, 3, 2); // on its face while it holds you up
-    face.position.set(0, 0, -0.3);
-    this.cam.add(face);
-    this.him.root.position.set(0, 0, -0.95);
+    const key = new THREE.PointLight(0xffd0b0, 16, 9, 1.3); // from the camera's side, on the two of you
+    key.position.set(2.2, 1.7, -1.2);
+    s.add(key);
+    const rim = new THREE.PointLight(0xff3020, 8, 8, 1.5);
+    rim.position.set(-2, 1.2, -2.5);
+    s.add(rim);
+    this.you = makeWorker(m);
+    this.you.root.rotation.y = 1.2; // half turned to us
+    s.add(this.you.root);
+    this.him.root.position.set(0, 0, 0.35);
+    this.him.root.rotation.y = Math.PI;
+    this.fallV = 0;
     this.audio.fanLoop(true);
   }
   fanUpdate(dt) {
-    const t = this.t;
+    const t = this.t, f = this.him, you = this.you;
     this.fan.rotation.y += dt * 14;
-    const head = this.headPos();
-    if (t < 3.3) {
-      // up, up, up toward it
-      const lift = ease((t - 0.8) / 2);
-      this.pose({ mode: 'grab', jaw: 0.6, twitch: this.twitch(0.3) });
-      for (const a of this.him.arms) a.sh.rotation.x = lerp(-1.6, -3.0, lift);
-      this.cam.position.set(0, lerp(1.95, 2.55, lift), -0.4 + lift * 0.05);
-      const look = lerp(0, 1, ease((t - 1) / 0.8));
-      this.cam.lookAt(V(head.x, head.y, head.z).lerp(V(0, 3, -0.6), look));
-      this.at(1.2, 'up', () => this.audio.growl({ x: 0, y: 2, z: -1 }, 1));
+    // the camera: low in the corner of the room, looking up at it, creeping closer
+    this.cam.position.set(lerp(3.3, 2.5, t / 7), lerp(1.0, 1.2, t / 7), lerp(-0.9, -0.6, t / 7));
+    this.cam.lookAt(0, lerp(1.75, 2.0, clamp01(t / 3)), -0.15);
+    // held just under the blades, then one hard shove up into them
+    const lift = Math.min(ease((t - 0.7) / 2.2), 0.52) + (t > 3.0 ? 0.48 * ease((t - 3.0) / 0.12) : 0);
+    if (t < 4.3) {
+      // by the throat, then up over its head, into the blades
+      this.pose({ mode: 'grab', jaw: 0.5 + lift * 0.4, twitch: this.twitch(0.25) });
+      for (const a of f.arms) { a.sh.rotation.x = lerp(-1.5, -2.95, lift); a.el.rotation.x = lerp(-0.4, -0.05, lift); }
+      f.neck.rotation.x = lerp(-0.2, -0.9, lift); // watching you go up
+      // keep its hands right under the hub
+      const h0 = this.handPos(0), h1 = this.handPos(1), hm = h0.add(h1).multiplyScalar(0.5);
+      f.root.position.x += this.fanPos.x - hm.x;
+      f.root.position.z += this.fanPos.z - hm.z;
+      const top = this.handPos(0).add(this.handPos(1)).multiplyScalar(0.5);
+      you.root.position.set(top.x, top.y - 0.6, top.z);
+      // kicking, clawing at its arms
+      you.legs.forEach((l, i) => { l.rotation.x = Math.sin(t * 13 + i * 2.5) * 0.55; l.userData.knee.rotation.x = 0.4 + Math.sin(t * 11 + i) * 0.4; });
+      you.arms.forEach((a, i) => { a.rotation.set(-1.2 + Math.sin(t * 9 + i * 3) * 0.6, 0, (i ? 1 : -1) * (0.4 + Math.sin(t * 7 + i) * 0.3)); });
+      you.head.rotation.set(-0.5 + Math.sin(t * 10) * 0.2, Math.sin(t * 8) * 0.4, 0);
+      this.at(0.9, 'up', () => this.audio.growl({ x: 0, y: 2, z: 0 }, 1));
       this.fear = 0.5 + lift * 0.5;
-    } else {
-      this.at(3.3, 'blades', () => {
-        this.audio.fanHit();
-        this.blood.splash(1);
-        this.blood.splash(1);
-        this.flash = 1;
-        this.shake = 2;
-        this.gore.burst(V(0, 2.7, -0.4), 50, 7, 0.1, [severedArm(this.mats, Math.random), severedArm(this.mats, Math.random)]);
-        this.gore.spray(V(0, 2.75, -0.4), V(1, 0, 0), 300, 9, 2);
-      });
-      // and then you're on the floor, looking up at it throwing you around the room
-      const k = ease((t - 3.4) / 0.5);
-      this.cam.position.set(0.6, lerp(2.6, 0.25, k), 0.6);
-      this.cam.lookAt(0, 2.8, -0.4);
-      this.cam.rotation.z += 0.6;
-      if (t < 5 && Math.random() < dt * 10) this.gore.spray(V(0, 2.75, -0.4), V(Math.random() - 0.5, -0.2, Math.random() - 0.5), 30, 8, 1.5);
-      this.pose({ mode: 'walk', jaw: 0.3, twitch: { x: -0.6, y: 0, z: 0.4, r: 0.5 } });
-      this.at(6.2, 'black', () => (this.blackout = 1));
     }
+    const hub = V(this.fanPos.x, this.fanPos.y - 0.1, this.fanPos.z);
+    const fling = () => { const a = Math.random() * 6.28; return V(Math.cos(a), -0.15 + Math.random() * 0.3, Math.sin(a)); };
+    this.at(3.1, 'head', () => {
+      // the head goes first
+      this.audio.fanHit();
+      this.flash = 0.6;
+      this.shake = 2;
+      you.head.visible = false;
+      const st = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 8), this.mats.meat, false);
+      st.position.y = 0.05;
+      you.neck.add(st);
+      this.bladeMat.color.setHex(0x8a2a22);
+      this.gore.burst(hub, 30, 7, 0.05, [severedHead(this.mats, Math.random)]);
+      for (let i = 0; i < 6; i++) this.gore.spray(hub, fling(), 60, 9, 0.4);
+    });
+    this.at(3.6, 'arms', () => {
+      this.audio.fanHit();
+      this.audio.crack();
+      this.shake = 2;
+      you.arms.forEach((a) => (a.visible = false));
+      openChest(you, this.mats);
+      this.gore.burst(hub, 30, 7, 0.05, [severedArm(this.mats, Math.random), severedArm(this.mats, Math.random)]);
+      for (let i = 0; i < 6; i++) this.gore.spray(hub, fling(), 60, 9, 0.4);
+    });
+    if (t > 3.1 && t < 4.3 && Math.random() < dt * 20) this.gore.spray(hub, fling(), 25, 9, 0.5);
+    if (t > 3.1 && t < 6 && Math.random() < dt * 6) this.gore.spray(V((Math.random() - 0.5) * 1.6, 2.75, -0.4 + (Math.random() - 0.5) * 1.6), V(0, -1, 0), 6, 1, 0.2); // it rains off the blades
+    if (t >= 4.3) {
+      // it lets go of what's left
+      this.at(4.3, 'drop', () => this.audio.squelch(1.5));
+      this.fallV -= 9.8 * dt;
+      you.root.position.y = Math.max(0.16, you.root.position.y + this.fallV * dt);
+      if (you.root.position.y <= 0.16) {
+        this.at(4.8, 'land', () => { this.audio.squelch(1.2); this.shake = 0.8; this.gore.spray(you.root.position.clone(), V(0, 1, 0), 60, 3, 1); });
+        you.root.rotation.x = Math.max(-1.45, you.root.rotation.x - dt * 6);
+      }
+      // and then it looks at you
+      const look = ease((t - 5.0) / 0.3);
+      this.pose({ mode: 'walk', jaw: 0.4 + look * 0.5, twitch: t > 5.0 ? this.twitch(0.15) : { x: -0.6, y: 0, z: 0, r: 0 } });
+      for (const a of f.arms) a.sh.rotation.x = lerp(-1.2, -0.6, ease((t - 4.3) / 0.6));
+      f.root.rotation.y = lerp(Math.PI, Math.atan2(this.cam.position.x - f.root.position.x, this.cam.position.z - f.root.position.z), look);
+      this.at(5.0, 'stare', () => { this.audio.jumpscare(0.7); this.flash = 0.4; });
+      if (t > 5.1) { const hp = this.headPos(); this.cam.position.lerp(hp, ease((t - 5.1) / 1.4) * 0.55); this.cam.lookAt(hp); this.fear = 1; }
+    }
+    this.at(6.8, 'black', () => (this.blackout = 1));
   }
 
   // ---------- 5: eaten (third person) ----------

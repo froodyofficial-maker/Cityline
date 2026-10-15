@@ -36,16 +36,60 @@ function stump(mats, r) {
   return g;
 }
 
-export function entrails(mats, rng, start, spread = 0.6, n = 9) {
+// bowel: a fat, wet, segmented rope that spills out of `start`, runs to the floor and heaps up in coils
+// beside it (around `pile`, if given). The tube bulges every few centimetres so it reads as gut, not hose.
+export function entrails(mats, rng, start, spread = 0.6, n = 9, pile = null) {
   const pts = [start.clone()];
-  let p = start.clone();
-  for (let i = 0; i < n; i++) {
-    p = p.clone().add(new THREE.Vector3((rng() - 0.5) * spread * 0.6, -Math.min(p.y, 0.05) * 0.5 - 0.01, (rng() - 0.5) * spread * 0.6));
-    p.y = Math.max(0.035, p.y);
-    pts.push(p);
+  const c = pile ? pile.clone() : start.clone().add(new THREE.Vector3((rng() - 0.5) * spread * 0.5, 0, (rng() - 0.5) * spread * 0.5));
+  const r0 = 0.035 + rng() * 0.01;
+  if (start.y > 0.12) pts.push(new THREE.Vector3((start.x + c.x) / 2, Math.max(r0, start.y * 0.35), (start.z + c.z) / 2));
+  let a = rng() * 6;
+  const loops = 6 + n;
+  for (let k = 0; k < loops; k++) {
+    a += 1.2 + rng() * 0.9;
+    const rad = spread * (0.1 + rng() * 0.16);
+    c.x += (rng() - 0.5) * spread * 0.08;
+    c.z += (rng() - 0.5) * spread * 0.08;
+    pts.push(new THREE.Vector3(c.x + Math.cos(a) * rad, r0 + (k % 3) * r0 * 0.9 * rng(), c.z + Math.sin(a) * rad));
   }
   const curve = new THREE.CatmullRomCurve3(pts);
-  return mesh(new THREE.TubeGeometry(curve, n * 6, 0.028 + rng() * 0.012, 6, false), mats.gut);
+  const seg = loops * 14, rs = 8, g = new THREE.TubeGeometry(curve, seg, r0, rs, false);
+  // the segments: squeeze every ring toward the centre line on a short period
+  const pos = g.attributes.position, P = new THREE.Vector3(), C = new THREE.Vector3();
+  for (let i = 0; i <= seg; i++) {
+    curve.getPointAt(i / seg, C);
+    const bulge = 0.72 + 0.4 * Math.abs(Math.sin(i * 0.9));
+    for (let j = 0; j <= rs; j++) {
+      const v = i * (rs + 1) + j;
+      P.fromBufferAttribute(pos, v).sub(C).multiplyScalar(bulge).add(C);
+      pos.setXYZ(v, P.x, P.y, P.z);
+    }
+  }
+  g.computeVertexNormals();
+  const grp = new THREE.Group();
+  grp.add(mesh(g, mats.gut));
+  return grp;
+}
+
+// the rest of what's inside a person: liver, stomach, a kidney, sometimes the heart
+export function organs(mats, rng, n = 3) {
+  mats.liver ||= new THREE.MeshPhongMaterial({ color: 0x3a0705, shininess: 140, specular: 0x884444 });
+  mats.stomach ||= new THREE.MeshPhongMaterial({ color: 0xa65a50, map: mats.gut.map, shininess: 110, specular: 0x775555 });
+  mats.heart ||= new THREE.MeshPhongMaterial({ color: 0x5a0a0a, map: mats.meat.map, shininess: 120, specular: 0x774444 });
+  const g = new THREE.Group();
+  const kinds = [
+    () => { const o = new THREE.Group(); const l1 = mesh(sph(0.1, 12), mats.liver); l1.scale.set(1.3, 0.38, 0.85); const l2 = mesh(sph(0.07, 10), mats.liver); l2.scale.set(1.1, 0.4, 0.9); l2.position.set(0.12, -0.005, 0.03); o.add(l1, l2); return o; },
+    () => { const o = mesh(sph(0.08, 12), mats.stomach); o.scale.set(1.35, 0.55, 0.8); return o; },
+    () => { const o = mesh(sph(0.035, 10), mats.heart); o.scale.set(0.75, 0.6, 1.4); return o; },
+    () => { const o = mesh(sph(0.055, 10), mats.heart); o.scale.set(0.9, 0.75, 1.1); const a = mesh(cyl(0.014, 0.012, 0.05, 6), mats.heart, false); a.position.set(0.01, 0.045, 0); a.rotation.z = 0.4; o.add(a); return o; },
+  ];
+  for (let i = 0; i < n; i++) {
+    const o = kinds[i % kinds.length]();
+    o.position.set((rng() - 0.5) * 0.3, 0.035, (rng() - 0.5) * 0.3);
+    o.rotation.y = rng() * 6;
+    g.add(o);
+  }
+  return g;
 }
 
 export function decal(mat, size, x, z, rot = 0, y = 0.012) {
@@ -59,8 +103,10 @@ export function decal(mat, size, x, z, rot = 0, y = 0.012) {
 // ---------- a person ----------
 // One jointed human body, used for everything: the dead on the floor, the ones on hooks, the ones in drawers,
 // and you, in the cutscenes. Built standing, facing +Z, origin at the pelvis; every joint is a group to pose.
-export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, bald = false } = {}) {
-  skin ||= rng() < 0.5 ? mats.skin : mats.skinGrey;
+export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, bald = false, dead = true } = {}) {
+  // the dead go grey and mottled; the bleach in the picture turns live-looking skin chalk white
+  mats.skinDead ||= [mats.skin, mats.skinGrey].map((m) => new THREE.MeshPhongMaterial({ map: m.map, color: 0x8c8a7e, shininess: 25, specular: 0x1a1a1a }));
+  skin ||= dead ? mats.skinDead[(rng() * 2) | 0] : rng() < 0.5 ? mats.skin : mats.skinGrey;
   cloth = naked ? skin : cloth || (rng() < 0.5 ? mats.coverall : mats.coverall2);
   const root = new THREE.Group();
   const pelvis = mesh(cap(0.105, 0.17), cloth);
@@ -102,19 +148,47 @@ export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, 
   nose.position.set(0, 0.095, 0.1);
   nose.rotation.x = Math.PI / 2 - 0.3;
   head.add(nose);
+  mats.sclera ||= new THREE.MeshPhongMaterial({ color: 0x8f8a7c, shininess: 80, specular: 0x333333 });
+  mats.bruise ||= new THREE.MeshPhongMaterial({ color: 0x2a1512, shininess: 20, specular: 0x111111 });
+  mats.mouthIn ||= new THREE.MeshPhongMaterial({ color: 0x1c0605, shininess: 60, specular: 0x331111 });
   for (const sx of [-1, 1]) {
     const ear = mesh(sph(0.026, 6), skin, false);
     ear.scale.set(0.4, 1, 0.7);
     ear.position.set(sx * 0.088, 0.095, -0.005);
     head.add(ear);
-    const socket = mesh(sph(0.022, 6), mats.black, false);
-    socket.scale.z = 0.5;
-    socket.position.set(sx * 0.034, 0.112, 0.083);
-    head.add(socket);
+    // sunken, half open, looking at nothing
+    const socket = mesh(sph(0.024, 8), mats.bruise, false);
+    socket.scale.set(1.1, 0.8, 0.5);
+    socket.position.set(sx * 0.035, 0.112, 0.08);
+    const eye = mesh(sph(0.015, 8), mats.sclera, false);
+    eye.position.set(sx * 0.035, 0.109, 0.084);
+    const lid = mesh(sph(0.018, 8), skin, false);
+    lid.scale.set(1.15, 0.62, 0.75);
+    lid.position.set(sx * 0.035, 0.119, 0.087);
+    head.add(socket, eye, lid);
   }
-  const mouth = mesh(box(0.045, 0.012, 0.01), mats.black, false);
-  mouth.position.set(0, 0.046, 0.088);
-  head.add(mouth);
+  // the mouth hangs open: a dark hole you see when the jaw drops, a few teeth at the top of it
+  const hole = mesh(sph(0.026, 8), mats.mouthIn, false);
+  hole.scale.set(0.95, 1.25, 0.55);
+  hole.position.set(0, 0.04, 0.074);
+  head.add(hole);
+  const teeth = mesh(box(0.036, 0.011, 0.008), mats.tooth, false);
+  teeth.position.set(0, 0.06, 0.088);
+  head.add(teeth);
+  const lip = mesh(box(0.05, 0.012, 0.014), skin, false);
+  lip.position.set(0, 0.069, 0.09);
+  head.add(lip);
+  const trickle = mesh(box(0.008, 0.07, 0.004), mats.blood, false); // from the corner of the mouth
+  trickle.position.set(0.022, 0.015, 0.082);
+  trickle.rotation.z = 0.25;
+  head.add(trickle);
+  if (dead) {
+    // the side of the head where it hit the floor, or something hit it
+    const wound = mesh(geo('wound', () => new THREE.SphereGeometry(0.103, 10, 8, 0, 1.6, 0.2, 1.3)), mats.blood, false);
+    wound.position.y = 0.1;
+    wound.rotation.y = rng() * 6;
+    head.add(wound);
+  }
   if (!bald) {
     const hair = mesh(sph(0.104, 10), mats.darkMetal, false);
     hair.scale.set(0.9, 0.72, 1.04);
@@ -162,6 +236,13 @@ export function openChest(b, mats) {
   cav.scale.set(1.05, 1.75, 0.38);
   cav.position.set(0, 0.27, 0.085);
   b.torso.add(cav);
+  mats.lung ||= new THREE.MeshPhongMaterial({ color: 0x9a5a5a, map: mats.gut.map, shininess: 60, specular: 0x553333 });
+  for (const [x, y, r, m] of [[-0.06, 0.36, 0.06, mats.lung], [0.065, 0.35, 0.055, mats.lung], [0.0, 0.26, 0.045, mats.gut], [0.03, 0.17, 0.05, mats.gut], [-0.05, 0.19, 0.045, mats.gut]]) {
+    const lump = mesh(sph(r, 9), m, false);
+    lump.scale.set(1, 1.2, 0.6);
+    lump.position.set(x, y, 0.11);
+    b.torso.add(lump);
+  }
   for (let i = 0; i < 4; i++) {
     const rib = mesh(geo('chrib', () => new THREE.TorusGeometry(0.11, 0.011, 4, 10, Math.PI)), mats.bone, false);
     rib.rotation.x = Math.PI / 2;
@@ -268,8 +349,12 @@ export function makeCorpse(mats, rng) {
     parts.push('forearm');
   }
   // what came out of the belly, onto the floor beside it
-  const guts = entrails(mats, rng, new THREE.Vector3(0.04, 0.2, -0.22), 0.9, 10);
+  const side = rng() < 0.5 ? -1 : 1;
+  const guts = entrails(mats, rng, new THREE.Vector3(0.05 * side, 0.2, -0.2), 1.1, 6, new THREE.Vector3(0.42 * side, 0, -0.12));
   g.add(guts);
+  const org = organs(mats, rng, 1 + ((rng() * 3) | 0));
+  org.position.set(0.5 * side, 0, -0.5);
+  g.add(org);
   const pool = decal(mats.pool[(rng() * 3) | 0], 2.4, 0.05, -0.35, rng() * 6);
   g.add(pool);
   // the brass tag, deep in the opened chest
@@ -596,7 +681,7 @@ function trayBody(mats, rng) {
     feet.position.set(0, 0.16, 0.36);
     g.add(t, feet);
   } else {
-    const b = makeBody(mats, rng, { naked: true, skin: mats.skinGrey, bald: rng() < 0.5 });
+    const b = makeBody(mats, rng, { naked: true, bald: rng() < 0.5 });
     b.legs.forEach((l) => { l.userData.boot.visible = false; });
     const lay = new THREE.Group();
     lay.rotation.x = -Math.PI / 2;

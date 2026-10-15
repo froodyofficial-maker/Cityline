@@ -56,7 +56,7 @@ He doesn't only run faster on the harder settings. He also hesitates less when h
 
 When he gets you, he crosses the last few steps in an eighth of a second. The view punches in on his face, his jaw opens past where a jaw should stop, his head rattles, and the screen strobes white, red and black under a shriek.
 
-The dead are people: jointed bodies with faces, hands and boots, lying where they fell with their arms out and their chests opened. The same body hangs from the hooks, lies in the morgue drawers, and plays you in the death scenes.
+The dead are people: jointed bodies with grey, slack faces (half-closed eyes, jaws hanging open), hands and boots. They lie where they fell with their arms out, chests opened to the ribs and lungs, and their bowels heaped in coils beside them with a liver or a stomach. The same body hangs from the hooks, lies in the morgue drawers, and plays you in the death scenes.
 
 A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extreme death) ends the shift: the next one starts fresh, with a new layout.
 
@@ -64,11 +64,11 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 
 **Overtime:** the endless version. Floors are random, puzzles are random from B2, and where a death sends you depends on the difficulty. Your deepest floor goes on your time card.
 
-**Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random:
+**Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random (the third-person ones keep blood off the screen, since the camera isn't you):
 - strung up over a fire pit
 - an EXIT door that opens onto a sheer drop
-- the meat grinder (third person)
-- the ceiling fan
+- the meat grinder (third person): he drags you across the floor by the ankle, hoists you over the hopper and drops you in
+- the ceiling fan (third person): he holds you up by the throat under the blades, then shoves you into them
 - eaten on the floor (third person)
 
 Syringes (**R**) give you a few seconds of running that never runs out.
