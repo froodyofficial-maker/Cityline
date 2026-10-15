@@ -24,7 +24,7 @@ npm start            # serves the project at http://localhost:8080
 
 The repo also holds **OFFAL**, a separate first-person horror game. You work the night shift at the Hollow Pines Meatworks, a slaughterhouse that goes down further than the plans say.
 
-**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse. It goes fullscreen on your first click; **F11**, the *Fullscreen* button on the menu and pause screens, or the setting turns it on and off.
+**Play:** open `dist/offal.html` (one self-contained file), or run `npm start` and go to `http://localhost:8080/offal/`. Play with headphones and the lights off. It needs a keyboard and mouse. It goes fullscreen on your first click; **F11**, the *Fullscreen* button on the menu and pause screens, or the setting turns it on and off. Alt+Tab works in fullscreen too, and switching away pauses the shift.
 
 **Music:** the heavy drone plays on the menu and under the death screen, always at its own pitch. On the floors it sits far back under a soft pad and a music box, and during a chase it drops out for your heartbeat.
 
@@ -58,7 +58,7 @@ He doesn't only run faster on the harder settings. He also hesitates less when h
 
 When he gets you, he crosses the last few steps in an eighth of a second. The view punches in on his face, his jaw opens past where a jaw should stop, his head rattles, and the screen strobes white, red and black under a shriek.
 
-The dead are people: jointed bodies with grey, slack faces (half-closed eyes, jaws hanging open), hands and boots. They lie where they fell with their arms out, chests opened to the ribs and lungs, and their bowels heaped in coils beside them with a liver or a stomach. The same body hangs from the hooks, lies in the morgue drawers, and plays you in the death scenes.
+The dead are people: jointed bodies with grey, slack faces (half-closed eyes, jaws hanging open), hands and boots. They lie where they fell with their arms out, chests opened to the ribs and lungs, and their bowels heaped in coils beside them with a liver or a stomach. Blood pools are uneven and nearly black where they're deep, with a thinner red film at the edges, clots, runs and a wet sheen; spatter throws stretched droplets away from where it hit. The same body hangs from the hooks, lies in the morgue drawers, and plays you in the death scenes.
 
 A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extreme death) ends the shift: the next one starts fresh, with a new layout.
 

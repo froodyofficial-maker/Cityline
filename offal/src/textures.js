@@ -27,27 +27,36 @@ function blob(g, x, y, r) {
 }
 
 // ---------- blood painters ----------
-export const BLOOD = { fresh: '128,4,4', dark: '70,2,2', dried: '42,8,5', black: '18,2,2' };
+export const BLOOD = { fresh: '112,3,3', dark: '62,2,2', dried: '42,8,5', black: '18,2,2' };
 
 export function splat(g, x, y, s, rng, col = BLOOD.fresh, a = 0.92) {
+  // the core: a lobed, uneven stain, darker where it landed thickest
   g.fillStyle = `rgba(${col},${a})`;
-  for (let i = 0; i < 9; i++) {
-    const ang = rng() * TAU, d = rng() * s * 0.35;
-    blob(g, x + Math.cos(ang) * d, y + Math.sin(ang) * d, s * (0.18 + rng() * 0.3));
-  }
+  lobed(g, x, y, s * 0.42, rng, 5, 0.45);
+  g.fill();
+  g.fillStyle = `rgba(${BLOOD.black},${a * 0.45})`;
+  lobed(g, x + (rng() - 0.5) * s * 0.1, y + (rng() - 0.5) * s * 0.1, s * 0.22, rng, 4, 0.4);
+  g.fill();
+  // spines thrown off it, each ending in a bead
   const spikes = 10 + ((rng() * 16) | 0);
+  g.fillStyle = `rgba(${col},${a})`;
   for (let i = 0; i < spikes; i++) {
-    const ang = rng() * TAU, len = s * (0.5 + rng() * 1.4), w = s * (0.03 + rng() * 0.08);
+    const ang = rng() * TAU, len = s * (0.45 + rng() * 1.2), w = s * (0.02 + rng() * 0.06);
     g.beginPath();
     g.moveTo(x + Math.cos(ang + 1.57) * w, y + Math.sin(ang + 1.57) * w);
-    g.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
-    g.lineTo(x + Math.cos(ang - 1.57) * w, y + Math.sin(ang - 1.57) * w);
+    g.quadraticCurveTo(x + Math.cos(ang) * len * 0.6 + Math.cos(ang + 1.57) * w * 0.3, y + Math.sin(ang) * len * 0.6 + Math.sin(ang + 1.57) * w * 0.3, x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+    g.quadraticCurveTo(x + Math.cos(ang) * len * 0.6 + Math.cos(ang - 1.57) * w * 0.3, y + Math.sin(ang) * len * 0.6 + Math.sin(ang - 1.57) * w * 0.3, x + Math.cos(ang - 1.57) * w, y + Math.sin(ang - 1.57) * w);
     g.fill();
-    blob(g, x + Math.cos(ang) * len, y + Math.sin(ang) * len, w * 1.3);
+    blob(g, x + Math.cos(ang) * len, y + Math.sin(ang) * len, w * 1.4);
   }
-  for (let i = 0; i < 36; i++) {
-    const ang = rng() * TAU, d = s * (0.6 + rng() * 1.8);
-    blob(g, x + Math.cos(ang) * d, y + Math.sin(ang) * d, s * 0.015 + rng() * s * 0.05);
+  // the spray: droplets stretched along their flight, tails pointing back at where it came from
+  for (let i = 0; i < 46; i++) {
+    const ang = rng() * TAU, d = s * (0.6 + rng() * 1.8), r = s * 0.012 + rng() * s * 0.045;
+    const px = x + Math.cos(ang) * d, py = y + Math.sin(ang) * d;
+    g.fillStyle = `rgba(${col},${a * (0.6 + rng() * 0.4)})`;
+    g.beginPath();
+    g.ellipse(px, py, r * (1.2 + d / s * 0.6), r, ang, 0, TAU);
+    g.fill();
   }
 }
 
@@ -60,6 +69,72 @@ export function drip(g, x, y, len, w, col = BLOOD.fresh, a = 0.85) {
   g.quadraticCurveTo(x + w * 0.2, y + len * 0.5, x + w / 2, y);
   g.fill();
   blob(g, x, y + len, w * 0.55);
+}
+
+// a lobed, wobbling outline: blood finds the low spots, so a pool is never round
+function lobed(g, x, y, R, rng, lobes = 7, wob = 0.35) {
+  const ph = Array.from({ length: 4 }, () => rng() * TAU), k = [lobes, lobes * 2 + 1, 3, 13];
+  g.beginPath();
+  for (let i = 0; i <= 96; i++) {
+    const a = (i / 96) * TAU;
+    const r = R * (1 + wob * (0.5 * Math.sin(k[0] * a + ph[0]) + 0.25 * Math.sin(k[1] * a + ph[1]) + 0.35 * Math.sin(k[2] * a + ph[2]) + 0.12 * Math.sin(k[3] * a + ph[3])));
+    if (i) g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); else g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+  }
+  g.closePath();
+}
+// a pool of blood on the floor: almost black where it's deep, a thin redder film at the edges, a dried
+// rim where it has started to set, clots, a few fingers running off, satellite drops, and wet highlights
+export function bloodPool(g, x, y, R, rng) {
+  // the dried outer stain first, a little bigger than the wet pool
+  g.fillStyle = 'rgba(48,6,4,0.55)';
+  lobed(g, x, y, R * 1.08, rng, 6, 0.32);
+  g.fill();
+  // fingers running off along the floor
+  for (let i = 0, n = 2 + ((rng() * 3) | 0); i < n; i++) {
+    const a = rng() * TAU, len = R * (0.7 + rng() * 0.7), w = R * (0.08 + rng() * 0.1);
+    g.fillStyle = 'rgba(70,4,3,0.85)';
+    g.beginPath();
+    g.moveTo(x + Math.cos(a + 0.25) * R * 0.7, y + Math.sin(a + 0.25) * R * 0.7);
+    g.quadraticCurveTo(x + Math.cos(a) * (R + len * 0.6) + (rng() - 0.5) * w * 4, y + Math.sin(a) * (R + len * 0.6) + (rng() - 0.5) * w * 4, x + Math.cos(a) * (R + len), y + Math.sin(a) * (R + len));
+    g.quadraticCurveTo(x + Math.cos(a) * (R + len * 0.5), y + Math.sin(a) * (R + len * 0.5), x + Math.cos(a - 0.25) * R * 0.7, y + Math.sin(a - 0.25) * R * 0.7);
+    g.fill();
+    blob(g, x + Math.cos(a) * (R + len), y + Math.sin(a) * (R + len), w * 0.9);
+  }
+  // the wet body: thick and dark in the middle, thinning to red at the edge
+  const gr = g.createRadialGradient(x, y, R * 0.1, x, y, R * 1.05);
+  gr.addColorStop(0, 'rgba(26,0,0,0.98)');
+  gr.addColorStop(0.55, 'rgba(46,1,1,0.97)');
+  gr.addColorStop(0.85, 'rgba(84,4,3,0.92)');
+  gr.addColorStop(1, 'rgba(118,10,6,0.8)');
+  g.fillStyle = gr;
+  lobed(g, x, y, R, rng, 6, 0.3);
+  g.fill();
+  // the meniscus: a thin bright line where the surface curves down to the floor
+  g.strokeStyle = 'rgba(140,16,10,0.55)';
+  g.lineWidth = 1.2;
+  g.stroke();
+  // clots
+  for (let i = 0; i < 7; i++) {
+    const a = rng() * TAU, d = rng() * R * 0.6;
+    g.fillStyle = `rgba(14,0,0,${0.45 + rng() * 0.4})`;
+    lobed(g, x + Math.cos(a) * d, y + Math.sin(a) * d, R * (0.04 + rng() * 0.09), rng, 4, 0.4);
+    g.fill();
+  }
+  // satellite drops
+  for (let i = 0; i < 18; i++) {
+    const a = rng() * TAU, d = R * (1.1 + rng() * 0.7), r = 0.8 + rng() * R * 0.05;
+    g.fillStyle = `rgba(${60 + rng() * 40 | 0},3,2,${0.6 + rng() * 0.35})`;
+    blob(g, x + Math.cos(a) * d, y + Math.sin(a) * d, r);
+  }
+  // wet highlights: the light catching the surface
+  for (let i = 0; i < 5; i++) {
+    const a = rng() * TAU, d = rng() * R * 0.55, hx = x + Math.cos(a) * d, hy = y + Math.sin(a) * d;
+    const hl = g.createRadialGradient(hx, hy, 0, hx, hy, R * (0.08 + rng() * 0.1));
+    hl.addColorStop(0, 'rgba(150,40,34,0.35)');
+    hl.addColorStop(1, 'rgba(150,40,34,0)');
+    g.fillStyle = hl;
+    g.fillRect(hx - R * 0.2, hy - R * 0.2, R * 0.4, R * 0.4);
+  }
 }
 
 // a splatter that runs: the default for anything on a wall
@@ -412,10 +487,7 @@ function clothCanvas(seed, base, bloody) {
 function decalCanvas(kind, seed) {
   const S = 256, { c, g } = canvas(S, S), rng = makeRng(seed);
   if (kind === 'pool') {
-    g.fillStyle = `rgba(${BLOOD.dark},0.95)`;
-    for (let i = 0; i < 14; i++) blob(g, S / 2 + (rng() - 0.5) * 90, S / 2 + (rng() - 0.5) * 90, 30 + rng() * 40);
-    g.fillStyle = `rgba(${BLOOD.fresh},0.5)`;
-    for (let i = 0; i < 6; i++) blob(g, S / 2 + (rng() - 0.5) * 60, S / 2 + (rng() - 0.5) * 60, 14 + rng() * 26);
+    bloodPool(g, S / 2, S / 2, 70, rng);
   } else if (kind === 'splat') {
     splat(g, S / 2, S / 2, 40, rng, rng() < 0.5 ? BLOOD.fresh : BLOOD.dark, 0.92);
   } else if (kind === 'drag') {
@@ -448,7 +520,7 @@ export function makeMaterials() {
   const meatTex = tx(meatCanvas(3));
   const decalMat = (kind, seed, extra = {}) => new THREE.MeshPhongMaterial({
     map: decalCanvas(kind, seed), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
-    shininess: 90, specular: 0x441111, ...extra,
+    color: 0x5c5c5c, shininess: 140, specular: 0x6a2e2a, ...extra, // dark: blood soaks up the torch and only the wet surface shines
   });
 
   return {
@@ -459,7 +531,7 @@ export function makeMaterials() {
     ceil,
     meat: phong({ map: meatTex, shininess: 70, specular: 0x552222 }),
     meatPale: phong({ map: tx(meatCanvas(8, true)), shininess: 40, specular: 0x332222 }),
-    gut: phong({ color: 0xc87070, map: tx(meatCanvas(12, true)), shininess: 110, specular: 0x886666 }),
+    gut: phong({ color: 0x8e4844, map: tx(meatCanvas(12, true)), shininess: 130, specular: 0x7a4a46 }),
     blood: phong({ color: 0x2a0000, shininess: 120, specular: 0x662222 }),
     bone: new THREE.MeshLambertMaterial({ color: 0xd9ceb2 }),
     skin: phong({ map: tx(skinCanvas(21)), shininess: 12, specular: 0x111111 }),

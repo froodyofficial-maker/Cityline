@@ -44,7 +44,7 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .menu-col { max-width: 640px; }
 .title-wrap { position: relative; }
 .title {
-  font-family: var(--serif); font-weight: 400; margin: 0; line-height: .85;
+  font-family: var(--serif); font-weight: 400; margin: 0; line-height: .85; white-space: nowrap;
   font-size: clamp(84px, 15vw, 210px); letter-spacing: .06em; color: var(--blood);
   filter: url(#rough); text-shadow: 0 0 40px rgba(150,0,0,.45), 0 4px 0 #2a0000;
   animation: titleFlicker 7s infinite;
@@ -56,10 +56,23 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
   93.4% { opacity: .1; transform: translateX(-6px) skewX(4deg); }
   94% { opacity: 1; transform: none; }
 }
-.drips { position: absolute; left: 0; right: 0; top: 76%; height: 0; pointer-events: none; }
-.drip { position: absolute; top: 0; width: 6px; border-radius: 0 0 4px 4px; background: linear-gradient(#7a0707, #5a0404); transform-origin: top; animation: dripGrow var(--d) cubic-bezier(.5,0,.8,1) var(--delay) infinite; height: var(--h); }
-.drip::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 9px; height: 11px; margin-left: -4.5px; background: #6a0505; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; }
-@keyframes dripGrow { 0% { transform: scaleY(0); opacity: 1; } 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+.drips { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; }
+.title .bl { display: inline-block; width: 0; height: 0; }
+.drip { position: absolute; top: 0; width: 6px; height: 0; border-radius: 0 0 99px 99px; pointer-events: none;
+  background: linear-gradient(90deg, #2a0000 0%, #6e0505 30%, #a51414 46%, #7a0707 62%, #2a0000 100%);
+  animation: dripRun var(--d) cubic-bezier(.55,0,.85,.6) var(--delay) infinite; }
+/* where it leaves the letter: a wider smear that the streak hangs from */
+.drip::before { content: ''; position: absolute; left: 50%; top: -4px; width: 260%; height: 12px; transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 30%, #7a0606 0 40%, rgba(90,4,4,.6) 60%, transparent 72%); }
+/* the bead: swells at the tip, stretches, then falls */
+.drip::after { content: ''; position: absolute; left: 50%; bottom: -5px; width: 190%; aspect-ratio: .8; transform: translateX(-50%);
+  border-radius: 50% 50% 50% 50% / 38% 38% 62% 62%;
+  background: radial-gradient(circle at 36% 62%, #d23a30 0 7%, #8f0a08 26%, #4a0000 78%);
+  box-shadow: inset -1px -2px 2px rgba(0,0,0,.55);
+  animation: dripBead var(--d) cubic-bezier(.4,0,.9,.6) var(--delay) infinite; }
+@keyframes dripRun { 0% { height: 0; opacity: 1; } 72% { height: var(--h); opacity: 1; } 92% { height: var(--h); opacity: .9; } 100% { height: var(--h); opacity: 0; } }
+@keyframes dripBead { 0% { transform: translateX(-50%) scale(.6); opacity: 1; } 66% { transform: translateX(-50%) scale(1); opacity: 1; }
+  72% { transform: translateX(-50%) scale(.9, 1.35); opacity: 1; } 86% { transform: translateX(-50%) translateY(260px) scale(.7, 1.2); opacity: 0; } 100% { transform: translateX(-50%) translateY(260px); opacity: 0; } }
 .sub { letter-spacing: .42em; font-size: 12px; color: var(--dim); margin: 48px 0 40px 6px; }
 .menu-nav { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-left: 4px; }
 .menu-nav.row { flex-direction: row; gap: 40px; justify-content: center; align-items: center; margin: 0; }

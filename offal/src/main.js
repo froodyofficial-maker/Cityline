@@ -1037,6 +1037,7 @@ addEventListener('mousemove', (e) => {
   if (G.state === 'play' && (document.pointerLockElement === canvas || e.buttons)) player.look(e.movementX, e.movementY);
 });
 canvas.addEventListener('click', () => { if (G.state === 'play' && document.pointerLockElement !== canvas) lockPointer(); });
+addEventListener('blur', () => { if (G.state === 'play') pause(); }); // alt-tabbed away: the shift waits
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement !== canvas && G.state === 'play') pause();
 });
@@ -1049,7 +1050,9 @@ addEventListener('keydown', (e) => {
 // can't; otherwise the browser at least asks before throwing a shift away.
 addEventListener('beforeunload', (e) => { if (['play', 'paused', 'transition', 'dying'].includes(G.state)) { e.preventDefault(); e.returnValue = ''; } });
 document.addEventListener('fullscreenchange', () => {
-  try { if (document.fullscreenElement && navigator.keyboard) navigator.keyboard.lock(); else if (navigator.keyboard) navigator.keyboard.unlock(); } catch {}
+  // only the letter keys: Ctrl+W/R/T/N/Q can't close the window, but Alt+Tab, the Windows key and Esc stay yours
+  const LOCK = ['KeyW', 'KeyR', 'KeyT', 'KeyN', 'KeyQ', 'KeyF', 'KeyS', 'KeyP', 'KeyH', 'KeyD', 'KeyG', 'KeyA', 'KeyE', 'KeyC'];
+  try { if (document.fullscreenElement && navigator.keyboard) navigator.keyboard.lock(LOCK); else if (navigator.keyboard) navigator.keyboard.unlock(); } catch {}
 });
 // fullscreen: F11, the menu and pause buttons, or the setting (which also puts you there on your first click)
 function setFullscreen(on) {

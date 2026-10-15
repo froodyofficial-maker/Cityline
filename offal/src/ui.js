@@ -46,21 +46,62 @@ export function typewrite(el, text, cps = 38, onTick) {
   typing.set(el, id);
 }
 
+// Blood running off the bottom of the title. The letters are measured (drawn to a canvas in the same font)
+// so every drip starts at the underside of a stroke that rests on the baseline: the feet of the F, the A
+// and the L, the bottom of the O. The menu must be on screen to measure, so it waits until it is.
+let dripTimer = 0;
 export function buildDrips() {
-  const host = $('drips');
+  clearTimeout(dripTimer);
+  const host = $('drips'), title = document.querySelector('.title'), wrap = title.parentElement;
+  if (!title.offsetWidth) { dripTimer = setTimeout(buildDrips, 250); return; }
   host.innerHTML = '';
-  const xs = [4, 9, 17, 26, 33, 41, 52, 58, 66, 74, 83, 90];
-  for (const x of xs) {
-    const d = document.createElement('span');
-    d.className = 'drip';
-    d.style.left = x + Math.random() * 3 + '%';
-    d.style.width = 3 + Math.random() * 6 + 'px';
-    d.style.setProperty('--h', 20 + Math.random() * 110 + 'px');
-    d.style.setProperty('--d', 4 + Math.random() * 7 + 's');
-    d.style.setProperty('--delay', -Math.random() * 8 + 's');
-    host.appendChild(d);
+  const cs = window.getComputedStyle(title), text = title.firstChild.textContent;
+  const fs = parseFloat(cs.fontSize);
+  // where the baseline sits in the page: a zero-size inline block sits right on it
+  let mark = title.querySelector('.bl');
+  if (!mark) { mark = document.createElement('span'); mark.className = 'bl'; title.appendChild(mark); }
+  const wr = wrap.getBoundingClientRect(), baseY = mark.getBoundingClientRect().top - wr.top;
+  const left = title.getBoundingClientRect().left - wr.left + parseFloat(cs.paddingLeft);
+  const W = Math.ceil(title.scrollWidth + fs), H = Math.ceil(fs * 1.6), base = Math.round(fs * 1.1);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  if ('letterSpacing' in g) g.letterSpacing = cs.letterSpacing;
+  g.textBaseline = 'alphabetic';
+  g.fillText(text, 0, base);
+  const px = g.getImageData(0, 0, W, H).data;
+  // the lowest inked pixel in every column, kept only where a stroke comes down to the baseline
+  const runs = [];
+  let run = null;
+  for (let x = 0; x < W; x++) {
+    let bottom = -1;
+    for (let y = H - 1; y >= 0; y--) if (px[(y * W + x) * 4 + 3] > 128) { bottom = y; break; }
+    const onBase = bottom >= base - fs * 0.06;
+    if (onBase) { if (!run) runs.push((run = { x0: x, x1: x, y: bottom })); run.x1 = x; run.y = Math.max(run.y, bottom); } else run = null;
+  }
+  for (const r of runs) {
+    const w = r.x1 - r.x0;
+    if (w < 4) continue;
+    // a wide foot can carry two; a narrow one only sometimes carries one
+    const n = w > fs * 0.35 ? 2 : Math.random() < 0.85 ? 1 : 0;
+    for (let k = 0; k < n; k++) {
+      const x = r.x0 + w * (n === 1 ? 0.3 + Math.random() * 0.4 : k ? 0.65 + Math.random() * 0.2 : 0.15 + Math.random() * 0.2);
+      const d = document.createElement('span');
+      const dw = 3 + Math.random() * 5;
+      d.className = 'drip';
+      d.style.left = left + x - dw / 2 + 'px';
+      d.style.top = baseY + (r.y - base) - 3 + 'px'; // tucked just inside the bottom edge of the stroke
+      d.style.width = dw + 'px';
+      d.style.setProperty('--h', 20 + Math.random() * 110 + 'px');
+      d.style.setProperty('--d', 4 + Math.random() * 7 + 's');
+      d.style.setProperty('--delay', -Math.random() * 8 + 's');
+      host.appendChild(d);
+    }
   }
 }
+addEventListener('resize', () => { clearTimeout(dripTimer); dripTimer = setTimeout(buildDrips, 200); });
+if (document.fonts) document.fonts.ready.then(() => buildDrips());
 
 let msgTimer = 0;
 export function message(text, secs = 3.5) {
