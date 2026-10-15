@@ -7,7 +7,7 @@ import * as UI from './ui.js';
 const BRIEF = {
   start: 'Your shift has started. Somewhere on this floor are dead workers with brass ID tags inside them. The lift will not move without their tags.\n\nHold Q to listen. The flies get louder, and the red arrow shows the way to whatever you need next.',
   adrenaline: 'One hit from the hook kills you.\n\nIf you find a syringe, press R to use it: a few seconds of running that never runs out of breath.',
-  near: 'That’s one of them. Look at the body and hold E to cut the tag out.\n\nIt takes a few seconds and it is loud. He will hear it.',
+  near: 'That’s one of them. Look at the body and hold E to cut the tag out.\n\nIt takes a few seconds. It makes no sound he can hear, but keep an eye on the doors.',
   quiet: 'Keep moving. Crouch (C) to stay quiet. Running is the loudest thing you can do.\n\nHe sees the torch: switch it off (F) when he’s near. If you hear metal dragging on concrete, that’s him patrolling.',
   close: 'HE’S CLOSE.\n\nBreak his line of sight first, then get into a locker (E). When he comes near, hold SPACE to hold your breath. If he watches you climb in, it will not save you.',
   back: 'That’s every tag. Hold Q: the arrow points to whatever is still stopping the lift, or to the lift itself.\n\nWalk in, feed the panel (E), then pull the lever.',
@@ -58,7 +58,7 @@ export class Guide {
     const { L, player: pl } = this.G;
     let best = null;
     for (const g of goals) {
-      const path = findPath(L, pl.pos.x, pl.pos.z, g.x, g.z);
+      const path = findPath(L, pl.pos.x, pl.pos.z, g.x, g.z, true); // you can use the crouchways
       if (!path) continue;
       let len = 0, px = pl.pos.x, pz = pl.pos.z;
       for (const p of path) { len += Math.hypot(p.x - px, p.z - pz); px = p.x; pz = p.z; }

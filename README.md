@@ -33,7 +33,7 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 **Windows app (self-contained, about 80 MB):** `cd offal-desktop && npm ci && npm run dist:win` builds `offal-desktop/release/OFFAL-1.0.0-portable.exe` (run `npm run build:offal` in the repo root first). It needs no install. F11 or Alt+Enter toggles fullscreen. The *OFFAL desktop app* GitHub Actions workflow builds the same file.
 
 **Story mode (about 2.5 hours or more):** ten floors down to the bottom of the plant, and an ending.
-1. On every floor, find the dead workers and hold **E** to cut the brass ID tags out of them. It's slow and loud.
+1. On every floor, find the dead workers and hold **E** to cut the brass ID tags out of them. It's slow, but silent: he can't hear it on any difficulty.
 2. From B2 on, most floors also have a job before the lift will move (B1 is just tags):
    - **No power:** search body bags for fuses and slot them into the fuse box.
    - **Sealed shutter:** part of the floor is shut off. The code is scrawled in blood on the walls; type it into the keypad. A wrong code sets off an alarm.
@@ -43,15 +43,17 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 3. Feed the tags to the lift, pull the lever and survive the three seconds while the gate grinds shut.
 4. B10, *The Line*, is the finale: pull three kill switches to stop the line, then run for the lift with both of them hunting you.
 
+**Crouchways:** low crawl tunnels with hazard-striped frames and plastic strips over the mouth. Every dead-end room and corridor gets one out the back, and each floor has a few more as escape routes. Press **C** to crouch and crawl in (you can't get in standing, or stand up inside). The Foreman can't fit, can't see you in there and ignores what he hears from them: crawl in mid-chase and he gives up and walks off to the far side of the floor. Hold **Q** and the red arrow will route you through them.
+
 **Morgue floors** (B3 *The Morgue* and B7 *The Cold Room*, and sometimes in Overtime) are cold and blue: glazed tile walls with frost, freezer rooms lined with banks of body drawers (some hanging open), and autopsy tables.
 
 **Difficulty** is picked when you start a story or an Overtime run:
 
 | | The Foreman's sprint | Noise | When you die |
 | --- | --- | --- | --- |
-| Easy | Much slower than yours: you can outrun him | Walking, crouching, lockers and puzzle work are silent; cutting and running are quieter | Same floor, from its start |
+| Easy | Much slower than yours: you can outrun him | Walking, crouching, lockers and puzzle work are silent; running is quieter | Same floor, from its start |
 | Normal | A little slower than yours | Everything that makes noise makes noise | Same floor, from its start |
-| Hard | A little faster than yours | Footsteps, cutting, lockers and machinery carry further | One floor back, from its start |
+| Hard | A little faster than yours | Footsteps, lockers and machinery carry further | One floor back, from its start |
 | Extreme | Faster than yours, even with a syringe | Everything carries much further | Back to B1 |
 
 He doesn't only run faster on the harder settings. He also hesitates less when he first spots you, swings sooner and from further away, and keeps coming after a miss. On every setting he now runs straight at you in a chase instead of slowing for corners, and on Extreme a miss doesn't slow him down at all.
@@ -66,6 +68,10 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 
 **Overtime:** the endless version. Floors are random, puzzles are random from B2, and where a death sends you depends on the difficulty. Your deepest floor goes on your time card.
 
+**The chase:** chase music kicks in the moment he spots you (a 160 bpm industrial pulse, a bass line that never resolves, sawing strings) and your heartbeat gets louder and faster the closer he is, chase or not. He follows sounds while he hunts, but if he goes **15 seconds** without seeing you he gives up, searches a while and goes back to his rounds. He works out his route on a half-metre grid that knows where every table, gurney and locker is, so he goes round furniture instead of getting stuck on it.
+
+**Lockers:** getting in or out is a short camera move, not a cut, and your own locker door is never muffled. Holding your breath lasts about 20 s on Easy, 12.5 s on Normal, 7.7 s on Hard and 6.7 s on Extreme.
+
 **Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random (the third-person ones keep blood off the screen, since the camera isn't you):
 - strung up over a fire pit (real-looking fire: flickering tongues, glowing coals, charred logs, sparks and smoke)
 - an EXIT door that opens onto a sheer drop
@@ -76,7 +82,7 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 A full stamina bar is about 9.5 seconds of sprinting, and it refills in about 6 seconds standing still. Syringes (**R**) give you a few seconds of running that never runs out.
 
 **The Foreman** hunts by sound and by light:
-- Running, cutting, puzzles and a gasping breath all carry. Crouching is nearly silent.
+- Running, puzzles and a gasping breath all carry. Cutting tags out is silent. Crouching is nearly silent.
 - Crouched with the torch off, he can't see you unless he's right on top of you (about 2.5 m).
 - Shining your torch in his face gives you away.
 - If you hear the hook dragging, he's patrolling. If it goes quiet, he's running, and all you'll hear is your heart.

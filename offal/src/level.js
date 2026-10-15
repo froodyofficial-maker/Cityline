@@ -2,6 +2,8 @@
 // the freight lift in an alcove on the south wall, then geometry, props, collision, line of sight and A*.
 import * as THREE from 'three';
 import { TILE, WALL_H, difficulty } from './config.js';
+
+export const CRAWL_H = 1.2; // the roof of a crouchway: you crouched fit (eyes at 1.0), he doesn't
 import { makeRng } from './rng.js';
 import * as P from './props.js';
 
@@ -9,9 +11,12 @@ const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 export const tileCenter = (t) => t * TILE + TILE / 2;
 export const toTile = (v) => Math.floor(v / TILE);
+export const inCrawl = (L, x, z) => !!(L.crawl && L.crawl[toTile(z) * L.W + toTile(x)]);
 
-export function isWall(L, tx, ty) {
+// crawlOpen: the caller fits through a crouchway (you, crouched). Everything else (him, his eyes) treats one as rock.
+export function isWall(L, tx, ty, crawlOpen = false) {
   if (tx < 0 || ty < 0 || tx >= L.W || ty >= L.H || L.grid[ty * L.W + tx] === 0) return true;
+  if (!crawlOpen && L.crawl && L.crawl[ty * L.W + tx]) return true;
   const d = L.door;
   return !!(d && d.closed && d.x === tx && d.y === ty);
 }
@@ -132,6 +137,68 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
   });
   grid[ay * W + ax] = 1;
 
+  // crouchways: low crawl tunnels through the rock, out of dead ends and as a few shortcuts. You fit; he doesn't.
+  // (their own rng, so the rest of a floor comes out the same as it always did for a given seed)
+  const crawl = new Uint8Array(W * H), crng = makeRng((seed ^ 0x6c3a91) >>> 0);
+  const tunnel = (x, y, dx, dy, from) => {
+    const tiles = [];
+    for (let t = 1; t <= 8; t++) {
+      const nx = x + dx * t, ny = y + dy * t;
+      if (nx < 1 || ny < 1 || nx >= W - 1 || ny >= H - 1) return null;
+      const n = ny * W + nx;
+      if (grid[n]) {
+        if (tiles.length < 2 || crawl[n] || roomOf[n] === 0 || (from >= 0 && roomOf[n] === from) || (nx === ax && ny === ay)) return null;
+        return tiles;
+      }
+      // enclosed both sides, so it reads as a tunnel and doesn't open sideways into anything
+      if (grid[(ny + dx) * W + nx + dy] || grid[(ny - dx) * W + nx - dy]) return null;
+      tiles.push(n);
+    }
+    return null;
+  };
+  const carveCrawl = (tiles) => { for (const n of tiles) { grid[n] = 1; crawl[n] = 1; } };
+  const roomTunnels = (r, ri) => {
+    const out = [];
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) for (const [dx, dy] of DIRS) {
+      const ox = x + dx, oy = y + dy;
+      if (roomOf[oy * W + ox] === ri) continue; // only from the room's edge, outward
+      const t = tunnel(x, y, dx, dy, ri);
+      if (t) out.push(t);
+    }
+    return out;
+  };
+  const exits = (r, ri) => {
+    const seen = new Set();
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) for (const [dx, dy] of DIRS) {
+      const n = (y + dy) * W + x + dx;
+      if (grid[n] && roomOf[n] !== ri) seen.add(n);
+    }
+    return seen.size;
+  };
+  // every dead-end room gets a way out the back
+  rooms.forEach((r, ri) => {
+    if (ri === 0 || exits(r, ri) > 1) return;
+    const c = roomTunnels(r, ri).sort((a, b) => a.length - b.length);
+    if (c.length) carveCrawl(c[Math.min(c.length - 1, (crng() * 2) | 0)]);
+  });
+  // and so does every corridor that stops short
+  for (let i = 0; i < W * H; i++) {
+    if (!corridor[i] || crawl[i]) continue;
+    const x = i % W, y = (i / W) | 0, open = DIRS.filter(([dx, dy]) => grid[(y + dy) * W + x + dx]);
+    if (open.length !== 1) continue;
+    const back = open[0];
+    const c = DIRS.filter(([dx, dy]) => dx !== back[0] || dy !== back[1]).map(([dx, dy]) => tunnel(x, y, dx, dy, -1)).filter(Boolean).sort((a, b) => a.length - b.length);
+    if (c.length) carveCrawl(c[0]);
+  }
+  // a few more, anywhere, as escape routes
+  const extra = 2 + Math.floor(rooms.length / 5);
+  for (let k = 0, tries = 0; k < extra && tries < 60; tries++) {
+    const ri = 1 + Math.floor(crng() * (rooms.length - 1)), c = roomTunnels(rooms[ri], ri);
+    if (!c.length) continue;
+    carveCrawl(c[Math.floor(crng() * c.length)]);
+    k++;
+  }
+
   // room jobs
   // a morgue floor is mostly freezers
   const morgue = D.theme === 'morgue';
@@ -158,7 +225,7 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
       q.push(n);
     }
   }
-  return { depth, seed, W, H, grid, roomOf, corridor, rooms, alcove: { x: ax, y: ay }, dist, block: new Uint8Array(W * H), D };
+  return { depth, seed, W, H, grid, roomOf, corridor, crawl, rooms, alcove: { x: ax, y: ay }, dist, block: new Uint8Array(W * H), D };
 }
 
 // ---------- geometry ----------
@@ -184,6 +251,7 @@ class Geo {
 export function buildLevel(L, mats) {
   const rng = makeRng(L.seed * 7 + 3);
   const { W, H, grid, D } = L;
+  const crawl = L.crawl || new Uint8Array(W * H);
   const group = new THREE.Group();
   const out = {
     group, colliders: [], lamps: [], corpses: [], pickups: [], lockers: [], swingers: [], screamers: [],
@@ -197,19 +265,23 @@ export function buildLevel(L, mats) {
   const buf = (map, k) => map.get(k) || map.set(k, new Geo()).get(k);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    if (!grid[i]) continue;
+    if (!grid[i] || crawl[i]) continue;
     const room = L.rooms[L.roomOf[i]];
     const goreBoost = room && (room.type === 'butcher' || room.type === 'pit') ? 1 : 0;
     const style = room ? (L.roomOf[i] + L.depth) % 3 : L.depth % 3;
     const cx = tileCenter(x), cz = tileCenter(y);
     for (const [dx, dy] of DIRS) {
       const nx = x + dx, ny = y + dy;
-      if (nx >= 0 && ny >= 0 && nx < W && ny < H && grid[ny * W + nx]) continue; // geometry ignores the shutter
+      const nb = ny * W + nx;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H && grid[nb] && !crawl[nb]) continue; // geometry ignores the shutter
       const n = [-dx, 0, -dy];
       const r = [-dy, 0, dx]; // so that r x up points along n: the face is front-facing from inside the tile
       const p0 = [cx + dx * TILE / 2 - r[0] * TILE / 2, 0, cz + dy * TILE / 2 - r[2] * TILE / 2];
       let gore = rng() < 0.3 + 0.17 * D.gore + goreBoost * 0.2 ? Math.min(3, 1 + Math.floor(rng() * (D.gore + 1 + goreBoost))) : 0;
-      buf(wallBufs, gore * 3 + style).quad(p0, [r[0] * TILE, 0, r[2] * TILE], [0, WALL_H, 0], n, rng() < 0.5);
+      const flip = rng() < 0.5;
+      // a crouchway's mouth: only the wall above it
+      if (crawl[nb]) buf(wallBufs, gore * 3 + style).quad([p0[0], CRAWL_H, p0[2]], [r[0] * TILE, 0, r[2] * TILE], [0, WALL_H - CRAWL_H, 0], n, flip);
+      else buf(wallBufs, gore * 3 + style).quad(p0, [r[0] * TILE, 0, r[2] * TILE], [0, WALL_H, 0], n, flip);
     }
     let fk = 0;
     if (room && room.type === 'pit' && x === room.cx && y === room.cy) fk = 2;
@@ -218,6 +290,35 @@ export function buildLevel(L, mats) {
     if (fk) out.bloodTiles[i] = 1;
     buf(floorBufs, fk).quad([x * TILE, 0, (y + 1) * TILE], [TILE, 0, 0], [0, 0, -TILE], [0, 1, 0], rng() < 0.5);
     ceil.quad([x * TILE, WALL_H, y * TILE], [TILE, 0, 0], [0, 0, TILE], [0, -1, 0], false);
+  }
+  // the crouchways themselves: their own rng, so the rest of the floor dresses the same as it always has
+  {
+    const crng = makeRng(L.seed * 13 + 5), cw = new Geo(), cf = new Geo(), cc = new Geo();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (!crawl[i]) continue;
+      const cx = tileCenter(x), cz = tileCenter(y);
+      for (const [dx, dy] of DIRS) {
+        const nx = x + dx, ny = y + dy, nb = ny * W + nx;
+        if (grid[nb]) {
+          if (crawl[nb]) continue;
+          // the mouth: a rusted frame, and strips of filthy plastic hanging in it
+          const fr = P.crawlMouth(mats, crng);
+          add(fr, cx + dx * TILE / 2, cz + dy * TILE / 2, Math.atan2(dx, dy));
+          continue;
+        }
+        const n = [-dx, 0, -dy], r = [-dy, 0, dx];
+        const p0 = [cx + dx * TILE / 2 - r[0] * TILE / 2, 0, cz + dy * TILE / 2 - r[2] * TILE / 2];
+        cw.quad(p0, [r[0] * TILE, 0, r[2] * TILE], [0, CRAWL_H, 0], n, crng() < 0.5);
+      }
+      cf.quad([x * TILE, 0, (y + 1) * TILE], [TILE, 0, 0], [0, 0, -TILE], [0, 1, 0], crng() < 0.5);
+      cc.quad([x * TILE, CRAWL_H, y * TILE], [TILE, 0, 0], [0, 0, TILE], [0, -1, 0], false);
+      // pipes along the low roof
+      if (crng() < 0.7) { const pipe = P.crawlPipe(mats, crng); add(pipe, cx, cz, crawl[i + 1] || crawl[i - 1] ? Math.PI / 2 : 0); }
+    }
+    if (cw.p.length) group.add(P.mesh(cw.build(), mats.rust[0], false));
+    if (cf.p.length) group.add(P.mesh(cf.build(), mats.floors[3], false));
+    if (cc.p.length) group.add(P.mesh(cc.build(), mats.rust[1], false));
   }
   for (const [k, g] of wallBufs) { const m = P.mesh(g.build(), D.theme === 'morgue' ? mats.morgueWalls[Math.floor(k / 3)] : mats.walls[k], false); group.add(m); }
   for (const [k, g] of floorBufs) { const m = P.mesh(g.build(), mats.floors[k], false); group.add(m); }
@@ -273,6 +374,8 @@ export function buildLevel(L, mats) {
     return t;
   };
   const used = new Set();
+  // keep the way into every crouchway clear
+  for (let i = 0; i < W * H; i++) if (crawl[i]) for (const [dx, dy] of DIRS) { const x = (i % W) + dx, y = ((i / W) | 0) + dy; if (grid[y * W + x] && !crawl[y * W + x]) used.add(x + ',' + y); }
 
   // rooms
   L.rooms.forEach((r, ri) => {
@@ -533,12 +636,12 @@ function pushOut(p, r, x0, z0, x1, z1) {
   return true;
 }
 
-export function collide(L, B, p, r, hunter = false) {
+export function collide(L, B, p, r, hunter = false, crawlOpen = false) {
   let hit = false;
   for (let it = 0; it < 2; it++) {
     const tx0 = toTile(p.x - r), tx1 = toTile(p.x + r), tz0 = toTile(p.z - r), tz1 = toTile(p.z + r);
     for (let tz = tz0; tz <= tz1; tz++) for (let tx = tx0; tx <= tx1; tx++)
-      if (isWall(L, tx, tz)) hit = pushOut(p, r, tx * TILE, tz * TILE, (tx + 1) * TILE, (tz + 1) * TILE) || hit;
+      if (isWall(L, tx, tz, crawlOpen && !hunter)) hit = pushOut(p, r, tx * TILE, tz * TILE, (tx + 1) * TILE, (tz + 1) * TILE) || hit;
     for (const c of B.colliders) {
       if (c.off || (hunter && !c.hunters)) continue;
       if (p.x + r < c.x0 || p.x - r > c.x1 || p.z + r < c.z0 || p.z - r > c.z1) continue;
@@ -579,9 +682,9 @@ export function lineOfSight(L, ax, az, bx, bz) {
 }
 
 // ---------- A* over the tile grid (8-way, no cutting corners) ----------
-export function findPath(L, sx, sz, ex, ez) {
-  const { W, H, grid, block } = L;
-  const open = (x, y) => x >= 0 && y >= 0 && x < W && y < H && grid[y * W + x] && !block[y * W + x];
+export function findPath(L, sx, sz, ex, ez, crawlOpen = false) {
+  const { W, H, grid, block, crawl } = L;
+  const open = (x, y) => x >= 0 && y >= 0 && x < W && y < H && grid[y * W + x] && !block[y * W + x] && (crawlOpen || !crawl || !crawl[y * W + x]);
   let s = [toTile(sx), toTile(sz)], e = [toTile(ex), toTile(ez)];
   if (!open(...e)) {
     const alt = DIRS.map(([dx, dy]) => [e[0] + dx, e[1] + dy]).find((t) => open(...t));
@@ -651,4 +754,109 @@ export function randomFloorNear(L, x, z, radiusTiles, rng = Math.random) {
     if (!isWall(L, nx, nz) && !L.block[nz * L.W + nx] && L.roomOf[nz * L.W + nx] !== 0 && !(nx === L.alcove.x && nz === L.alcove.y)) return new THREE.Vector3(tileCenter(nx), 0, tileCenter(nz));
   }
   return null;
+}
+
+// ---------- the Foreman's own map: half-metre cells, with walls and furniture grown by his width ----------
+// The tile grid is too coarse for him: a table in the middle of a tile is invisible to it, so he'd run his
+// path straight into it. This one knows where everything solid is. It's rebuilt when the shutter or the lift
+// gate changes.
+const NAV_S = 0.5, NAV_R = 0.36;
+export function navGrid(L, B) {
+  const key = (L.door && L.door.closed ? 1 : 0) + ':' + B.colliders.map((c) => (c.off ? 1 : 0)).join('');
+  if (L.nav && L.nav.key === key) return L.nav;
+  const per = Math.round(TILE / NAV_S), NW = L.W * per, NH = L.H * per;
+  const blocked = new Uint8Array(NW * NH);
+  for (let cy = 0; cy < NH; cy++) for (let cx = 0; cx < NW; cx++) {
+    const x = (cx + 0.5) * NAV_S, z = (cy + 0.5) * NAV_S;
+    if (isWall(L, toTile(x), toTile(z)) || isWall(L, toTile(x - NAV_R), toTile(z - NAV_R)) || isWall(L, toTile(x + NAV_R), toTile(z - NAV_R)) ||
+      isWall(L, toTile(x - NAV_R), toTile(z + NAV_R)) || isWall(L, toTile(x + NAV_R), toTile(z + NAV_R))) blocked[cy * NW + cx] = 1;
+  }
+  for (const c of B.colliders) {
+    if (c.off || !c.hunters) continue;
+    const x0 = Math.max(0, Math.floor((c.x0 - NAV_R) / NAV_S)), x1 = Math.min(NW - 1, Math.floor((c.x1 + NAV_R) / NAV_S));
+    const z0 = Math.max(0, Math.floor((c.z0 - NAV_R) / NAV_S)), z1 = Math.min(NH - 1, Math.floor((c.z1 + NAV_R) / NAV_S));
+    for (let cz = z0; cz <= z1; cz++) for (let cx = x0; cx <= x1; cx++) {
+      const x = (cx + 0.5) * NAV_S, z = (cz + 0.5) * NAV_S;
+      const px = Math.max(c.x0, Math.min(x, c.x1)), pz = Math.max(c.z0, Math.min(z, c.z1));
+      if ((x - px) ** 2 + (z - pz) ** 2 < NAV_R * NAV_R) blocked[cz * NW + cx] = 1;
+    }
+  }
+  const N = NW * NH;
+  L.nav = { key, NW, NH, blocked, g: new Float32Array(N), came: new Int32Array(N), stamp: new Uint32Array(N), shut: new Uint32Array(N), gen: 0 };
+  return L.nav;
+}
+// nearest free cell to (cx, cy), spiralling out a few rings
+function navFree(nav, cx, cy, rings = 4) {
+  const { NW, NH, blocked } = nav;
+  if (cx >= 0 && cy >= 0 && cx < NW && cy < NH && !blocked[cy * NW + cx]) return cy * NW + cx;
+  for (let r = 1; r <= rings; r++) {
+    let best = -1, bd = 1e9;
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || y < 0 || x >= NW || y >= NH || blocked[y * NW + x]) continue;
+      const d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = y * NW + x; }
+    }
+    if (best >= 0) return best;
+  }
+  return -1;
+}
+export function findPathNav(L, B, sx, sz, ex, ez) {
+  const nav = navGrid(L, B), { NW, NH, blocked, g, came, stamp, shut } = nav;
+  const si = navFree(nav, Math.floor(sx / NAV_S), Math.floor(sz / NAV_S)), ei = navFree(nav, Math.floor(ex / NAV_S), Math.floor(ez / NAV_S), 6);
+  if (si < 0 || ei < 0) return findPath(L, sx, sz, ex, ez);
+  const gen = ++nav.gen;
+  const hx = ei % NW, hy = (ei / NW) | 0;
+  const hfn = (x, y) => { const dx = Math.abs(x - hx), dy = Math.abs(y - hy); return dx + dy - 0.586 * Math.min(dx, dy); };
+  const heap = [];
+  const push = (f, i) => {
+    heap.push(f, i);
+    let k = heap.length / 2 - 1;
+    while (k > 0) { const p = (k - 1) >> 1; if (heap[p * 2] <= heap[k * 2]) break; const a = heap[p * 2], b = heap[p * 2 + 1]; heap[p * 2] = heap[k * 2]; heap[p * 2 + 1] = heap[k * 2 + 1]; heap[k * 2] = a; heap[k * 2 + 1] = b; k = p; }
+  };
+  const pop = () => {
+    const top = heap[1], lf = heap[heap.length - 2], li = heap[heap.length - 1];
+    heap.length -= 2;
+    if (heap.length) {
+      heap[0] = lf; heap[1] = li;
+      let k = 0;
+      const n = heap.length / 2;
+      for (;;) {
+        const l = 2 * k + 1, r = l + 1;
+        let m = k;
+        if (l < n && heap[l * 2] < heap[m * 2]) m = l;
+        if (r < n && heap[r * 2] < heap[m * 2]) m = r;
+        if (m === k) break;
+        const a = heap[m * 2], b = heap[m * 2 + 1]; heap[m * 2] = heap[k * 2]; heap[m * 2 + 1] = heap[k * 2 + 1]; heap[k * 2] = a; heap[k * 2 + 1] = b;
+        k = m;
+      }
+    }
+    return top;
+  };
+  stamp[si] = gen; g[si] = 0; came[si] = -1;
+  push(hfn(si % NW, (si / NW) | 0), si);
+  let found = false, iter = 0;
+  while (heap.length && iter++ < 60000) {
+    const c = pop();
+    if (shut[c] === gen) continue;
+    if (c === ei) { found = true; break; }
+    shut[c] = gen;
+    const cx = c % NW, cy = (c / NW) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= NW || ny >= NH) continue;
+      const n = ny * NW + nx;
+      if (blocked[n] || shut[n] === gen) continue;
+      if (dx && dy && (blocked[cy * NW + nx] || blocked[ny * NW + cx])) continue;
+      const ng = g[c] + (dx && dy ? 1.414 : 1);
+      if (stamp[n] !== gen || ng < g[n]) { stamp[n] = gen; g[n] = ng; came[n] = c; push(ng + hfn(nx, ny), n); }
+    }
+  }
+  if (!found) return findPath(L, sx, sz, ex, ez);
+  const path = [];
+  for (let c = ei; c !== -1 && c !== si; c = came[c]) path.push(new THREE.Vector3((c % NW + 0.5) * NAV_S, 0, (((c / NW) | 0) + 0.5) * NAV_S));
+  path.reverse();
+  return path;
 }

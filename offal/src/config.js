@@ -7,15 +7,16 @@ export const RUN_SPEED = 5.1; // the player's sprint, m/s; the Foreman's chase i
 // how fast he is next to you, and what makes noise
 // chase: his sprint as a share of yours, on the first floor and on the last
 // noise: multipliers per kind of noise (see main.js G.noise); 0 means silent
+// breathDrain: how fast a held breath runs out in a locker, per second out of 100 (easy 20 s, normal 12.5, hard 7.7, extreme 6.7)
 export const DIFFS = {
-  easy: { label: 'EASY', chase: [0.78, 0.84], hear: 0.8, windup: 0.6, reach: 1.9, recover: 1.1, alert: 1.3, blurb: 'You can outrun him. Walking, crouching, hiding and working are silent.',
-    noise: { walk: 0, crouch: 0, locker: 0, work: 0, cut: 0.6, run: 0.8, other: 0.8 } },
-  normal: { label: 'NORMAL', chase: [0.92, 0.97], hear: 1, windup: 0.5, reach: 2.1, recover: 0.6, alert: 1.1, blurb: 'He\u2019s almost as fast as you. You\u2019re still a little faster. Everything that makes noise makes noise.',
-    noise: {} },
-  hard: { label: 'HARD', chase: [1.03, 1.08], hear: 1.1, windup: 0.4, reach: 2.3, recover: 0.25, alert: 0.6, blurb: 'He\u2019s a little faster than you. Footsteps, cutting, lockers and machinery carry further.',
-    noise: { walk: 1.4, crouch: 1.6, locker: 2, work: 1.4, cut: 1.4, run: 1.15, other: 1.1 } },
-  extreme: { label: 'EXTREME', chase: [1.12, 1.2], hear: 1.25, windup: 0.3, reach: 2.5, recover: 0, alert: 0.3, blurb: 'He is faster than you. You will not outrun him. Everything is loud.',
-    noise: { walk: 1.7, crouch: 2, locker: 2.5, work: 1.7, cut: 1.7, run: 1.3, other: 1.3 } },
+  easy: { label: 'EASY', breathDrain: 5, chase: [0.78, 0.84], hear: 0.8, windup: 0.6, reach: 1.9, recover: 1.1, alert: 1.3, blurb: 'You can outrun him. Walking, crouching, hiding and working are silent.',
+    noise: { walk: 0, crouch: 0, locker: 0, work: 0, cut: 0, run: 0.8, other: 0.8 } },
+  normal: { label: 'NORMAL', breathDrain: 8, chase: [0.92, 0.97], hear: 1, windup: 0.5, reach: 2.1, recover: 0.6, alert: 1.1, blurb: 'He\u2019s almost as fast as you. You\u2019re still a little faster. Everything that makes noise makes noise.',
+    noise: { cut: 0 } },
+  hard: { label: 'HARD', breathDrain: 13, chase: [1.03, 1.08], hear: 1.1, windup: 0.4, reach: 2.3, recover: 0.25, alert: 0.6, blurb: 'He\u2019s a little faster than you. Footsteps, lockers and machinery carry further.',
+    noise: { walk: 1.4, crouch: 1.6, locker: 2, work: 1.4, cut: 0, run: 1.15, other: 1.1 } },
+  extreme: { label: 'EXTREME', breathDrain: 15, chase: [1.12, 1.2], hear: 1.25, windup: 0.3, reach: 2.5, recover: 0, alert: 0.3, blurb: 'He is faster than you. You will not outrun him. Everything is loud.',
+    noise: { walk: 1.7, crouch: 2, locker: 2.5, work: 1.7, cut: 0, run: 1.3, other: 1.3 } },
 };
 
 // The story goes down the way the line ran: receiving, stunning, bleeding... to the bottom, where it stops.
@@ -69,7 +70,7 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
   const df = DIFFS[diffKey] || DIFFS.normal;
   const ramp = Math.min(1, d / (STORY_FLOORS - 1));
   const chaseRatio = df.chase[0] + (df.chase[1] - df.chase[0]) * ramp;
-  const pace = { chaseSpeed: RUN_SPEED * chaseRatio, speedMul: chaseRatio / 0.92, diff: diffKey, windup: df.windup, reach: df.reach, recover: df.recover, alert: df.alert };
+  const pace = { chaseSpeed: RUN_SPEED * chaseRatio, speedMul: chaseRatio / 0.92, diff: diffKey, windup: df.windup, reach: df.reach, recover: df.recover, alert: df.alert, breathDrain: df.breathDrain };
   const base = {
     hearing: (1 + d * 0.06) * df.hear,
     batteries: Math.max(2, 5 - Math.floor(d / 2)),

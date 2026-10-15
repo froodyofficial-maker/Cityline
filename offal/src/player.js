@@ -1,6 +1,6 @@
 // You: a night-shift worker with a dying torch. Everything you do makes noise; running makes a lot.
 import * as THREE from 'three';
-import { collide, toTile } from './level.js';
+import { collide, toTile, inCrawl } from './level.js';
 
 export const keys = new Set();
 let pressed = new Set();
@@ -42,6 +42,7 @@ export class Player {
   }
 
   reset() {
+    this.lockerMove = null;
     this.hp = 100;
     this.stamina = 100;
     this.exhausted = false;
@@ -106,6 +107,8 @@ export class Player {
     const { L, B, audio } = w;
     if (tapped('KeyF') && this.battery > 0 && !this.hidden) { this.lightOn = !this.lightOn; audio.flashlight(); }
     if (tapped('KeyC')) this.crouch = !this.crouch;
+    this.inCrawl = !!(w.L && inCrawl(w.L, this.pos.x, this.pos.z));
+    if (this.inCrawl) this.crouch = true; // no room to stand up in a crouchway
     const crouching = this.crouch; // C toggles. Not Ctrl: Ctrl+W closes the browser window
     this.crouchT = (this.crouchT || 0) + ((crouching ? 1 : 0) - (this.crouchT || 0)) * Math.min(1, dt * 10);
 
@@ -139,7 +142,7 @@ export class Player {
       this.vel.set(0, 0, 0);
       this.holding = keys.has('Space');
       if (this.holding) {
-        this.breath = Math.max(0, this.breath - dt * 13);
+        this.breath = Math.max(0, this.breath - dt * (w.D.breathDrain || 13));
         if (this.breath <= 0) { this.holding = false; this.forceExhale = 1.2; w.gasp(); }
       } else this.breath = Math.min(100, this.breath + dt * 22);
       if (this.forceExhale > 0) { this.forceExhale -= dt; this.holding = false; }
@@ -176,7 +179,7 @@ export class Player {
     this.vel.z += (tz - this.vel.z) * k;
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
-    collide(L, B, this.pos, 0.3);
+    collide(L, B, this.pos, 0.3, false, this.crouch && this.crouchT > 0.75); // crouched, you fit into a crouchway
 
     // footsteps are noise
     const v = Math.hypot(this.vel.x, this.vel.z);
@@ -211,6 +214,13 @@ export class Player {
       cam.position.set(h.pos.x - h.facing.x * 0.05, 1.55, h.pos.z - h.facing.z * 0.05);
     } else {
       cam.position.set(this.pos.x, this.eyeY + Math.sin(this.bob * 2) * 0.03 * bob * Math.min(1, v / 2.6), this.pos.z);
+    }
+    // in or out of a locker: ease from where the camera was to where it's going, instead of a cut
+    if (this.lockerMove) {
+      const m = this.lockerMove;
+      m.t += dt / 0.28;
+      if (m.t >= 1) this.lockerMove = null;
+      else { const k = m.t * m.t * (3 - 2 * m.t); cam.position.lerpVectors(m.from, cam.position, k); }
     }
     cam.position.x += nx * sh * 0.04;
     cam.position.y += ny * sh * 0.04;

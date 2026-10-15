@@ -19,6 +19,8 @@ export class AudioEngine {
     this.muffle.type = 'lowpass';
     this.muffle.frequency.value = 20000;
     this.muffle.connect(comp).connect(this.out).connect(ctx.destination);
+    this.dry = this.gain(1, comp); // sounds made right at you (your own locker door): never muffled
+    this.muffled = false;
     this.sfx = this.gain(1, this.muffle);
     this.amb = this.gain(0.9, this.muffle);
     this.mus = this.gain(0.75, this.muffle);
@@ -115,7 +117,14 @@ export class AudioEngine {
       l.setOrientation(fwd.x, fwd.y, fwd.z, 0, 1, 0);
     }
   }
-  setMuffle(on) { if (this.ctx) this.muffle.frequency.setTargetAtTime(on ? 700 : 20000, this.t, 0.15); }
+  setMuffle(on) {
+    if (!this.ctx || this.muffled === !!on) return;
+    this.muffled = !!on;
+    const f = this.muffle.frequency;
+    f.cancelScheduledValues(this.t);
+    f.setValueAtTime(f.value, this.t);
+    f.setTargetAtTime(on ? 700 : 20000, this.t + (on ? 0.25 : 0), on ? 0.15 : 0.05); // in: after the door shuts. out: at once
+  }
 
   // a short noise burst through a filter
   burst(to, { type = 'bandpass', f = 1000, q = 1, dur = 0.1, vol = 0.2, a = 0.004, brown = false, sweep = null, at = 0 }) {
@@ -164,6 +173,16 @@ export class AudioEngine {
     });
     this.boxT = 3;
     this.mode = 'menu';
+    // chase music: a bed of strings sawing away on a tremolo, under a pulse that main code drives (chaseTick)
+    this.chaseBus = this.gain(0, this.mus);
+    const strings = this.filter('bandpass', 1400, 0.9, this.gain(0.022, this.chaseBus));
+    const trem = this.osc('sine', 11), tg = this.gain(0.5), sg = this.gain(0.5);
+    trem.connect(tg).connect(sg.gain);
+    sg.connect(strings);
+    for (const f of [587.3, 622.3, 880, 932.3, 1244.5]) { const o = this.osc('sawtooth', f, sg); o.detune.value = (Math.random() - 0.5) * 18; o.start(); }
+    trem.start();
+    this.chaseStep = 0;
+    this.chaseNext = 0;
     // your own breathing
     this.breathG = this.gain(0, this.sfx);
     this.noise(false, this.filter('bandpass', 900, 0.8, this.breathG)).start();
@@ -187,11 +206,39 @@ export class AudioEngine {
   }
   // being chased: the music cuts out and it's just your heart (main.js beats it)
   setChase(level) {
-    if (!this.ctx || this.mode !== 'roam') return;
+    if (!this.ctx) return;
+    if (this.mode !== 'roam') level = 0;
     if (level === this.chaseLevel) return;
     this.chaseLevel = level;
+    this.chaseBus.gain.setTargetAtTime(level ? 1 : 0, this.t, level ? 0.06 : 1.6);
+    if (level) { this.chaseNext = this.t + 0.02; this.chaseStep = 0; }
+    if (this.mode !== 'roam') return;
     this.roamBus.gain.setTargetAtTime(level ? 0 : 1, this.t, level ? 0.08 : 2.5);
     this.droneBus.gain.setTargetAtTime(level ? 0.08 : 0.22, this.t, level ? 0.08 : 2.5);
+  }
+  // the chase pulse, scheduled a little ahead on a 160 bpm eighth-note grid
+  chaseTick() {
+    if (!this.ctx || !this.chaseLevel) return;
+    const step = 60 / 160 / 2;
+    // D minor, leaning on the flat second: it never resolves
+    const bass = [73.4, 73.4, 77.8, 73.4, 73.4, 51.9, 73.4, 65.4];
+    while (this.chaseNext < this.t + 0.15) {
+      const at = this.chaseNext - this.t, k = this.chaseStep++;
+      const bus = this.chaseBus;
+      if (k % 2 === 0) { // the kick: on every beat
+        this.tone(bus, { f: 95, f2: 38, dur: 0.16, vol: 0.55, at });
+        this.burst(bus, { type: 'lowpass', f: 400, dur: 0.03, vol: 0.25, at });
+      } else { // metal on the off-beat
+        this.burst(bus, { type: 'bandpass', f: 3200 + Math.random() * 1500, q: 9, dur: 0.07, vol: 0.12, at });
+      }
+      if (k % 8 === 4) this.burst(bus, { type: 'bandpass', f: 900, q: 1.2, dur: 0.12, vol: 0.18, at }); // the snare-ish hit on 3
+      // the bass line
+      const f = bass[k % 8] * (k % 32 >= 24 ? 1.06 : 1); // and every fourth bar it slips up a semitone
+      this.tone(this.filter('lowpass', 520, 3, bus), { type: 'sawtooth', f, dur: step * 0.8, vol: 0.13, at });
+      // a stab every two bars
+      if (k % 16 === 0) for (const sf of [587.3, 830.6, 1174.7]) this.tone(bus, { type: 'sawtooth', f: sf, f2: sf * 0.94, dur: 0.35, vol: 0.035, at });
+      this.chaseNext += step;
+    }
   }
   musicBox() {
     // A minor pentatonic, two octaves up, a little out of tune like an old box
@@ -214,6 +261,7 @@ export class AudioEngine {
   // drips, distant metal, things moving in other rooms
   ambienceTick(dt, pos) {
     if (!this.ctx) return;
+    this.chaseTick();
     if (this.mode === 'roam' && !this.chaseLevel) {
       this.boxT -= dt;
       if (this.boxT < 0) { this.boxT = 4 + Math.random() * 9; this.musicBox(); }
@@ -518,8 +566,20 @@ export class AudioEngine {
     this.burst(p, { type: 'lowpass', f: 900, dur: 0.3, vol: 0.8, brown: true, at: 0.25 });
     this.burst(p, { type: 'bandpass', f: 500, q: 2, dur: 0.3, vol: 0.5, sweep: [300, 1500], at: 0.3 });
   }
-  lockerOpen(pos) { this.creak(pos); this.clank(pos, 0.4); }
-  lockerClose(pos) { this.clank(pos, 0.6); this.distantThud(pos); }
+  lockerOpen(pos, mine = false) {
+    if (!mine) { this.creak(pos); this.clank(pos, 0.4); return; }
+    // your own door, an inch from your ear: dry, close, never muffled
+    this.burst(this.dry, { f: 700, q: 6, dur: 0.45, vol: 0.35, sweep: [500, 900] });
+    this.burst(this.dry, { type: 'highpass', f: 2200, dur: 0.05, vol: 0.5, at: 0.05 });
+    this.tone(this.dry, { type: 'triangle', f: 320, f2: 180, dur: 0.18, vol: 0.25, at: 0.05 });
+  }
+  lockerClose(pos, mine = false) {
+    if (!mine) { this.clank(pos, 0.6); this.distantThud(pos); return; }
+    this.burst(this.dry, { type: 'highpass', f: 1800, dur: 0.06, vol: 0.7 });
+    this.tone(this.dry, { type: 'triangle', f: 260, f2: 120, dur: 0.25, vol: 0.4 });
+    this.tone(this.dry, { f: 80, f2: 45, dur: 0.3, vol: 0.5 });
+    this.burst(this.dry, { type: 'bandpass', f: 3200, q: 10, dur: 0.35, vol: 0.2, at: 0.02 }); // the sheet metal ringing
+  }
   gateRattle(pos) { for (let i = 0; i < 3; i++) setTimeout(() => this.clank(pos, 0.7), i * 90); }
   gateSlide(pos) {
     const p = this.pan(pos, 2, 1);

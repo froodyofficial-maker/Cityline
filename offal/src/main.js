@@ -4,7 +4,7 @@
 // at the bottom; Overtime is the endless version where dying sends you back to B1.
 import * as THREE from 'three';
 import { makeMaterials } from './textures.js';
-import { makeLayout, buildLevel, lineOfSight, toTile, findPath } from './level.js';
+import { makeLayout, buildLevel, lineOfSight, toTile, findPath, collide, inCrawl } from './level.js';
 import { Puzzles } from './puzzles.js';
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
@@ -729,7 +729,6 @@ function handleInteract(dt) {
           audio.squelch(0.9);
           blood.splash(0.25, true);
           player.shake = Math.max(player.shake, 0.22);
-          G.noise(c.pos, 9.5, false, 'cut');
         }
         player.vel.multiplyScalar(0.8);
       }
@@ -779,11 +778,11 @@ function handleInteract(dt) {
     }
     case 'locker':
       UI.prompt('<kbd>E</kbd>&nbsp; HIDE');
-      if (tapE) hide(it.lk);
+      if (tapE && performance.now() > (G.lockerCool || 0)) { G.lockerCool = performance.now() + 350; hide(it.lk); } // real time, so a slow frame rate can't swallow the key
       break;
     case 'unhide':
       UI.prompt('<kbd>E</kbd>&nbsp; GET OUT');
-      if (tapE) unhide();
+      if (tapE && performance.now() > (G.lockerCool || 0)) { G.lockerCool = performance.now() + 350; unhide(); }
       break;
     case 'feed':
       hold(1, '<kbd>E</kbd>&nbsp; HOLD — FEED THE TAGS TO THE LIFT', () => {
@@ -827,7 +826,6 @@ function harvest(c) {
   player.shake = 0.5;
   player.tags++;
   G.runTags++;
-  G.noise(c.pos, 12, true, 'cut');
   if (G.runTags === 1) director.queue('face', 6 + Math.random() * 5);
   const got = G.B.lift.inserted + player.tags;
   if (got >= G.D.tags) {
@@ -845,25 +843,40 @@ function harvest(c) {
 function hide(lk) {
   player.hidden = lk;
   player.hiddenSeenBy = new Set(G.hunters.filter((h) => h.seesPlayer || (h.state === 'chase' && h.pos.distanceTo(player.pos) < 4)));
+  player.lockerMove = { from: camera.position.clone(), t: 0 }; // the camera slides in rather than jumping
+  player.vel.set(0, 0, 0);
   player.yaw = lk.camYaw;
   player.pitch = 0;
   player.breath = 100;
   lk.obj.userData.door.visible = false;
+  lk.target = 0;
   UI.$('slits').classList.add('on');
+  audio.lockerClose(lk.pos, true);
   audio.setMuffle(true);
-  audio.lockerClose(lk.pos);
   G.noise(lk.pos, 2.5, false, 'locker');
 }
 function unhide() {
   const lk = player.hidden;
   player.hidden = null;
-  player.pos.set(lk.pos.x + lk.facing.x * 0.75, 0, lk.pos.z + lk.facing.z * 0.75);
+  // step out to a clear spot in front of it (the first that isn't in a wall or a prop)
+  const out = new THREE.Vector3();
+  for (const [d, side] of [[0.75, 0], [0.9, 0.3], [0.9, -0.3], [1.1, 0], [0.6, 0]]) {
+    out.set(lk.pos.x + lk.facing.x * d - lk.facing.z * side, 0, lk.pos.z + lk.facing.z * d + lk.facing.x * side);
+    const probe = out.clone();
+    collide(G.L, G.B, probe, 0.3);
+    if (probe.distanceToSquared(out) < 1e-4) break;
+    out.copy(probe);
+  }
+  player.lockerMove = { from: camera.position.clone(), t: 0 };
+  player.pos.copy(out);
+  player.vel.set(0, 0, 0);
+  player.crouch = false;
   lk.obj.userData.door.visible = true;
   lk.open = 1;
   lk.target = 0;
   UI.$('slits').classList.remove('on');
   audio.setMuffle(false);
-  audio.lockerOpen(lk.pos);
+  audio.lockerOpen(lk.pos, true);
   G.noise(lk.pos, 5, false, 'locker');
 }
 
@@ -955,6 +968,13 @@ function updateGame(dt, t) {
   const B = G.B;
   G.runTime += dt;
   G.floorTime += dt;
+  audio.setMuffle(!!player.hidden); // follows you in and out, whatever path got you there
+  // walking up to a crouchway standing: say how to get in (once in a while, not every time)
+  G.crawlHintT = Math.max(0, (G.crawlHintT || 0) - dt);
+  if (!player.crouch && !player.hidden && G.crawlHintT <= 0) {
+    const ax = player.pos.x - Math.sin(player.yaw) * 0.9, az = player.pos.z - Math.cos(player.yaw) * 0.9;
+    if (inCrawl(G.L, ax, az)) { UI.message('A crouchway. Press C to crouch and crawl in. He can\u2019t follow you in there.', 3.5); G.crawlHintT = 25; }
+  }
   G.saveT -= dt;
   if (G.saveT < 0) { G.saveT = 4; saveSnapshot(); }
   G.lampKill -= dt;
@@ -1003,7 +1023,6 @@ function updateGame(dt, t) {
   if (player.hidden) {
     const close = G.hunters.filter((h) => h.pos.distanceTo(player.pos) < 7 && h.state !== 'grab');
     player.breathUrgent = close.length > 0;
-    audio.setMuffle(true);
     for (const h of close) {
       if (!player.holding && h.pos.distanceTo(player.pos) < 4.5 && h.state !== 'locker' && Math.random() < dt * 0.45 * (DIFFS[G.diff] || DIFFS.normal).hear) {
         h.lockerTarget = player.hidden;
@@ -1016,10 +1035,11 @@ function updateGame(dt, t) {
 
   // heartbeat
   G.hb -= dt;
-  if (G.hb < 0 && (chase || G.fear > 0.12)) {
-    // chased: nothing but your heart, loud and fast
-    if (chase) { audio.heartbeat(1, true); G.hb = 60 / (150 + Math.max(0, 8 - near) * 4); }
-    else { audio.heartbeat((0.12 + G.fear * 0.6) * (player.hidden ? 1.5 : 1)); G.hb = 60 / (62 + G.fear * 90); }
+  // the closer he is, the louder and faster your heart, whether or not he's after you
+  const close = Math.max(0, Math.min(1, 1 - (near - 1.5) / 14));
+  if (G.hb < 0 && (chase || close > 0 || G.fear > 0.12)) {
+    if (chase || close > 0.35) { audio.heartbeat(0.45 + 0.55 * Math.max(close, chase ? 0.6 : 0), true); G.hb = 60 / (90 + close * 80 + (chase ? 30 : 0)); }
+    else { audio.heartbeat((0.12 + Math.max(G.fear, close) * 0.6) * (player.hidden ? 1.5 : 1)); G.hb = 60 / (62 + Math.max(G.fear, close) * 60); }
   }
 
   audio.ambienceTick(dt, player.pos);

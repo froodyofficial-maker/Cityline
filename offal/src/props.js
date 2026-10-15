@@ -751,3 +751,49 @@ export function autopsyTable(mats, rng) {
   g.add(decal(mats.pool[(rng() * 3) | 0], 1.4, 0, 0, rng() * 6));
   return g;
 }
+
+// ---------- crouchways ----------
+// a rusted steel frame round the mouth of a crawl tunnel, with strips of plastic curtain hanging in it.
+// origin on the floor at the mouth, facing into the tunnel (+Z)
+export function crawlMouth(mats, rng) {
+  const g = new THREE.Group();
+  const H = 1.2, Wd = 2;
+  if (!mats.hazard) {
+    // worn yellow-and-black stripes, the way anything low is painted in a plant
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 16;
+    const g2 = c.getContext('2d');
+    g2.fillStyle = '#16120c'; g2.fillRect(0, 0, 128, 16);
+    g2.fillStyle = '#9a7a1c';
+    for (let x = -16; x < 140; x += 16) { g2.beginPath(); g2.moveTo(x, 16); g2.lineTo(x + 8, 16); g2.lineTo(x + 16, 0); g2.lineTo(x + 8, 0); g2.fill(); }
+    for (let i = 0; i < 260; i++) { g2.fillStyle = `rgba(40,25,12,${Math.random() * 0.7})`; g2.fillRect(Math.random() * 128, Math.random() * 16, 1 + Math.random() * 4, 1 + Math.random() * 2); }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    mats.hazard = new THREE.MeshPhongMaterial({ map: t, shininess: 10 });
+  }
+  const top = mesh(box(Wd, 0.12, 0.14), mats.hazard);
+  top.position.y = H - 0.06;
+  g.add(top);
+  for (const sx of [-1, 1]) { const post = mesh(box(0.12, H, 0.14), mats.rust[2]); post.position.set(sx * (Wd / 2 - 0.06), H / 2, 0); g.add(post); }
+  mats.strip ||= new THREE.MeshLambertMaterial({ color: 0x6a6656, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+  for (let i = 0; i < 9; i++) {
+    if (rng() < 0.3) continue; // torn away
+    const len = 0.5 + rng() * 0.55;
+    const st = mesh(geo('strip', () => new THREE.PlaneGeometry(0.2, 1).translate(0, -0.5, 0)), mats.strip, false);
+    st.scale.y = len;
+    st.position.set(-0.85 + i * 0.21, H - 0.12, 0.02);
+    st.rotation.x = (rng() - 0.5) * 0.25;
+    g.add(st);
+  }
+  if (rng() < 0.6) g.add(decal(mats.splat[(rng() * 4) | 0], 0.9, (rng() - 0.5) * 1.2, -0.4, rng() * 6, 0.014));
+  return g;
+}
+export function crawlPipe(mats, rng) {
+  const g = new THREE.Group();
+  const p = mesh(cyl(0.06, 0.06, 2, 8), mats.rust[(rng() * 3) | 0], false);
+  p.rotation.x = Math.PI / 2;
+  p.position.set((rng() - 0.5) * 1.3, 1.2 - 0.09, 0);
+  g.add(p);
+  if (rng() < 0.4) { const d = mesh(cyl(0.004, 0.004, 0.3 + rng() * 0.4, 4), mats.blood, false); d.position.set(p.position.x, 0.9, (rng() - 0.5) * 1.5); g.add(d); }
+  return g;
+}
