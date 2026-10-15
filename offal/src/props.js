@@ -56,6 +56,126 @@ export function decal(mat, size, x, z, rot = 0, y = 0.012) {
   return m;
 }
 
+// ---------- a person ----------
+// One jointed human body, used for everything: the dead on the floor, the ones on hooks, the ones in drawers,
+// and you, in the cutscenes. Built standing, facing +Z, origin at the pelvis; every joint is a group to pose.
+export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, bald = false } = {}) {
+  skin ||= rng() < 0.5 ? mats.skin : mats.skinGrey;
+  cloth = naked ? skin : cloth || (rng() < 0.5 ? mats.coverall : mats.coverall2);
+  const root = new THREE.Group();
+  const pelvis = mesh(cap(0.105, 0.17), cloth);
+  pelvis.rotation.z = Math.PI / 2;
+  pelvis.scale.set(1, 1, 0.78);
+  root.add(pelvis);
+  const torso = new THREE.Group();
+  torso.position.y = 0.07;
+  root.add(torso);
+  const belly = mesh(cyl(0.15, 0.135, 0.24, 10), cloth);
+  belly.position.y = 0.12;
+  belly.scale.z = 0.72;
+  const chest = mesh(cyl(0.185, 0.152, 0.27, 10), cloth);
+  chest.position.y = 0.37;
+  chest.scale.z = 0.66;
+  torso.add(belly, chest);
+  for (const sx of [-1, 1]) { const sh = mesh(sph(0.07, 8), cloth); sh.position.set(sx * 0.175, 0.46, 0); sh.scale.set(1, 0.85, 0.9); torso.add(sh); }
+  const neck = new THREE.Group();
+  neck.position.y = 0.5;
+  torso.add(neck);
+  const neckM = mesh(cyl(0.045, 0.05, 0.11, 7), skin);
+  neckM.position.y = 0.05;
+  neck.add(neckM);
+  const head = new THREE.Group();
+  head.position.y = 0.11;
+  neck.add(head);
+  const skull = mesh(sph(0.1, 12), skin);
+  skull.scale.set(0.86, 1.05, 1.0);
+  skull.position.y = 0.1;
+  head.add(skull);
+  const jaw = new THREE.Group();
+  jaw.position.set(0, 0.06, 0.01);
+  const jawM = mesh(sph(0.075, 10), skin);
+  jawM.scale.set(0.85, 0.62, 1.0);
+  jawM.position.set(0, -0.025, 0.025);
+  jaw.add(jawM);
+  head.add(jaw);
+  const nose = mesh(geo('nose', () => new THREE.ConeGeometry(0.018, 0.045, 5)), skin, false);
+  nose.position.set(0, 0.095, 0.1);
+  nose.rotation.x = Math.PI / 2 - 0.3;
+  head.add(nose);
+  for (const sx of [-1, 1]) {
+    const ear = mesh(sph(0.026, 6), skin, false);
+    ear.scale.set(0.4, 1, 0.7);
+    ear.position.set(sx * 0.088, 0.095, -0.005);
+    head.add(ear);
+    const socket = mesh(sph(0.022, 6), mats.black, false);
+    socket.scale.z = 0.5;
+    socket.position.set(sx * 0.034, 0.112, 0.083);
+    head.add(socket);
+  }
+  const mouth = mesh(box(0.045, 0.012, 0.01), mats.black, false);
+  mouth.position.set(0, 0.046, 0.088);
+  head.add(mouth);
+  if (!bald) {
+    const hair = mesh(sph(0.104, 10), mats.darkMetal, false);
+    hair.scale.set(0.9, 0.72, 1.04);
+    hair.position.set(0, 0.14, -0.012);
+    head.add(hair);
+  }
+  const arms = [-1, 1].map((sx) => {
+    const sh = limb(cloth, 0.24, 0.046);
+    sh.position.set(sx * 0.2, 0.44, 0);
+    const el = limb(rng() < 0.5 ? skin : cloth, 0.22, 0.038);
+    el.position.y = -0.29;
+    sh.add(el);
+    const hand = new THREE.Group();
+    hand.position.y = -0.27;
+    const palm = mesh(box(0.065, 0.085, 0.026), skin, false);
+    palm.position.y = -0.045;
+    const thumb = mesh(cap(0.011, 0.04), skin, false);
+    thumb.position.set(sx * -0.035, -0.035, 0.012);
+    thumb.rotation.z = sx * 0.5;
+    hand.add(palm, thumb);
+    el.add(hand);
+    torso.add(sh);
+    sh.userData = { el, hand };
+    return sh;
+  });
+  const legs = [-1, 1].map((sx) => {
+    const hip = limb(cloth, 0.35, 0.066);
+    hip.position.set(sx * 0.09, -0.04, 0);
+    const knee = limb(cloth, 0.35, 0.053);
+    knee.position.y = -0.42;
+    hip.add(knee);
+    const boot = mesh(box(0.1, 0.09, 0.25), mats.bag, false);
+    boot.position.set(0, -0.44, 0.055);
+    knee.add(boot);
+    root.add(hip);
+    hip.userData = { knee, boot };
+    return hip;
+  });
+  return { root, pelvis, torso, chest, belly, neck, head, jaw, arms, legs, skin, cloth };
+}
+
+// opened from the throat to the belt: a red cavity and the cage of ribs over it
+export function openChest(b, mats) {
+  const cav = mesh(sph(0.13, 10), mats.meat);
+  cav.scale.set(1.05, 1.75, 0.38);
+  cav.position.set(0, 0.27, 0.085);
+  b.torso.add(cav);
+  for (let i = 0; i < 4; i++) {
+    const rib = mesh(geo('chrib', () => new THREE.TorusGeometry(0.11, 0.011, 4, 10, Math.PI)), mats.bone, false);
+    rib.rotation.x = Math.PI / 2;
+    rib.scale.set(1.1, 1, 0.55);
+    rib.position.set(0, 0.29 + i * 0.055, 0.075);
+    b.torso.add(rib);
+  }
+  const sternum = mesh(box(0.025, 0.2, 0.012), mats.bone, false);
+  sternum.position.set(0.11, 0.33, 0.13);
+  sternum.rotation.z = 0.5;
+  b.torso.add(sternum);
+  return cav;
+}
+
 // ---------- hanging carcasses ----------
 export function makeCarcass(mats, rng, human) {
   const root = new THREE.Group(); // origin at the ceiling rail; swings about it
@@ -75,41 +195,20 @@ export function makeCarcass(mats, rng, human) {
   root.add(body);
   if (human) {
     // strung up by the ankles, opened down the front, no head
-    const skin = rng() < 0.5 ? mats.skin : mats.skinGrey;
-    for (const s of [-1, 1]) {
-      const leg = mesh(cap(0.075, 0.75), skin);
-      leg.position.set(s * 0.13, -0.42, 0);
-      leg.rotation.z = s * 0.25;
-      body.add(leg);
-    }
-    const torso = mesh(cap(0.17, 0.5), skin);
-    torso.scale.set(1.15, 1, 0.75);
-    torso.position.y = -1.05;
-    body.add(torso);
-    const cut = mesh(sph(0.15), mats.meat);
-    cut.scale.set(0.75, 2.4, 0.5);
-    cut.position.set(0, -1.05, 0.08);
-    body.add(cut);
-    for (let i = 0; i < 5; i++) {
-      const rib = mesh(geo('rib', () => new THREE.TorusGeometry(0.13, 0.012, 4, 10, Math.PI)), mats.bone, false);
-      rib.position.set(0, -1.12 + i * 0.07, 0.03);
-      rib.rotation.set(-Math.PI / 2 + 0.2, 0, 0);
-      body.add(rib);
-    }
-    for (const s of [-1, 1]) {
-      const arm = limb(skin, 0.55, 0.05);
-      arm.position.set(s * 0.21, -1.3, 0);
-      arm.rotation.z = s * 0.08;
-      body.add(arm);
-    }
-    const neck = stump(mats, 0.06);
-    neck.position.y = -1.42;
-    neck.rotation.x = Math.PI;
-    body.add(neck);
-    // it is still running down onto the floor
+    const b = makeBody(mats, rng, { naked: true, bald: true });
+    b.root.rotation.z = Math.PI; // upside down
+    b.root.position.y = -0.95;
+    b.legs.forEach((l, i) => { l.rotation.z = (i ? -1 : 1) * 0.28; });
+    b.arms.forEach((a, i) => { a.rotation.z = (i ? 1 : -1) * 0.15; a.userData.el.rotation.x = -0.1; });
+    b.head.visible = false;
+    const neck = stump(mats, 0.055);
+    neck.position.y = 0.06;
+    b.neck.add(neck);
+    openChest(b, mats);
+    body.add(b.root);
     const stream = mesh(cyl(0.006, 0.01, 1, 4), mats.blood, false);
-    stream.scale.y = WALL_H - chainLen - 1.6;
-    stream.position.y = -1.45 - stream.scale.y / 2;
+    stream.scale.y = Math.max(0.2, WALL_H - chainLen - 2.05);
+    stream.position.y = -1.95 - stream.scale.y / 2;
     body.add(stream);
   } else {
     // a split side: fat outside, meat and ribs in the cavity
@@ -141,77 +240,50 @@ export function makeCarcass(mats, rng, human) {
 // ---------- the dead workers you cut tags out of ----------
 export function makeCorpse(mats, rng) {
   const g = new THREE.Group();
-  const cloth = rng() < 0.5 ? mats.coverall : mats.coverall2;
-  const skin = rng() < 0.5 ? mats.skin : mats.skinGrey;
-  const torso = mesh(cap(0.17, 0.42), cloth);
-  torso.rotation.z = Math.PI / 2;
-  torso.scale.set(0.75, 1, 1.25);
-  torso.position.set(0, 0.13, 0);
-  g.add(torso);
-  // opened chest
-  const cavity = mesh(sph(0.15), mats.meat);
-  cavity.scale.set(1.5, 0.4, 0.95);
-  cavity.position.set(0.05, 0.22, 0);
-  g.add(cavity);
-  for (let i = 0; i < 4; i++) {
-    const rib = mesh(geo('crib', () => new THREE.TorusGeometry(0.15, 0.01, 4, 8, Math.PI)), mats.bone, false);
-    rib.position.set(-0.08 + i * 0.07, 0.17, 0);
-    rib.rotation.y = Math.PI / 2;
-    rib.scale.y = 0.55;
-    g.add(rib);
-  }
-  const head = new THREE.Group();
-  head.position.set(0.52, 0.11, (rng() - 0.5) * 0.08);
-  head.rotation.set((rng() - 0.5) * 1.2, (rng() - 0.5) * 0.8, 0);
-  const skull = mesh(sph(0.11, 10), skin);
-  skull.scale.set(1.1, 0.95, 0.9);
-  head.add(skull);
-  for (const s of [-1, 1]) {
-    const eye = mesh(sph(0.022, 6), mats.black, false);
-    eye.position.set(0.035, 0.07, s * 0.04);
-    head.add(eye);
-  }
-  const mouth = mesh(sph(0.03, 6), mats.black, false);
-  mouth.scale.set(0.6, 0.4, 1.2);
-  mouth.position.set(0.09, 0.07, 0);
-  head.add(mouth);
-  g.add(head);
-  // limbs, sometimes not all of them
+  const b = makeBody(mats, rng);
+  const cavity = openChest(b, mats);
+  // sprawled on its back where it fell: arms flung out, head lolled to one side, jaw hanging
+  const lay = new THREE.Group();
+  lay.rotation.x = -Math.PI / 2;
+  lay.position.y = 0.125;
+  lay.add(b.root);
+  g.add(lay);
+  b.arms.forEach((a, i) => {
+    const sx = i ? 1 : -1;
+    a.rotation.z = sx * (0.5 + rng() * 1.2);
+    a.userData.el.rotation.z = sx * rng() * 0.9;
+  });
+  b.legs.forEach((l, i) => { l.rotation.z = (i ? -1 : 1) * (0.08 + rng() * 0.3); });
+  if (rng() < 0.35) { const l = b.legs[(rng() * 2) | 0]; l.rotation.x = -0.75; l.userData.knee.rotation.x = 1.35; } // one knee up
+  b.head.rotation.y = (rng() < 0.5 ? -1 : 1) * (0.4 + rng() * 0.6);
+  b.jaw.rotation.x = 0.25 + rng() * 0.35;
   const parts = [];
-  for (const s of [-1, 1]) {
-    if (rng() < 0.2) {
-      const st = stump(mats, 0.055);
-      st.position.set(0.3, 0.12, s * 0.24);
-      st.rotation.x = s * Math.PI / 2;
-      g.add(st);
-      parts.push(['arm', s]);
-    } else {
-      const arm = limb(rng() < 0.6 ? cloth : skin, 0.5, 0.05);
-      arm.position.set(0.3, 0.06, s * 0.22);
-      arm.rotation.set(-s * Math.PI / 2, (rng() - 0.5) * 1.6, 0, 'YXZ'); // laid flat, then fanned out
-      g.add(arm);
-    }
-    const leg = limb(cloth, 0.75, 0.07);
-    leg.position.set(-0.32, 0.08, s * 0.1);
-    leg.rotation.set(0, s * (0.1 + rng() * 0.35), -Math.PI / 2, 'YXZ');
-    g.add(leg);
+  if (rng() < 0.25) { // something taken
+    const a = b.arms[(rng() * 2) | 0];
+    a.userData.el.visible = false;
+    const st = stump(mats, 0.04);
+    st.position.y = -0.29;
+    st.rotation.x = Math.PI;
+    a.add(st);
+    parts.push('forearm');
   }
-  const guts = entrails(mats, rng, new THREE.Vector3(0.05, 0.22, 0.1), 0.9, 10);
+  // what came out of the belly, onto the floor beside it
+  const guts = entrails(mats, rng, new THREE.Vector3(0.04, 0.2, -0.22), 0.9, 10);
   g.add(guts);
-  const pool = decal(mats.pool[(rng() * 3) | 0], 2.2, 0, 0, rng() * 6);
+  const pool = decal(mats.pool[(rng() * 3) | 0], 2.4, 0.05, -0.35, rng() * 6);
   g.add(pool);
-  // the brass tag, poking out of the opened chest
+  // the brass tag, deep in the opened chest
   const tag = mesh(box(0.07, 0.004, 0.045), mats.brass, false);
-  tag.position.set(0.06, 0.28, 0.02);
+  tag.position.set(0.03, 0.25, -0.38);
   tag.rotation.set(0.6, 0.3, 0.4);
   g.add(tag);
-  // flies
   const N = 24, fp = new Float32Array(N * 3);
   const flies = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(fp, 3)),
     mats.fly ||= new THREE.PointsMaterial({ color: 0x1a140c, size: 0.007, sizeAttenuation: true }));
   flies.userData.seeds = Array.from({ length: N }, () => [rng() * 6, rng() * 6, 0.5 + rng(), rng() * 6]);
+  flies.position.z = -0.35;
   g.add(flies);
-  return { group: g, tag, cavity, pool, flies, parts };
+  return { group: g, tag, cavity, pool, flies, parts, body: b };
 }
 
 export function animateFlies(flies, t) {
@@ -515,28 +587,31 @@ export function makeLift(mats, slots) {
 // a body on a drawer tray, feet toward you, the way they always come out
 function trayBody(mats, rng) {
   const g = new THREE.Group();
-  const skin = mats.skinGrey;
-  const covered = rng() < 0.5;
-  const torso = mesh(cap(0.16, 0.5), covered ? mats.sheet : skin);
-  torso.rotation.x = Math.PI / 2;
-  torso.scale.set(1.2, 1, 0.6);
-  torso.position.set(0, 0.12, -0.75);
-  const head = mesh(sph(0.1, 10), covered ? mats.sheet : skin);
-  head.position.set(0, 0.12, -1.35);
-  const legs = mesh(cap(0.12, 0.7), covered ? mats.sheet : skin);
-  legs.rotation.x = Math.PI / 2;
-  legs.scale.set(1.5, 1, 0.55);
-  legs.position.set(0, 0.1, -0.05);
-  g.add(torso, head, legs);
-  for (const s of [-1, 1]) { // bare feet sticking out, always
-    const foot = mesh(box(0.08, 0.14, 0.05), skin);
-    foot.position.set(s * 0.07, 0.15, 0.36);
-    g.add(foot);
+  if (rng() < 0.45) { // under a sheet
+    const t = mesh(cap(0.17, 1.3), mats.sheet);
+    t.rotation.x = Math.PI / 2;
+    t.scale.set(1.25, 1, 0.55);
+    t.position.set(0, 0.13, -0.5);
+    const feet = mesh(box(0.2, 0.15, 0.08), mats.skinGrey);
+    feet.position.set(0, 0.16, 0.36);
+    g.add(t, feet);
+  } else {
+    const b = makeBody(mats, rng, { naked: true, skin: mats.skinGrey, bald: rng() < 0.5 });
+    b.legs.forEach((l) => { l.userData.boot.visible = false; });
+    const lay = new THREE.Group();
+    lay.rotation.x = -Math.PI / 2;
+    lay.position.set(0, 0.12, -0.55);
+    lay.add(b.root);
+    b.arms.forEach((a, i) => (a.rotation.z = (i ? 1 : -1) * 0.12));
+    b.jaw.rotation.x = 0.3;
+    const cut = mesh(box(0.04, 0.42, 0.01), mats.meat, false); // the Y incision
+    cut.position.set(0, 0.28, 0.12);
+    b.torso.add(cut);
+    g.add(lay);
   }
   const toe = mesh(box(0.05, 0.07, 0.003), mats.sheet, false);
-  toe.position.set(0.09, 0.1, 0.4);
+  toe.position.set(0.09, 0.12, 0.42);
   g.add(toe);
-  if (!covered) { const cut = mesh(box(0.05, 0.01, 0.4), mats.meat, false); cut.position.set(0, 0.2, -0.8); g.add(cut); } // the Y incision
   return g;
 }
 

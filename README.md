@@ -32,7 +32,7 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Story mode (about 2.5 hours or more):** ten floors down to the bottom of the plant, and an ending.
 1. On every floor, find the dead workers and hold **E** to cut the brass ID tags out of them. It's slow and loud.
-2. Most floors also have a job before the lift will move:
+2. From B2 on, most floors also have a job before the lift will move (B1 is just tags):
    - **No power:** search body bags for fuses and slot them into the fuse box.
    - **Sealed shutter:** part of the floor is shut off. The code is scrawled in blood on the walls; type it into the keypad. A wrong code sets off an alarm.
    - **Jammed counterweight:** cuts of meat hang around the floor, tagged in kilograms. You can carry two. Make the freight scale by the lift read the exact weight.
@@ -51,6 +51,12 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 | Normal | A little slower than yours | Everything that makes noise makes noise | Same floor, from its start |
 | Hard | A little faster than yours | Footsteps, cutting, lockers and machinery carry further | One floor back, from its start |
 | Extreme | Faster than yours, even with a syringe | Everything carries much further | Back to B1 |
+
+He doesn't only run faster on the harder settings. He also hesitates less when he first spots you, swings sooner and from further away, and keeps coming after a miss. On every setting he now runs straight at you in a chase instead of slowing for corners, and on Extreme a miss doesn't slow him down at all.
+
+When he gets you, he crosses the last few steps in an eighth of a second. The view punches in on his face, his jaw opens past where a jaw should stop, his head rattles, and the screen strobes white, red and black under a shriek.
+
+The dead are people: jointed bodies with faces, hands and boots, lying where they fell with their arms out and their chests opened. The same body hangs from the hooks, lies in the morgue drawers, and plays you in the death scenes.
 
 A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extreme death) ends the shift: the next one starts fresh, with a new layout.
 

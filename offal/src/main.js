@@ -379,63 +379,88 @@ function startDeath(h, kind, locker) {
   h.setState('grab');
   for (const o of G.hunters) if (o !== h) o.obj.visible = false;
   // put it right in your face
-  let dir;
+  // it starts back where it was (a few steps off at most) and closes the gap in a blink
+  let dir, from;
   if (kind === 'locker') {
     dir = locker.facing.clone();
-    h.pos.copy(locker.pos).addScaledVector(dir, 1.25);
+    from = 2.4;
     locker.target = 1;
     locker.obj.userData.door.visible = true;
   } else {
     dir = new THREE.Vector3(h.pos.x - player.pos.x, 0, h.pos.z - player.pos.z);
+    from = Math.min(3.2, Math.max(1.6, dir.length() + 0.6));
     if (dir.lengthSq() < 0.01) dir.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
     dir.normalize();
-    h.pos.copy(player.pos).addScaledVector(dir, 1.3);
   }
+  G.death.from = from;
   G.death.dir = dir;
   h.yaw = Math.atan2(-dir.x, -dir.z);
-  G.flash = 1;
   audio.setMuffle(false);
 }
 
 const _head = new THREE.Vector3();
 const faceLight = new THREE.PointLight(0xff5a40, 0, 3, 2);
 scene.add(faceLight);
+const LUNGE = 0.13, GRAB = 1.5;
 function updateDeath(dt) {
   const d = G.death, h = d.h, t = (d.t += dt);
-  const grab = t < 1.35;
+  const grab = t < GRAB, hit = t >= LUNGE;
+  const base = d.kind === 'locker' ? 1.25 : 1.3;
   if (grab) {
-    // the face comes at you
-    const close = 0.55 + 0.45 * Math.min(1, t / 0.9); // no wind-up: it's just there
-    // its head juts well out in front of its hips; this leaves the face a hand's width from yours
-    const base = d.kind === 'locker' ? 1.25 : 1.3;
-    h.pos.copy(d.kind === 'locker' ? player.hidden.pos : d.floorPos).addScaledVector(d.dir, base - close * 0.25);
+    // the lunge: from where it stood to a hand's width from your face, in an eighth of a second
+    const k = Math.min(1, t / LUNGE), lunge = 1 - (1 - k) ** 3;
+    const dist = d.from + (base - 0.38 - d.from) * lunge;
+    h.pos.copy(d.kind === 'locker' ? player.hidden.pos : d.floorPos).addScaledVector(d.dir, dist);
   }
-  const jitter = { x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.4, z: (Math.random() - 0.5) * 0.6, r: (Math.random() - 0.5) * 0.8 };
+  // once it has you, its head shakes like something's trying to get out of it
+  const rattle = hit ? (t < 0.7 ? 1 : 0.55) : 0.15;
+  const jitter = { x: (Math.random() - 0.5) * 1.1 * rattle, y: (Math.random() - 0.5) * 0.9 * rattle, z: (Math.random() - 0.5) * 1.2 * rattle, r: (Math.random() - 0.5) * 1.6 * rattle };
   let swing = 0;
   if (!grab) swing = t < 2.0 ? 0 : Math.min(1, (t - 2.0) / 0.13);
-  poseForeman(h.body, { gait: 0, speed: 0, mode: grab ? 'grab' : 'attack', t, swing, jawOpen: grab ? Math.min(1, t * 2.5) : 0.7, twitch: grab ? jitter : { x: 0.3, y: 0, z: 0.4, r: 0.5 } });
+  // the jaw keeps going past where a jaw should stop
+  const jaw = grab ? (hit ? Math.min(1.75, 0.6 + (t - LUNGE) * 4.5) + Math.random() * 0.12 : 0.6) : 0.7;
+  poseForeman(h.body, { gait: 0, speed: 0, mode: grab ? 'grab' : 'attack', t, swing, jawOpen: jaw, twitch: grab ? jitter : { x: 0.3, y: 0, z: 0.4, r: 0.5 } });
   h.obj.position.copy(h.pos);
   h.obj.rotation.y = h.yaw;
   h.obj.updateMatrixWorld(true);
   h.body.head.getWorldPosition(_head);
+  if (!grab && camera.fov !== save.settings.fov) {
+    camera.fov = save.settings.fov;
+    camera.updateProjectionMatrix();
+  }
   if (grab) {
     // it lifts you off the floor by the throat, up to its face
     camera.position.copy(d.eye);
-    camera.position.y += 0.4 * Math.min(1, t / 0.12);
-    if (t < 0.2) G.flash = Math.floor(t * 40) % 2 ? 1 : 0.15; // strobe on impact
+    const after = Math.max(0, t - LUNGE);
+    camera.position.y += 0.45 * Math.min(1, after / 0.1);
     camera.lookAt(_head);
-    faceLight.position.lerpVectors(camera.position, _head, 0.55);
-    faceLight.intensity = 1.6 + Math.random() * 1.4;
+    // the hit: the view punches in on its face, then breathes
+    const fov0 = save.settings.fov;
+    camera.fov = hit ? fov0 * (after < 0.05 ? 0.5 : 0.62 + 0.06 * Math.sin(after * 31)) : fov0;
+    camera.updateProjectionMatrix();
+    const shake = hit ? Math.max(0.25, 1 - after * 1.2) : 0.05;
+    camera.rotation.z += (Math.random() - 0.5) * 0.35 * shake;
+    camera.position.x += (Math.random() - 0.5) * 0.09 * shake;
+    camera.position.y += (Math.random() - 0.5) * 0.09 * shake;
+    // white, red, black, white: the strobe of being taken
+    // set outright every frame so nothing smears: single hard frames over a clean, close face
+    const ph = Math.floor(after * 24) % 4;
+    const strobe = hit && after < 0.45;
+    G.flash = !hit ? 0 : after < 0.03 || (strobe && ph === 0) ? 0.85 : 0;
+    G.damage = strobe && ph === 2 ? 1.1 : hit && !strobe && Math.random() < dt * 5 ? 0.9 : 0;
+    G.blackout = strobe && ph === 3 && after > 0.1 ? 0.9 : 0;
+    faceLight.position.lerpVectors(camera.position, _head, 0.5);
+    faceLight.color.setHex(Math.random() < 0.5 ? 0xff2a14 : 0xffe0c8);
+    faceLight.intensity = hit ? 4 + Math.random() * 4 : 1.5;
     player.torch.intensity = Math.random() < 0.3 ? 0 : 20 + Math.random() * 35; // shaking in your hand
-    camera.rotation.z += (Math.random() - 0.5) * 0.1;
-    camera.position.x += (Math.random() - 0.5) * 0.05;
-    camera.position.y += (Math.random() - 0.5) * 0.05;
     G.fear = 1;
     G.scare = 1;
   } else {
     // hard cut from its face to how you die
     if (!G.cutscene) {
       faceLight.intensity = 0;
+      camera.fov = save.settings.fov;
+      camera.updateProjectionMatrix();
       G.flash = 1;
       G.cutscene = new Cutscene(d.scene, { mats, audio, blood, aspect: camera.aspect });
       audio.setMode('ending');

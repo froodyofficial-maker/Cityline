@@ -7,7 +7,7 @@
 // Each one builds its own little stage, runs off a timeline, and throws gore around with a small physics pass.
 import * as THREE from 'three';
 import { createForemanMesh, poseForeman } from './monster.js';
-import { limb, mesh, decal, severedArm, severedHead, meatChunk, makeLamp } from './props.js';
+import { makeBody, openChest, mesh, decal, severedArm, severedHead, meatChunk, makeLamp } from './props.js';
 import { canvas } from './textures.js';
 
 export const CUTSCENES = ['rope', 'exit', 'grinder', 'fan', 'eaten'];
@@ -19,21 +19,11 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
 // ---------- the worker: you, from the outside ----------
 function makeWorker(mats) {
-  const root = new THREE.Group(); // origin at the pelvis
-  const torso = mesh(new THREE.CapsuleGeometry(0.17, 0.42, 3, 8), mats.coverall);
-  torso.position.y = 0.36;
-  torso.scale.set(1.1, 1, 0.75);
-  root.add(torso);
-  const head = new THREE.Group();
-  head.position.y = 0.8;
-  const skull = mesh(new THREE.SphereGeometry(0.11, 10, 8), mats.skin);
-  skull.scale.set(0.9, 1.1, 0.95);
-  head.add(skull);
-  for (const s of [-1, 1]) { const e = mesh(new THREE.SphereGeometry(0.02, 6, 4), mats.black, false); e.position.set(s * 0.04, 0.02, 0.09); head.add(e); }
-  root.add(head);
-  const arms = [-1, 1].map((s) => { const a = limb(mats.coverall, 0.5, 0.05); a.position.set(s * 0.24, 0.62, 0); root.add(a); return a; });
-  const legs = [-1, 1].map((s) => { const l = limb(mats.coverall, 0.75, 0.07); l.position.set(s * 0.1, 0, 0); root.add(l); return l; });
-  return { root, torso, head, arms, legs };
+  let seed = 7;
+  const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const b = makeBody(mats, rng, { cloth: mats.coverall, skin: mats.skin });
+  b.jaw.rotation.x = 0.35; // screaming, or trying to
+  return b;
 }
 
 // point an object's local +Y along `y` with local +Z as close to `z` as possible
@@ -653,6 +643,7 @@ export class Cutscene {
       this.at(2.65, 'chop2', () => {
         this.audio.crack(); this.audio.squelch(1.5);
         this.you.legs[0].visible = false;
+        openChest(this.you, this.mats);
         this.gore.burst(V(-0.4, 0.2, 0.05), 8, 2, 0.8, [severedArm(this.mats, Math.random)]);
         this.gore.spray(V(-0.35, 0.2, 0), V(-0.2, 1, 0), 80, 3, 0.6);
         this.shake = 0.6;

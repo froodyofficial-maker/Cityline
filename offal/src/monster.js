@@ -306,7 +306,7 @@ export class Hunter {
         speed = 0;
         goal = this.target;
         turn = 2;
-        if (this.stateT > 1.1) { this.setState('investigate'); }
+        if (this.stateT > D.alert) { this.setState('investigate'); }
         break;
       case 'investigate':
         speed = 2.5 * D.speedMul;
@@ -341,26 +341,27 @@ export class Hunter {
         }
         let tgt = this.lastSeen || pl.pos;
         if (!sees && this.lastVel) tgt = tgt.clone().addScaledVector(this.lastVel, Math.min(this.lostT, 1.2));
-        if (sees && dP < 7 && this.unstickT <= 0 && pathClear(L, w.B, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) { goal = pl.pos; this.path = null; }
+        if (sees && this.unstickT <= 0 && pathClear(L, w.B, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) { goal = pl.pos; this.path = null; }
         else if (!this.path || this.pathT > 0.35) this.pathTo(tgt);
-        if (sees && dP < 1.55) { this.setState('attack'); w.audio.growl(this.pos, 1); }
+        if (sees && dP < D.reach * 0.75) { this.setState('attack'); w.audio.growl(this.pos, 1); }
         break;
       }
       case 'attack':
+        // he keeps coming while he winds up; the harder the shift, the shorter the windup and the longer the reach
         goal = pl.pos;
-        turn = 6;
-        speed = 0.6;
-        this.swing = Math.min(1, Math.max(0, (this.stateT - 0.42) / 0.14));
-        if (this.stateT > 0.5 && !this.struck) {
+        turn = 8;
+        speed = D.chaseSpeed * 0.85;
+        this.swing = Math.min(1, Math.max(0, (this.stateT - D.windup * 0.8) / (D.windup * 0.3)));
+        if (this.stateT > D.windup && !this.struck) {
           this.struck = true;
-          if (dP < 2.1 && !pl.hidden && lineOfSight(L, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) w.onHit(this);
+          if (dP < D.reach && !pl.hidden && lineOfSight(L, this.pos.x, this.pos.z, pl.pos.x, pl.pos.z)) w.onHit(this);
           else w.audio.whoosh(this.pos);
         }
-        if (this.stateT > 0.75) { this.struck = false; this.swing = 0; this.setState('recover'); }
+        if (this.stateT > D.windup + 0.2) { this.struck = false; this.swing = 0; this.setState(D.recover > 0 ? 'recover' : 'chase'); }
         break;
-      case 'recover': // a beat to let you run
+      case 'recover': // a beat to let you run (none at all on extreme)
         speed = 0;
-        if (this.stateT > 1.1) this.setState('chase');
+        if (this.stateT > D.recover) this.setState('chase');
         break;
       case 'locker': {
         const lk = this.lockerTarget;
@@ -401,23 +402,27 @@ export class Hunter {
 
     // steering
     if (!goal && this.path && this.path.length) {
-      while (this.path.length > 1 && pathClear(L, w.B, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z) && this.pos.distanceTo(this.path[0]) < 3) this.path.shift();
+      // cut corners wherever the straight line is clear
+      for (let k = 0; k < 6 && this.path.length > 1 && pathClear(L, w.B, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z); k++) this.path.shift();
       goal = this.path[0];
       if (this.pos.distanceTo(goal) < 0.45) { this.path.shift(); goal = this.path[0] || null; }
     }
-    let moveSpeed = 0;
+    // walking, he goes where he faces. hunting, he goes straight at you and the body catches up
+    const hunting = this.state === 'chase' || this.state === 'attack' || this.state === 'gate' || this.state === 'locker';
+    let moveSpeed = 0, mx = Math.sin(this.yaw), mz = Math.cos(this.yaw);
     if (goal) {
-      const dx = goal.x - this.pos.x, dz = goal.z - this.pos.z;
-      if (Math.hypot(dx, dz) > 0.05) {
+      const dx = goal.x - this.pos.x, dz = goal.z - this.pos.z, dist = Math.hypot(dx, dz);
+      if (dist > 0.05) {
         const want = Math.atan2(dx, dz);
         let diff = ((want - this.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
         this.yaw += Math.max(-turn * dt, Math.min(turn * dt, diff));
-        moveSpeed = speed * Math.max(0, Math.cos(diff));
+        if (hunting) { moveSpeed = speed; mx = dx / dist; mz = dz / dist; }
+        else moveSpeed = speed * Math.max(0, Math.cos(diff));
       }
     }
-    this.speed += (moveSpeed - this.speed) * Math.min(1, dt * 5);
-    this.pos.x += Math.sin(this.yaw) * this.speed * dt;
-    this.pos.z += Math.cos(this.yaw) * this.speed * dt;
+    this.speed += (moveSpeed - this.speed) * Math.min(1, dt * (hunting ? 10 : 5));
+    this.pos.x += mx * this.speed * dt;
+    this.pos.z += mz * this.speed * dt;
     collide(L, w.B, this.pos, 0.34, true);
 
     // unstick

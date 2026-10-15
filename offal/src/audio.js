@@ -383,6 +383,28 @@ export class AudioEngine {
     const s1 = this.osc('sine', 62, sub), s2 = this.osc('square', 41, this.filter('lowpass', 180, 1, sub));
     s1.frequency.exponentialRampToValueAtTime(26, t + 1);
     s1.start(t); s2.start(t); s1.stop(t + 1.2); s2.stop(t + 1.2);
+    // a voice: something with a throat shrieking at you from an inch away, its head shaking while it does
+    const voice = this.gain(0, bus);
+    voice.gain.setValueAtTime(0.0001, t);
+    voice.gain.exponentialRampToValueAtTime(1.3, t + 0.02);
+    voice.gain.setValueAtTime(1.3, t + len * 0.55);
+    voice.gain.exponentialRampToValueAtTime(0.001, t + len);
+    const trem = this.gain(0.6, voice), rat = this.osc('square', 23), rg = this.gain(0.4);
+    rat.connect(rg).connect(trem.gain);
+    rat.frequency.linearRampToValueAtTime(31, t + len);
+    const ws = this.ctx.createWaveShaper();
+    ws.curve = this.curve(14);
+    for (const [f, q, a] of [[880, 5, 1], [1300, 7, 0.8], [2750, 9, 0.7], [3700, 12, 0.45]]) ws.connect(this.filter('bandpass', f, q, this.gain(a, trem)));
+    for (const f0 of [415, 422, 640]) {
+      const o = this.osc('sawtooth', f0, ws), vib = this.osc('sine', 6 + Math.random() * 3), vg = this.gain(f0 * 0.05);
+      vib.connect(vg).connect(o.frequency);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.4, t + 0.14);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.66, t + len);
+      o.start(t); vib.start(t); o.stop(stop); vib.stop(stop);
+    }
+    rat.start(t); rat.stop(stop);
+    // and the crack of its jaw going too far
+    for (let i = 0; i < 4; i++) this.burst(this.shockClip, { type: 'highpass', f: 1800, dur: 0.012, vol: 1.2 * v, at: 0.16 + i * 0.045 + Math.random() * 0.02 });
   }
   roar(pos) {
     const t = this.t, p = this.pan(pos, 3, 0.8), g = this.gain(0, p), ws = this.ctx.createWaveShaper();
