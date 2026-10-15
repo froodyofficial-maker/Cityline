@@ -30,15 +30,37 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Windows app (self-contained, about 80 MB):** `cd offal-desktop && npm ci && npm run dist:win` builds `offal-desktop/release/OFFAL-1.0.0-portable.exe` (run `npm run build:offal` in the repo root first). It needs no install. F11 or Alt+Enter toggles fullscreen. The *OFFAL desktop app* GitHub Actions workflow builds the same file.
 
-**The loop:** every floor is generated fresh. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the nearest body (and back to the lift once you have every tag). Find the dead workers and hold **E** to cut the brass ID tags out of them, which is slow and loud. Carry the tags back to the freight lift, feed them to the panel and pull the lever while the gate grinds shut. Each floor down is darker and bigger, needs more tags, and the Foreman gets faster. From B5 there are two of him. Die and you start again at B1. Your deepest floor, the tags you've cut and every shift you've worked go on your time card.
+**Story mode (about 2.5 hours or more):** ten floors down to the bottom of the plant, and an ending.
+1. On every floor, find the dead workers and hold **E** to cut the brass ID tags out of them. It's slow and loud.
+2. Most floors also have a job before the lift will move:
+   - **No power:** search body bags for fuses and slot them into the fuse box.
+   - **Sealed shutter:** part of the floor is shut off. The code is scrawled in blood on the walls; type it into the keypad. A wrong code sets off an alarm.
+   - **Jammed counterweight:** cuts of meat hang around the floor, tagged in kilograms. You can carry two. Make the freight scale by the lift read the exact weight.
+   - **Steam on the brake:** find the release order, then turn the hissing valves in it. The wrong valve vents everything, loudly.
+3. Feed the tags to the lift, pull the lever and survive the three seconds while the gate grinds shut.
+4. B10, *The Line*, is the finale: pull three kill switches to stop the line, then run for the lift with both of them hunting you.
+
+Each floor is a checkpoint. Dying restarts that floor with the same layout, so what you learned still helps. Hold **Q** to listen: the flies get louder and a red arrow shows the way through the maze to the next body, puzzle piece, or the lift. An objective line at the top always says what's next, and on the first floors a shift briefing explains each thing as it comes up.
+
+**Overtime:** the endless version. Floors are random, puzzles are random from B2, and dying sends you back to B1. Your deepest floor goes on your time card.
+
+**Dying:** one hit from his hook kills you. He grabs you, and then one of five deaths plays at random:
+- strung up over a fire pit
+- an EXIT door that opens onto a sheer drop
+- the meat grinder (third person)
+- the ceiling fan
+- eaten on the floor (third person)
+
+Syringes (**R**) give you a few seconds of running that never runs out.
 
 **The Foreman** hunts by sound and by light:
-- Running, cutting and a gasping breath all carry. Crouching is nearly silent.
+- Running, cutting, puzzles and a gasping breath all carry. Crouching is nearly silent.
 - Shining your torch in his face gives you away.
-- If you hear the hook dragging, he's patrolling. If it goes quiet, he's running.
+- If you hear the hook dragging, he's patrolling. If it goes quiet, he's running, and all you'll hear is your heart.
 - Hide in lockers. If he comes close, hold **Space** to hold your breath. If he watched you climb in, he will open it.
 - He searches where he lost you and checks the lockers nearby.
-- One hit from the hook leaves you bleeding. The second one ends the shift.
+
+From B5 there are two of him.
 
 Everything is procedural: textures, models and gore are painted and built in code, and all sound is synthesised with Web Audio, positional and with HRTF. The scene renders at low resolution through a grading pass that keeps only blood saturated, with dithering, grain and a vignette that closes in as he gets close.
 
@@ -46,11 +68,14 @@ Everything is procedural: textures, models and gore are painted and built in cod
 | --- | --- |
 | W A S D | Move |
 | Shift | Run (loud) |
-| C / Ctrl | Crouch (quiet) |
+| C | Crouch on/off (quiet) |
 | F | Torch on/off (the battery drains) |
-| E | Use: cut, take, hide, feed the lift, pull the lever |
-| Space | Hold your breath (in a locker) |
-| Q (hold) | Listen: show the way to the next body, or the lift |
+| E | Use: cut, search, take, read, hide, turn, feed the lift, pull the lever |
+| Space | Hold your breath (in a locker); skip a death scene |
+| Q (hold) | Listen: show the way to whatever is next |
+| R | Use a syringe (sprint without running out) |
+| 0–9, Enter | Type a code at a keypad |
+| F11 | Fullscreen |
 | Esc | Pause |
 
 Source is in `offal/` (ES modules on the vendored three.js). `npm run build:offal` writes `dist/offal.html`.

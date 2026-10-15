@@ -102,6 +102,7 @@ export class Director {
         G.B.swingers.push(c);
         this.drops.push({ obj: c, t: 0 });
         a.bodyDrop(new THREE.Vector3(p.x, 1.5, p.z));
+        setTimeout(() => a.jumpscare(0.5), 230);
         G.noise(p, 14, true);
         G.scare = 1;
         G.player.shake = Math.max(G.player.shake, 0.6);
@@ -173,6 +174,7 @@ export class Director {
       s.used = true;
       s.obj.userData.swing.v += 4;
       G.audio.shriek(s.pos);
+      G.audio.jumpscare(0.4);
       G.noise(s.pos, 16, true);
       G.scare = 1;
       pl.shake = Math.max(pl.shake, 0.5);

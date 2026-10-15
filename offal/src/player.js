@@ -59,7 +59,8 @@ export class Player {
     this.roll = 0;
     this.lit = false;
     this.inLift = true;
-    this.bleed = 0;
+    this.adrenaline = 0;
+    this.boostT = 0;
     this.flickerT = 0;
     this.vel.set(0, 0, 0);
     this.sinceRun = 99;
@@ -105,7 +106,7 @@ export class Player {
     const { L, B, audio } = w;
     if (tapped('KeyF') && this.battery > 0 && !this.hidden) { this.lightOn = !this.lightOn; audio.flashlight(); }
     if (tapped('KeyC')) this.crouch = !this.crouch;
-    const crouching = this.crouch || keys.has('ControlLeft') || keys.has('ControlRight');
+    const crouching = this.crouch; // C toggles. Not Ctrl: Ctrl+W closes the browser window
     this.crouchT = (this.crouchT || 0) + ((crouching ? 1 : 0) - (this.crouchT || 0)) * Math.min(1, dt * 10);
 
     // torch battery
@@ -122,6 +123,18 @@ export class Player {
     if (w.torchKill > 0) ti *= Math.random() < 0.5 ? 0 : 0.2;
     this.torch.intensity = ti;
 
+    // adrenaline: a few seconds of running that doesn't run out
+    if (tapped('KeyR') && this.adrenaline > 0 && this.boostT <= 0 && !this.hidden) {
+      this.adrenaline--;
+      this.boostT = 7;
+      this.stamina = 100;
+      this.exhausted = false;
+      audio.gasp();
+      audio.heartbeat(0.9, true);
+      w.say('You jam the needle into your thigh. Everything goes sharp and loud. RUN.', 2.5);
+    }
+    this.boostT -= dt;
+    if (w.frozen) { this.vel.set(0, 0, 0); this.applyCamera(dt, w); return; }
     if (this.hidden) {
       this.vel.set(0, 0, 0);
       this.holding = keys.has('Space');
@@ -144,7 +157,7 @@ export class Player {
     const wantRun = (keys.has('ShiftLeft') || keys.has('ShiftRight')) && moving && iz <= 0 && !crouching && !w.listening;
     const running = wantRun && !this.exhausted;
     if (running) {
-      this.stamina = Math.max(0, this.stamina - dt * 19);
+      if (this.boostT <= 0) this.stamina = Math.max(0, this.stamina - dt * 19);
       this.sinceRun = 0;
       if (this.stamina <= 0) { this.exhausted = true; w.say('Your lungs are on fire.', 2); }
     } else {
@@ -152,8 +165,7 @@ export class Player {
       if (this.sinceRun > 0.7) this.stamina = Math.min(100, this.stamina + dt * (moving ? 9 : 16));
       if (this.stamina > 35) this.exhausted = false;
     }
-    let speed = running ? 5.1 : crouching ? 1.35 : 2.6;
-    if (this.hp < 50) speed *= 0.88;
+    let speed = running ? (this.boostT > 0 ? 5.7 : 5.1) : crouching ? 1.35 : 2.6;
     if (w.slowT > 0) speed *= 0.5;
     if (w.listening) speed = Math.min(speed, 1.3); // you can't listen and hurry
     const len = Math.hypot(ix, iz) || 1;

@@ -1,27 +1,31 @@
 // OFFAL: night shift at the Hollow Pines Meatworks.
-// The loop: drop into a floor, follow the flies to the dead, cut their tags out, get back to the lift
-// alive, feed it, go deeper. Every floor is new, darker, and he gets faster. Die and you start at B1.
+// The loop: drop into a floor, find the dead, cut their tags out, solve whatever else is keeping the lift
+// shut, get back to it alive, go deeper. Story mode is ten floors with a checkpoint on each and an ending
+// at the bottom; Overtime is the endless version where dying sends you back to B1.
 import * as THREE from 'three';
 import { makeMaterials } from './textures.js';
-import { generateLayout, buildLevel, lineOfSight, toTile, findPath } from './level.js';
+import { makeLayout, buildLevel, lineOfSight, toTile, findPath } from './level.js';
+import { Puzzles } from './puzzles.js';
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
 import { Post } from './post.js';
 import { Director } from './director.js';
 import { Guide } from './guide.js';
+import { Cutscene, CUTSCENES } from './cutscenes.js';
 import * as UI from './ui.js';
 import * as P from './props.js';
-import { floorInfo, WALL_H } from './config.js';
+import { floorInfo, difficulty, WALL_H, STORY_FLOORS } from './config.js';
 import { animateFlies } from './props.js';
 
 // ---------- save ----------
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
-  const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true } };
+  const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0 }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && s.v === 1) return { ...fresh, ...s, settings: { ...fresh.settings, ...s.settings } };
+    if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, settings: { ...fresh.settings, ...s.settings } };
   } catch {}
   return fresh;
 })();
@@ -191,19 +195,24 @@ function disposeLevel() {
   G.B.group.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
   for (const h of G.hunters) { scene.remove(h.obj); h.dispose(); }
   for (const f of G.flies) f && f.stop();
+  if (G.puzzles) G.puzzles.dispose();
   G.hunters = [];
   G.flies = [];
+  G.puzzles = null;
+  if (UI.keypad.isOpen) UI.keypad.close();
 }
 
-function loadFloor(depth) {
+function loadFloor(depth, seed) {
   disposeLevel();
-  const L = generateLayout(depth, (Math.random() * 2 ** 31) | 0);
+  const D = difficulty(depth, G.mode);
+  const L = makeLayout(depth, seed, D);
   const B = buildLevel(L, mats);
-  Object.assign(G, { L, B, D: L.D, depth, info: floorInfo(depth), floorTime: 0, lampKill: 0, torchKill: 0 });
+  Object.assign(G, { L, B, D, depth, info: floorInfo(depth, G.mode), floorTime: 0, lampKill: 0, torchKill: 0, frenzy: false, frenzyT: 0 });
+  G.puzzles = new Puzzles(G, D.puzzles, seed + 17);
   scene.add(B.group);
   scene.fog.color.setHex(G.info.fog);
   scene.background.setHex(G.info.fog);
-  scene.fog.density = (depth === 4 ? 0.11 : 0.085) + Math.min(depth, 10) * 0.003;
+  scene.fog.density = 0.085 + D.fogBoost + Math.min(depth, 10) * 0.003;
   for (const l of lampLights) l.color.setHex(G.info.lamp);
   G.hunters = B.hunterSpawns.map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
   G.flies = B.corpses.map((c) => audio.flies(c.pos));
@@ -228,18 +237,24 @@ function inAlcove() {
 }
 
 // ---------- run flow ----------
-function startRun() {
+// mode: 'story' (continue from the saved floor, or fresh) or 'overtime' (endless, from B1)
+function startRun(mode = 'story', fresh = false) {
   audio.init();
   applySettings();
   player.reset();
   blood.clear();
-  guide.newRun();
+  G.mode = mode;
+  const st = save.story;
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0 });
+  if (mode === 'story' && (fresh || st.floor === 1)) guide.newRun();
+  if (mode === 'overtime') guide.newRun();
   save.shifts++;
   G.shift = save.shifts;
-  G.runTime = 0;
-  G.runTags = 0;
+  G.runTime = mode === 'story' ? st.time : 0;
+  G.runTags = mode === 'story' ? st.tags : 0;
   G.fear = G.scare = G.damage = G.flash = G.blackout = 0;
-  G.trans = { t: 0.8, loaded: false, next: 1 };
+  writeSave();
+  G.trans = { t: 0.8, loaded: false, next: mode === 'story' ? st.floor : 1 };
   G.state = 'transition';
   UI.$('fade').classList.add('on');
   UI.only();
@@ -261,7 +276,18 @@ function updateTransition(dt) {
   if (tr.t >= 0.8 && !tr.loaded) {
     tr.loaded = true;
     audio.liftMotor(true);
-    loadFloor(tr.next);
+    // story: the floor keeps its seed until you clear it, so a retry is the same floor you learned
+    let seed = (Math.random() * 2 ** 30) | 0;
+    if (G.mode === 'story') {
+      const st = save.story;
+      if (st.floor !== tr.next || !st.seed) { st.floor = tr.next; st.seed = seed; }
+      seed = st.seed;
+      st.time = Math.round(G.runTime);
+      st.tags = G.runTags;
+      writeSave();
+    }
+    loadFloor(tr.next, seed);
+    player.tags = 0;
     const info = G.info;
     UI.$('cardB').textContent = info.label;
     UI.$('cardName').textContent = info.name;
@@ -282,11 +308,13 @@ function updateTransition(dt) {
     G.lift = { phase: 'opening', t: 0 };
     audio.gateSlide(G.B.lift.pos);
     G.state = 'play';
-    if (G.depth > 1) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the flies.`, 4.5), 2500);
+    audio.setMode('roam');
+    if (G.depth > 1 && G.D.tags) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the way.`, 4.5), 2500);
   }
 }
 
 function nextFloor() {
+  if (G.mode === 'story') { save.story.floor = G.depth + 1; save.story.seed = 0; }
   G.trans = { t: 0, loaded: false, next: G.depth + 1 };
   G.state = 'transition';
   UI.$('fade').classList.add('on');
@@ -294,25 +322,22 @@ function nextFloor() {
 }
 
 // ---------- hurting and dying ----------
+// one hit is all it takes
 function hurt(h) {
   if (G.state !== 'play') return;
-  player.hp -= 55;
-  audio.hurt();
-  blood.splash(1);
-  G.damage = 1;
-  player.shake = 1.3;
-  const dx = player.pos.x - h.pos.x, dz = player.pos.z - h.pos.z, l = Math.hypot(dx, dz) || 1;
-  player.vel.x += (dx / l) * 7;
-  player.vel.z += (dz / l) * 7;
-  G.slowT = 0.35;
-  if (player.hp <= 0) startDeath(h, 'hook');
-  else UI.message(['The hook goes in under your ribs and comes back out. Keep moving.', 'Something tears. You’re still standing. Run.'][(Math.random() * 2) | 0], 3);
+  player.hp = 0;
+  startDeath(h, 'hook');
+  return;
 }
 
 function startDeath(h, kind, locker) {
   if (G.state === 'dying' || G.state === 'dead') return;
   G.state = 'dying';
-  G.death = { t: 0, h, kind, cut: false, splat: false, eye: camera.position.clone(), floorPos: player.pos.clone() };
+  // which death: any of the five, but never the same one twice in a row
+  const pool = CUTSCENES.filter((c) => c !== save.lastCut);
+  const sceneKind = window.__forceCut || pool[(Math.random() * pool.length) | 0];
+  save.lastCut = sceneKind;
+  G.death = { t: 0, h, kind, scene: sceneKind, eye: camera.position.clone(), floorPos: player.pos.clone() };
   audio.jumpscare(1);
   audio.setChase(0);
   audio.setBreath(0, 1);
@@ -379,38 +404,27 @@ function updateDeath(dt) {
     G.fear = 1;
     G.scare = 1;
   } else {
-    if (!d.cut) {
-      // hard cut: you're on the floor now, looking up at it
-      d.cut = true;
+    // hard cut from its face to how you die
+    if (!G.cutscene) {
       faceLight.intensity = 0;
       G.flash = 1;
-      audio.crack();
-      audio.squelch(1.6);
-      blood.splash(0.8);
-      if (player.hidden) { d.floorPos.copy(player.hidden.pos).addScaledVector(d.dir, 0.3); player.hidden = null; }
-      h.pos.copy(d.floorPos).addScaledVector(d.dir, 0.9);
+      G.cutscene = new Cutscene(d.scene, { mats, audio, blood, aspect: camera.aspect });
+      audio.setMode('ending');
     }
-    camera.position.set(d.floorPos.x, 0.22, d.floorPos.z);
-    player.torch.intensity = 40; // dropped, still on, pointing at it
-    if (camera.fov !== 55) { camera.fov = 55; camera.updateProjectionMatrix(); }
-    _head.y -= 0.3;
-    camera.lookAt(_head);
-    camera.rotation.z += 0.75;
-    if (t >= 2.13 && !d.splat) {
-      d.splat = true;
-      blood.drown();
-      audio.squelch(2);
-      audio.crack();
-      audio.tear();
-      G.damage = 1;
-      G.flash = 0.35;
-    }
-    if (d.splat) {
-      camera.position.y += Math.max(0, 0.06 - (t - 2.13) * 0.1) * (Math.random() - 0.5);
-      G.blackout = Math.min(1, (t - 2.3) / 1.2);
+    const cs = G.cutscene;
+    const done = cs.update(dt);
+    G.fear = cs.fear;
+    G.flash = Math.max(G.flash, cs.flash);
+    G.blackout = cs.blackout;
+    const skippable = cs.t > 1.2;
+    UI.$('skip').classList.toggle('on', skippable && cs.blackout < 1);
+    if (done || (skippable && (tapped('Space') || tapped('Enter')))) {
+      UI.$('skip').classList.remove('on');
+      cs.dispose();
+      G.cutscene = null;
+      showDeath();
     }
   }
-  if (t > 3.9) { camera.fov = save.settings.fov; camera.updateProjectionMatrix(); showDeath(); }
 }
 
 const DEATH_TITLES = ['PROCESSED', 'TENDERIZED', 'HUNG TO BLEED', 'DEBONED', 'RENDERED DOWN', 'PUT ON THE LINE', 'OPENED UP'];
@@ -419,34 +433,100 @@ function showDeath() {
   G.state = 'dead';
   try { document.exitPointerLock(); } catch {}
   audio.setMuffle(false);
-  const floor = G.depth;
-  const record = floor > save.best;
-  save.best = Math.max(save.best, floor);
+  const floor = G.depth, story = G.mode === 'story';
+  const record = !story && floor > save.best;
   save.deaths++;
-  save.totalTags += G.runTags;
-  save.runs.push({ n: G.shift, floor, tags: G.runTags, time: Math.round(G.runTime) });
-  if (save.runs.length > 30) save.runs.splice(0, save.runs.length - 30);
+  if (story) {
+    // checkpoint: same floor, same layout, and the time you spent dying still counts
+    save.story.deaths++;
+    save.story.time = Math.round(G.runTime);
+  } else {
+    save.best = Math.max(save.best, floor);
+    save.totalTags += G.runTags;
+    save.runs.push({ n: G.shift, floor, tags: G.runTags, time: Math.round(G.runTime) });
+    if (save.runs.length > 30) save.runs.splice(0, save.runs.length - 30);
+  }
   writeSave();
   const where = `${G.info.label} — ${G.info.name}`;
   const cause = d.kind === 'locker' ? `Dragged out of a locker on ${where}.` : d.kind === 'lift' ? `He got into the lift with you on ${where}.` : `Hooked and opened on ${where}.`;
   const fmt = (s) => `${(s / 60) | 0}:${String((s | 0) % 60).padStart(2, '0')}`;
   UI.$('deathTitle').textContent = DEATH_TITLES[(Math.random() * DEATH_TITLES.length) | 0];
   UI.$('deathCause').textContent = cause;
-  UI.$('deathStats').innerHTML = `
-    <span>DEEPEST FLOOR</span><b class="${record ? 'rec' : ''}">B${floor}${record ? ' — NEW RECORD' : ''}</b>
+  UI.$('deathStats').innerHTML = story ? `
+    <span>FLOOR</span><b>${G.info.label} OF B${STORY_FLOORS}</b>
+    <span>DEATHS THIS SHIFT</span><b>${save.story.deaths}</b>
+    <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
+    <span>CHECKPOINT</span><b>START OF ${G.info.label}</b>` : `
+    <span>DEEPEST FLOOR</span><b class="${record ? 'rec' : ''}">B${floor}${record ? ' \u2014 NEW RECORD' : ''}</b>
     <span>TAGS CUT</span><b>${G.runTags}</b>
     <span>TIME ON SHIFT</span><b>${fmt(G.runTime)}</b>
     <span>SHIFT</span><b>#${G.shift}</b>
     <span>WORKERS PROCESSED</span><b>${save.deaths}</b>`;
+  UI.$('btnRetry').textContent = story ? `Try ${G.info.label} again` : 'Clock in again';
   UI.only('death');
   blood.clear();
   disposeLevel();
   G.B = null;
 }
 
+// ---------- the end ----------
+function startEnding() {
+  G.state = 'ending';
+  try { document.exitPointerLock(); } catch {}
+  const st = save.story;
+  const time = Math.round(G.runTime);
+  st.done = (st.done || 0) + 1;
+  st.bestTime = st.bestTime ? Math.min(st.bestTime, time) : time;
+  st.active = false;
+  const deaths = st.deaths;
+  writeSave();
+  UI.prompt(null);
+  UI.$('fade').classList.add('on');
+  audio.siren(false);
+  const fmt = (s) => `${(s / 3600) | 0}h ${String(((s / 60) | 0) % 60).padStart(2, '0')}m`;
+  const lines = [
+    'B9 \u2026 B7 \u2026 B4 \u2026 B2 \u2026 B1 \u2026',
+    'The motor screams the whole way up. Nothing follows you.',
+    'The gate opens onto grey light.',
+    '06:00. Somewhere outside, birds.',
+    'The car park is empty except for your car. You don\u2019t look back at the building.',
+    'In your pocket, your time card has been stamped.',
+  ];
+  const host = UI.$('endLines');
+  host.innerHTML = '';
+  UI.$('endStamp').classList.remove('on');
+  UI.$('endStats').classList.remove('on');
+  UI.$('endNav').classList.remove('on');
+  setTimeout(() => { if (G.state !== 'ending') return; disposeLevel(); G.B = null; audio.liftMotor(false); UI.only('ending'); audio.dawn(); }, 2500);
+  lines.forEach((l, i) => setTimeout(() => {
+    if (G.state !== 'ending') return;
+    const p = document.createElement('p');
+    host.appendChild(p);
+    UI.typewrite(p, l, 32, () => Math.random() < 0.4 && audio.tick());
+  }, 3500 + i * 4200));
+  const tEnd = 3500 + lines.length * 4200;
+  setTimeout(() => { if (G.state === 'ending') { UI.$('endStamp').classList.add('on'); audio.clank({ x: 0, z: 0 }, 1); } }, tEnd);
+  setTimeout(() => {
+    if (G.state !== 'ending') return;
+    UI.$('endStats').innerHTML = `<span>TIME ON SHIFT</span><b>${fmt(time)}</b><span>TIMES PROCESSED</span><b>${deaths}</b><span>TAGS CUT</span><b>${G.runTags}</b><span>NEXT SHIFT</span><b class="rec">TONIGHT, 22:00</b>`;
+    UI.$('endStats').classList.add('on');
+    UI.$('endNav').classList.add('on');
+  }, tEnd + 2500);
+}
+
+function refreshMenu() {
+  const st = save.story;
+  UI.$('btnStory').textContent = st.active ? `Continue \u2014 B${st.floor} \u00B7 ${floorInfo(st.floor).name}` : st.done ? 'Clock in again' : 'Clock in';
+  UI.$('btnNew').hidden = !st.active;
+  UI.timecard(save);
+}
+
 function toMenu() {
   G.state = 'menu';
-  UI.timecard(save);
+  refreshMenu();
+  audio.setMode('menu');
+  audio.siren(false);
+  audio.lineRunning(false);
   UI.only('menu');
   audio.setChase(0);
   audio.setBreath(0, 1);
@@ -473,7 +553,7 @@ function findInteract() {
   if (player.hidden) return { type: 'unhide' };
   if (inAlcove() && G.lift.phase === 'open') {
     if (player.tags > 0) return { type: 'feed' };
-    if (B.lift.inserted >= D.tags) return { type: 'lever' };
+    if (B.lift.inserted >= D.tags && G.puzzles.ready) return { type: 'lever' };
     return { type: 'liftInfo' };
   }
   // whatever you're looking at most directly wins
@@ -491,13 +571,20 @@ function findInteract() {
     const fx = lk.pos.x + lk.facing.x * 0.6, fz = lk.pos.z + lk.facing.z * 0.6;
     consider({ type: 'locker', lk }, lk.pos, Math.hypot(fx - player.pos.x, fz - player.pos.z), 0.95, 0.4);
   }
+  for (const p of G.puzzles.interactables()) consider({ type: 'puzzle', p }, p.pos, Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z), p.range, p.minFacing, 0.3);
   return best;
 }
 
 function handleInteract(dt) {
+  // the E that closes the keypad mustn't also reopen it
+  if (UI.keypad.isOpen) G.kpCool = 0.3; else G.kpCool = (G.kpCool || 0) - dt;
+  if (UI.keypad.isOpen || G.kpCool > 0) { UI.prompt(null); G.holdT = 0; return; }
   const it = findInteract(), B = G.B, D = G.D;
   const holdE = keys.has('KeyE'), tapE = tapped('KeyE');
-  if (!it) { UI.prompt(null); G.holdT = 0; return; }
+  if (!it) { UI.prompt(null); G.holdT = 0; G.holdId = null; return; }
+  // holding E on one thing and drifting onto another must not carry the progress over
+  const id = (it.type === 'puzzle' ? it.p.pos : it.c || it.p || it.lk) || it.type; // puzzle entries are rebuilt each frame; their positions aren't
+  if (id !== G.holdId) { G.holdId = id; G.holdT = 0; }
   const hold = (secs, label, done) => {
     if (holdE) G.holdT += dt / secs; else G.holdT = Math.max(0, G.holdT - dt * 2);
     UI.prompt(label, Math.min(1, G.holdT));
@@ -532,17 +619,36 @@ function handleInteract(dt) {
         UI.message('A battery. Still has some life in it.', 2);
       }
       break;
-    case 'bandage':
-      if (player.hp >= 100) { UI.prompt('BANDAGES. YOU’RE NOT BLEEDING. YET.'); break; }
-      UI.prompt('<kbd>E</kbd>&nbsp; WRAP THE WOUND');
+    case 'adrenaline':
+      UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE SYRINGE');
       if (tapE) {
         it.p.taken = true;
         it.p.obj.visible = false;
-        player.hp = Math.min(100, player.hp + 45);
+        player.adrenaline++;
         audio.pickup();
-        UI.message('You pack the hole with gauze and pull it tight.', 2.5);
+        UI.message('A syringe of something red. Press R when you need to run and keep running.', 3);
       }
       break;
+    case 'puzzle': {
+      const p = it.p;
+      if (p.hold) {
+        if (holdE && p.tick) {
+          G.cutT -= dt;
+          if (G.cutT < 0) {
+            G.cutT = 0.35 + Math.random() * 0.2;
+            if (p.tick === 'squelch') { audio.squelch(0.7); blood.splash(0.15, true); }
+            else if (p.tick === 'screech') audio.creak(p.pos);
+            else audio.clank(p.pos, 0.4);
+            if (p.noise) G.noise(p.pos, p.noise, false);
+          }
+        }
+        hold(p.hold, '<kbd>E</kbd>&nbsp; ' + p.label, p.use);
+      } else if (p.use && p.tap !== false) {
+        UI.prompt('<kbd>E</kbd>&nbsp; ' + p.label);
+        if (tapE) p.use();
+      } else UI.prompt(p.label);
+      break;
+    }
     case 'locker':
       UI.prompt('<kbd>E</kbd>&nbsp; HIDE');
       if (tapE) hide(it.lk);
@@ -562,7 +668,7 @@ function handleInteract(dt) {
       });
       break;
     case 'lever':
-      hold(0.8, '<kbd>E</kbd>&nbsp; HOLD — PULL THE LEVER', () => {
+      hold(0.8, G.D.finale ? '<kbd>E</kbd>&nbsp; HOLD \u2014 PULL THE LEVER. GO UP.' : '<kbd>E</kbd>&nbsp; HOLD \u2014 PULL THE LEVER', () => {
         G.lift = { phase: 'closing', t: 0 };
         B.lift.lever.rotation.z = -0.6;
         B.gate.off = false;
@@ -571,9 +677,11 @@ function handleInteract(dt) {
         UI.message('The gate starts to come down. Slowly. Too slowly.', 3);
       });
       break;
-    case 'liftInfo':
-      UI.prompt(`THE LIFT WANTS ${D.tags - B.lift.inserted} MORE TAG${D.tags - B.lift.inserted === 1 ? '' : 'S'}`);
+    case 'liftInfo': {
+      const left = D.tags - B.lift.inserted, blocker = G.puzzles.blocker();
+      UI.prompt(left > 0 ? `THE LIFT WANTS ${left} MORE TAG${left === 1 ? '' : 'S'}` : blocker ? blocker.liftMsg() : '');
       break;
+    }
   }
 }
 
@@ -656,9 +764,9 @@ function updateLift(dt) {
       break;
     }
     case 'sealed':
-      if (lf.t > 0.8 && !lf.motor) { lf.motor = true; audio.liftMotor(true); UI.message('It’s moving. You’re going down.', 3); }
+      if (lf.t > 0.8 && !lf.motor) { lf.motor = true; audio.liftMotor(true); UI.message(G.D.finale ? 'It\u2019s moving. It\u2019s going UP.' : 'It\u2019s moving. You\u2019re going down.', 3); }
       if (lf.t > 0.8) player.shake = Math.max(player.shake, 0.3);
-      if (lf.t > 2.2) nextFloor();
+      if (lf.t > 2.2) { if (G.D.finale && G.mode === 'story') startEnding(); else nextFloor(); }
       break;
   }
 }
@@ -722,7 +830,8 @@ function updateGame(dt, t) {
   G.lampKill -= dt;
   G.torchKill -= dt;
   G.slowT -= dt;
-  const listen = keys.has('KeyQ') && !player.hidden;
+  G.frozen = UI.keypad.isOpen;
+  const listen = keys.has('KeyQ') && !player.hidden && !G.frozen;
   if (listen !== !!G.listening) { G.listening = listen; audio.setListen(listen); }
   player.update(dt, G);
   for (const h of G.hunters) h.update(dt, t);
@@ -730,6 +839,7 @@ function updateGame(dt, t) {
   updateLift(dt);
   if (G.state !== 'play') return;
   handleInteract(dt);
+  G.puzzles.update(dt);
   guide.update(dt);
   director.update(dt);
   updateLamps(t);
@@ -750,6 +860,14 @@ function updateGame(dt, t) {
   G.scare = Math.max(0, G.scare - dt * 0.35);
   G.fear += (Math.max(f, G.scare) - G.fear) * Math.min(1, dt * 2.5);
   audio.setChase(chase ? 1 : 0);
+  // the line has stopped: they know exactly where you are, all the time
+  if (G.frenzy) {
+    G.frenzyT -= dt;
+    if (G.frenzyT < 0) {
+      G.frenzyT = 0.7;
+      for (const h of G.hunters) if (!['chase', 'attack', 'recover', 'grab', 'locker'].includes(h.state)) h.hear({ pos: player.pos.clone(), radius: 999, loud: true });
+    }
+  }
 
   // hiding: it can hear you breathe
   if (player.hidden) {
@@ -768,18 +886,18 @@ function updateGame(dt, t) {
 
   // heartbeat
   G.hb -= dt;
-  if (G.hb < 0 && G.fear > 0.12) {
-    audio.heartbeat((0.12 + G.fear * 0.6) * (player.hidden ? 1.5 : 1));
-    G.hb = 60 / (62 + G.fear * 90);
+  if (G.hb < 0 && (chase || G.fear > 0.12)) {
+    // chased: nothing but your heart, loud and fast
+    if (chase) { audio.heartbeat(1, true); G.hb = 60 / (150 + Math.max(0, 8 - near) * 4); }
+    else { audio.heartbeat((0.12 + G.fear * 0.6) * (player.hidden ? 1.5 : 1)); G.hb = 60 / (62 + G.fear * 90); }
   }
-  // you are bleeding
-  if (player.hp < 50 && Math.random() < dt * 0.4) blood.splash(0.05, true);
 
   audio.ambienceTick(dt, player.pos);
   audio.listen(camera.position, player.forward(_fwd));
+  UI.stamina(player.stamina, player.exhausted, player.boostT > 0);
   UI.hud({
     floor: `${G.info.label} · ${G.info.name}`, have: player.tags, fed: B.lift.inserted, need: G.D.tags, battery: player.battery,
-    breath: player.breath, hidden: !!player.hidden, breathUrgent: player.breathUrgent,
+    breath: player.breath, hidden: !!player.hidden, breathUrgent: player.breathUrgent, adrenaline: player.adrenaline,
   });
 }
 
@@ -795,6 +913,18 @@ document.addEventListener('pointerlockchange', () => {
 addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && G.state === 'paused' && !UI.$('settings').classList.contains('on')) resume();
   if (e.code === 'KeyP' && G.state === 'play') pause();
+});
+
+// Ctrl+W, Ctrl+R and friends close or reload the window. In fullscreen we can claim the keyboard so they
+// can't; otherwise the browser at least asks before throwing a shift away.
+addEventListener('beforeunload', (e) => { if (['play', 'paused', 'transition', 'dying'].includes(G.state)) { e.preventDefault(); e.returnValue = ''; } });
+document.addEventListener('fullscreenchange', () => {
+  try { if (document.fullscreenElement && navigator.keyboard) navigator.keyboard.lock(); else if (navigator.keyboard) navigator.keyboard.unlock(); } catch {}
+});
+addEventListener('keydown', (e) => {
+  if (e.code === 'F11') { e.preventDefault(); if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }
+  // browser shortcuts we can still swallow outside fullscreen (find, save, print, history)
+  if ((e.ctrlKey || e.metaKey) && ['KeyF', 'KeyS', 'KeyP', 'KeyH', 'KeyD', 'KeyG'].includes(e.code) && G.state === 'play') e.preventDefault();
 });
 
 function pause() {
@@ -820,7 +950,10 @@ document.addEventListener('click', (e) => {
   if (!b) return;
   audio.tick();
   const act = b.dataset.act;
-  if (act === 'start') startRun();
+  if (act === 'story') startRun('story');
+  else if (act === 'newstory') startRun('story', true);
+  else if (act === 'overtime') startRun('overtime');
+  else if (act === 'retry') startRun(G.mode);
   else if (act === 'howto') UI.only('howto');
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else UI.only('menu'); settingsFrom = 'menu'; }
@@ -852,13 +985,14 @@ for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHEC
 
 // ---------- boot ----------
 UI.buildDrips();
-UI.timecard(save);
+refreshMenu();
 if (matchMedia('(pointer: coarse)').matches) UI.$('mobileNote').textContent = '· keyboard and mouse required';
 UI.typewrite(UI.$('warnText'), 'This game contains graphic gore, mutilated bodies, sudden loud noises and flashing images.\n\nPlay it in the dark. Wear headphones.\n\nIf you need to stop, press ESC. The plant will wait for you.', 45);
 UI.$('warn').addEventListener('click', () => {
   audio.init();
   applySettings();
   audio.chime();
+  audio.setMode('menu');
   G.state = 'menu';
   UI.only('menu');
 });
@@ -898,7 +1032,9 @@ function frame(now) {
     u.flash.value = G.flash;
     u.hidden.value = player.hidden ? 1 : 0;
     u.blackout.value = G.state === 'dying' ? G.blackout : 0;
-    if (G.B) post.render(scene, camera);
+    u.health.value = G.state === 'dying' ? 1 : u.health.value;
+    if (G.cutscene) post.render(G.cutscene.scene, G.cutscene.cam);
+    else if (G.B) post.render(scene, camera);
   }
   blood.update(dt);
   endFrame();
@@ -907,6 +1043,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract,
+  G, player, save, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };

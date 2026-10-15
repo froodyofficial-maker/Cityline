@@ -19,6 +19,7 @@
 <canvas id="blood"></canvas>
 <div id="slits"></div>
 <div id="fade"></div>
+<div id="skip">SPACE &middot; SKIP</div>
 
 <!-- content warning: also the click that unlocks audio -->
 <section id="warn" class="screen on">
@@ -37,7 +38,9 @@
     </div>
     <p class="sub">HOLLOW PINES MEATWORKS &middot; NIGHT SHIFT</p>
     <nav class="menu-nav">
-      <button data-act="start">Clock in</button>
+      <button data-act="story" id="btnStory">Clock in</button>
+      <button data-act="newstory" id="btnNew" hidden>Start a new shift</button>
+      <button data-act="overtime">Overtime <small>endless</small></button>
       <button data-act="howto">Orientation</button>
       <button data-act="settings">Settings</button>
     </nav>
@@ -54,14 +57,17 @@
       <li>Find the bodies. Hold <kbd>Q</kbd> to <b>listen for the flies</b>: a red arrow shows the way to the nearest body, and back to the lift once you have every tag. Hold <kbd>E</kbd> to cut the tag out. It is slow and it is <b>loud</b>.</li>
       <li>Bring the tags back to the lift, feed the panel, pull the lever, and go <b>deeper</b>. There is no bottom.</li>
       <li><b>The Foreman</b> is still on shift. He hunts by <b>sound</b> and by <b>light</b>. Don't run unless you have to. Never shine your torch in his face.</li>
+      <li><b>One hit from his hook kills you.</b> Syringes (<kbd>R</kbd>) give you a few seconds of running that never runs out.</li>
+      <li>Most floors have a job besides the tags: no power, a sealed shutter, a jammed counterweight, steam on the brake. The objective line at the top always says what&rsquo;s next.</li>
       <li>Hide in lockers with <kbd>E</kbd>. If he comes close, hold <kbd>SPACE</kbd> to hold your breath. If he watched you climb in, it will not help.</li>
       <li>If you hear the hook dragging, it's patrolling. If it goes quiet, it's running.</li>
     </ol>
     <table class="keys">
       <tr><td><kbd>W A S D</kbd></td><td>move</td><td><kbd>SHIFT</kbd></td><td>run (loud)</td></tr>
-      <tr><td><kbd>C</kbd> / <kbd>CTRL</kbd></td><td>crouch (quiet)</td><td><kbd>F</kbd></td><td>torch</td></tr>
+      <tr><td><kbd>C</kbd></td><td>crouch on/off (quiet)</td><td><kbd>F</kbd></td><td>torch</td></tr>
       <tr><td><kbd>E</kbd></td><td>use / cut / hide</td><td><kbd>SPACE</kbd></td><td>hold breath</td></tr>
-      <tr><td><kbd>Q</kbd> (hold)</td><td>listen: show the way</td><td><kbd>ESC</kbd></td><td>pause</td></tr>
+      <tr><td><kbd>Q</kbd> (hold)</td><td>listen: show the way</td><td><kbd>R</kbd></td><td>syringe: sprint</td></tr>
+      <tr><td><kbd>ESC</kbd></td><td>pause</td><td><kbd>F11</kbd></td><td>fullscreen</td></tr>
     </table>
     <button class="back" data-act="back">Back</button>
   </div>
@@ -101,11 +107,18 @@
   <div id="compass"><div class="needle" id="needle"><i></i></div><span id="compassD"></span></div>
   <div id="brief" class="brief"><b>SHIFT BRIEFING</b><p id="briefText"></p></div>
   <div class="hud-bl"><div id="tags" class="tags"></div><div id="tagText" class="hud-small"></div></div>
-  <div class="hud-br"><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
+  <div class="hud-br"><div id="syringes" class="syringes"></div><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
+  <div id="stamina"><div class="st-bar"><i id="staminaFill"></i></div><span id="staminaLabel">STAMINA</span></div>
   <div id="dot"></div>
   <div id="prompt"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="ring-bg"/><circle id="ring" cx="20" cy="20" r="16" class="ring"/></svg><span id="promptText"></span></div>
   <div id="breath"><div id="breathFill"></div><span>HOLD YOUR BREATH</span></div>
   <div id="msg"></div>
+  <div id="note" class="note"><b id="noteTitle"></b><p id="noteBig" class="note-big"></p><p id="noteSmall" class="note-small"></p></div>
+  <div id="keypad" class="keypad">
+    <div class="kp-head">SHUTTER CONTROL</div>
+    <div id="kpSlots" class="kp-slots"></div>
+    <div class="kp-help">TYPE THE CODE <kbd>0</kbd>&ndash;<kbd>9</kbd> &middot; <kbd>ENTER</kbd> TO TRY IT &middot; <kbd>E</kbd> TO STEP AWAY<br>A WRONG CODE SOUNDS THE ALARM</div>
+  </div>
   <div id="pa"></div>
 </section>
 
@@ -135,8 +148,20 @@
     <p id="deathCause" class="death-cause"></p>
     <div id="deathStats" class="death-stats"></div>
     <nav class="menu-nav row">
-      <button data-act="start">Clock in again</button>
+      <button data-act="retry" id="btnRetry">Try again</button>
       <button data-act="menu">Leave</button>
+    </nav>
+  </div>
+</section>
+
+<section id="ending" class="screen">
+  <div class="end-in">
+    <div id="endLines" class="end-lines"></div>
+    <div id="endStamp" class="end-stamp">SHIFT COMPLETE</div>
+    <div id="endStats" class="death-stats end-stats"></div>
+    <nav id="endNav" class="menu-nav row end-nav">
+      <button data-act="overtime">Overtime <small>endless</small></button>
+      <button data-act="menu">Back to the menu</button>
     </nav>
   </div>
 </section>

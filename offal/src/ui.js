@@ -89,8 +89,21 @@ export function prompt(text, progress = 0) {
 }
 
 let hudKey = '';
-export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrgent }) {
-  const key = [floor, have, fed, need, Math.ceil(battery / 20), battery < 20].join('|');
+let stKey = '';
+export function stamina(v, out, boost) {
+  $('staminaFill').style.transform = `scaleX(${Math.max(0, v) / 100})`;
+  const k = (boost ? 'b' : out ? 'o' : v >= 100 ? 'f' : 'n');
+  if (k === stKey) return;
+  stKey = k;
+  const el = $('stamina');
+  el.classList.toggle('boost', !!boost);
+  el.classList.toggle('out', !!out && !boost);
+  el.classList.toggle('full', k === 'f');
+  $('staminaLabel').textContent = boost ? 'ADRENALINE' : out ? 'OUT OF BREATH' : 'STAMINA';
+}
+
+export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrgent, adrenaline = 0 }) {
+  const key = [floor, have, fed, need, Math.ceil(battery / 20), battery < 20, adrenaline].join('|');
   if (key !== hudKey) {
     hudKey = key;
     $('floorLabel').textContent = floor;
@@ -101,12 +114,13 @@ export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrg
       t.className = 'tag' + (i < fed ? ' fed' : i < fed + have ? ' got' : '');
       tags.appendChild(t);
     }
-    $('tagText').textContent = fed >= need ? 'PULL THE LEVER' : have + fed >= need ? 'BACK TO THE LIFT' : `TAGS ${have + fed}/${need}`;
+    $('tagText').textContent = need === 0 ? '' : `TAGS ${have + fed}/${need}`;
     const b = $('battery');
     b.innerHTML = '';
     const bars = Math.ceil(battery / 20);
     for (let i = 0; i < 5; i++) { const x = document.createElement('i'); if (i >= bars) x.className = 'off'; b.appendChild(x); }
     b.classList.toggle('low', battery < 20);
+    $('syringes').textContent = adrenaline ? `R \u00B7 SYRINGE \u00D7${adrenaline}` : '';
   }
   const br = $('breath');
   br.classList.toggle('on', !!hidden);
@@ -126,9 +140,63 @@ export function timecard(save) {
       <tr><th>SHIFT</th><th>DEEPEST</th><th>TAGS</th><th>HOURS</th></tr>
       ${rows.length ? rows.map((r) => `<tr><td>#${r.n}</td><td class="r">B${r.floor}</td><td>${r.tags}</td><td>${fmt(r.time)}</td></tr>`).join('') : '<tr><td colspan="4"><i>no shifts worked yet</i></td></tr>'}
     </table>
-    <div class="tc-tot"><span>DEEPEST EVER: <b>${save.best ? 'B' + save.best : '\u2014'}</b></span><span>TAGS CUT: <b>${save.totalTags}</b></span></div>
+    <div class="tc-tot"><span>STORY: <b>${save.story.active ? 'ON B' + save.story.floor : save.story.done ? 'FINISHED' : 'NOT STARTED'}</b></span><span>OVERTIME BEST: <b>${save.best ? 'B' + save.best : '\u2014'}</b></span></div>
     ${save.deaths ? `<div class="stamp">PROCESSED ×${save.deaths}</div>` : ''}`;
 }
+
+// ---------- notes you find, and the shutter keypad ----------
+let noteTimer = 0;
+export function note(title, big, small) {
+  $('noteTitle').textContent = title;
+  $('noteBig').textContent = big;
+  $('noteSmall').textContent = small || '';
+  $('note').classList.add('on');
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => $('note').classList.remove('on'), 8000);
+}
+
+export const keypad = {
+  isOpen: false,
+  closedAt: 0,
+  digits: [],
+  cb: null,
+  open(cb) {
+    this.cb = cb;
+    this.digits = [];
+    this.isOpen = true;
+    this.render();
+    $('keypad').classList.add('on');
+  },
+  close() {
+    this.isOpen = false;
+    this.closedAt = performance.now();
+    $('keypad').classList.remove('on');
+  },
+  render() {
+    const slots = $('kpSlots');
+    slots.innerHTML = '';
+    for (let i = 0; i < 4; i++) { const s = document.createElement('i'); s.textContent = this.digits[i] ?? ''; slots.appendChild(s); }
+  },
+  key(e) {
+    if (!this.isOpen) return false;
+    const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code);
+    if (m && this.digits.length < 4) { this.digits.push(+m[1]); this.render(); }
+    else if (e.code === 'Backspace') { this.digits.pop(); this.render(); }
+    else if ((e.code === 'Enter' || e.code === 'NumpadEnter') && this.digits.length === 4) {
+      if (!this.cb(this.digits.slice())) {
+        const p = $('keypad');
+        p.classList.remove('wrong');
+        void p.offsetWidth;
+        p.classList.add('wrong');
+        this.digits = [];
+        this.render();
+      }
+    } else if (e.code === 'KeyE') this.close();
+    else return false;
+    return true;
+  },
+};
+addEventListener('keydown', (e) => { if (keypad.key(e)) e.preventDefault(); });
 
 // ---------- blood on the lens ----------
 export class ScreenBlood {

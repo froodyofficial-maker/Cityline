@@ -11,13 +11,71 @@ export const tileCenter = (t) => t * TILE + TILE / 2;
 export const toTile = (v) => Math.floor(v / TILE);
 
 export function isWall(L, tx, ty) {
-  return tx < 0 || ty < 0 || tx >= L.W || ty >= L.H || L.grid[ty * L.W + tx] === 0;
+  if (tx < 0 || ty < 0 || tx >= L.W || ty >= L.H || L.grid[ty * L.W + tx] === 0) return true;
+  const d = L.door;
+  return !!(d && d.closed && d.x === tx && d.y === ty);
+}
+
+// a floor that needs a sealed wing (the keypad puzzle) retries seeds until the map has a chokepoint for it
+export function makeLayout(depth, seed, D) {
+  for (let i = 0; i < 40; i++) {
+    const L = generateLayout(depth, seed + i * 7919, D);
+    if (!D.puzzles.includes('keypad')) return L;
+    const wing = findWing(L);
+    if (!wing) continue;
+    L.door = wing.door;
+    L.wing = wing;
+    L.block[wing.door.y * L.W + wing.door.x] = 1;
+    return L;
+  }
+  throw new Error('could not lay out a floor with a sealed wing');
+}
+
+// a straight piece of corridor that, shut, cuts off a good chunk of the floor (but never the lift)
+function findWing(L) {
+  const { W, H, grid, corridor, rooms, alcove } = L;
+  const start = alcove.y * W + alcove.x;
+  const reach = (shut) => {
+    const seen = new Uint8Array(W * H), q = [start];
+    seen[start] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const c = q[h], cx = c % W, cy = (c / W) | 0;
+      for (const [dx, dy] of DIRS) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const n = ny * W + nx;
+        if (!grid[n] || seen[n] || n === shut) continue;
+        seen[n] = 1;
+        q.push(n);
+      }
+    }
+    return seen;
+  };
+  let best = null;
+  for (let i = 0; i < W * H; i++) {
+    if (!corridor[i]) continue;
+    const x = i % W, y = (i / W) | 0;
+    const ew = !isWall(L, x - 1, y) && !isWall(L, x + 1, y) && isWall(L, x, y - 1) && isWall(L, x, y + 1);
+    const ns = !isWall(L, x, y - 1) && !isWall(L, x, y + 1) && isWall(L, x - 1, y) && isWall(L, x + 1, y);
+    if (!ew && !ns) continue;
+    const seen = reach(i);
+    const cut = [];
+    rooms.forEach((r, ri) => { if (ri > 0 && !seen[r.cy * W + r.cx]) cut.push(ri); });
+    if (cut.length < 2 || cut.length > (rooms.length - 1) * 0.55) continue;
+    const score = -Math.abs(cut.length - (rooms.length - 1) * 0.35);
+    if (!best || score > best.score) best = { score, x, y, ns, seen, cut };
+  }
+  if (!best) return null;
+  const mask = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) if (grid[i] && !best.seen[i] && i !== best.y * W + best.x) mask[i] = 1;
+  // which side of the shutter you arrive from
+  const [sx, sy] = best.ns ? (best.seen[(best.y - 1) * W + best.x] ? [0, -1] : [0, 1]) : (best.seen[best.y * W + best.x - 1] ? [-1, 0] : [1, 0]);
+  return { door: { x: best.x, y: best.y, ns: best.ns, side: [sx, sy], closed: true }, mask, rooms: best.cut };
 }
 
 // ---------- layout ----------
-export function generateLayout(depth, seed) {
+export function generateLayout(depth, seed, D = difficulty(depth)) {
   const rng = makeRng(seed);
-  const D = difficulty(depth);
   const W = D.size, H = D.size;
   const grid = new Uint8Array(W * H);
   const roomOf = new Int16Array(W * H).fill(-1);
@@ -67,7 +125,7 @@ export function generateLayout(depth, seed) {
     inTree.push(best[2]);
   }
   rooms.forEach((r, i) => {
-    if (!rng.chance(0.45)) return;
+    if (!rng.chance(D.puzzles && D.puzzles.includes('keypad') ? 0.2 : 0.45)) return;
     const near = rooms.map((o, j) => [dist2(r, o), j]).filter(([, j]) => j !== i).sort((a, b) => a[0] - b[0]).slice(0, 3);
     const [, j] = rng.pick(near);
     if (!linked.has(i + ',' + j)) { carve(r, rooms[j]); linked.add(i + ',' + j).add(j + ',' + i); }
@@ -142,7 +200,8 @@ export function buildLevel(L, mats) {
     const style = room ? (L.roomOf[i] + L.depth) % 3 : L.depth % 3;
     const cx = tileCenter(x), cz = tileCenter(y);
     for (const [dx, dy] of DIRS) {
-      if (!isWall(L, x + dx, y + dy)) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H && grid[ny * W + nx]) continue; // geometry ignores the shutter
       const n = [-dx, 0, -dy];
       const r = [-dy, 0, dx]; // so that r x up points along n: the face is front-facing from inside the tile
       const p0 = [cx + dx * TILE / 2 - r[0] * TILE / 2, 0, cz + dy * TILE / 2 - r[2] * TILE / 2];
@@ -170,7 +229,9 @@ export function buildLevel(L, mats) {
   };
 
   // which wall faces a tile has, for things that stand against walls
-  const wallSides = (x, y) => DIRS.filter(([dx, dy]) => isWall(L, x + dx, y + dy));
+  // real walls only: the wing's shutter is not somewhere to hang a fuse box
+  const solid = (x, y) => x < 0 || y < 0 || x >= W || y >= H || !grid[y * W + x];
+  const wallSides = (x, y) => DIRS.filter(([dx, dy]) => solid(x + dx, y + dy));
 
   const lockerAt = (x, y, [dx, dy], off = 0) => {
     const cx = tileCenter(x), cz = tileCenter(y);
@@ -286,6 +347,7 @@ export function buildLevel(L, mats) {
   }
   let corridorLockers = 0;
   for (const [x, y] of corridorTiles) {
+    if (L.door && Math.abs(L.door.x - x) + Math.abs(L.door.y - y) <= 1) continue; // keep the shutter clear
     const s = wallSides(x, y);
     const straight = s.length === 2 && s[0][0] === -s[1][0] && s[0][1] === -s[1][1];
     if (straight && corridorLockers < 3 + (L.depth > 2 ? 1 : 0) && rng() < 0.08) { lockerAt(x, y, s[0], 0); used.add(x + ',' + y); corridorLockers++; }
@@ -301,22 +363,30 @@ export function buildLevel(L, mats) {
   }
 
   // tagged corpses, spread far apart and far from the lift
+  const inWing = (x, y) => !!(L.wing && L.wing.mask[y * W + x]);
   const candidates = L.rooms.slice(1).map((r) => ({ r, d: L.dist[r.cy * W + r.cx] })).filter((c) => c.d > 0);
   candidates.sort((a, b) => b.d - a.d);
   const chosen = [];
-  while (chosen.length < D.tags && candidates.length) {
-    let best = null, bestScore = -1;
-    for (const c of candidates) {
-      const sep = chosen.length ? Math.min(...chosen.map((o) => Math.abs(o.r.cx - c.r.cx) + Math.abs(o.r.cy - c.r.cy))) : 99;
-      const score = Math.min(sep, 14) * 2 + c.d * 0.5 + rng() * 6;
-      if (score > bestScore) { bestScore = score; best = c; }
+  const choose = (pool, n) => {
+    for (let k = 0; k < n && pool.length; k++) {
+      let best = null, bestScore = -1;
+      for (const c of pool) {
+        const sep = chosen.length ? Math.min(...chosen.map((o) => Math.abs(o.r.cx - c.r.cx) + Math.abs(o.r.cy - c.r.cy))) : 99;
+        const score = Math.min(sep, 14) * 2 + c.d * 0.5 + rng() * 6;
+        if (score > bestScore) { bestScore = score; best = c; }
+      }
+      chosen.push(best);
+      pool.splice(pool.indexOf(best), 1);
+      candidates.splice(candidates.indexOf(best), 1);
     }
-    chosen.push(best);
-    candidates.splice(candidates.indexOf(best), 1);
-  }
+  };
+  // behind a sealed shutter there is always something you need
+  if (L.wing) choose(candidates.filter((c) => inWing(c.r.cx, c.r.cy)), Math.max(1, Math.round(D.tags * 0.4)));
+  choose(candidates.filter((c) => !inWing(c.r.cx, c.r.cy)), D.tags - chosen.length);
+  choose(candidates.slice(), D.tags - chosen.length);
   // more tags than rooms on tiny maps: use corridor dead ends
   while (chosen.length < D.tags) {
-    const t = rng.pick(corridorTiles);
+    const t = rng.pick(corridorTiles.filter(([x, y]) => !(L.door && L.door.x === x && L.door.y === y)));
     chosen.push({ r: { x: t[0], y: t[1], w: 1, h: 1, cx: t[0], cy: t[1], type: 'corridor' } });
   }
   for (const { r } of chosen) {
@@ -330,12 +400,35 @@ export function buildLevel(L, mats) {
     out.bloodTiles[y * W + x] = 1;
   }
 
-  // batteries and bandages
-  const floorTiles = [];
-  L.rooms.forEach((r) => { if (r.type !== 'lift') for (const t of allTiles(r)) if (!used.has(t[0] + ',' + t[1]) && !L.block[t[1] * W + t[0]]) floorTiles.push(t); });
-  rng.shuffle(floorTiles);
+  // placement for everything that comes after (pickups here, puzzles in puzzles.js)
+  const freeTiles = [];
+  L.rooms.forEach((r, ri) => { if (r.type !== 'lift') for (const [x, y] of allTiles(r)) if (!used.has(x + ',' + y) && !L.block[y * W + x]) freeTiles.push([x, y, ri]); });
+  rng.shuffle(freeTiles);
+  out.inWing = inWing;
+  out.takeTile = (pred = () => true) => {
+    const i = freeTiles.findIndex((t) => !used.has(t[0] + ',' + t[1]) && pred(t));
+    if (i < 0) return null;
+    const t = freeTiles.splice(i, 1)[0];
+    used.add(t[0] + ',' + t[1]);
+    return t;
+  };
+  // a bare stretch of wall: [x, y, [dx, dy] toward the wall, room]
+  out.takeWall = (pred = () => true) => {
+    for (const [x, y, ri] of freeTiles) {
+      if (used.has(x + ',' + y)) continue;
+      for (const s of wallSides(x, y)) {
+        const k = x + ',' + y + 'L' + s;
+        if (used.has(k) || !pred([x, y, s, ri])) continue;
+        used.add(k).add(x + ',' + y);
+        return [x, y, s, ri];
+      }
+    }
+    return null;
+  };
+
+  // batteries and adrenaline
   const pickup = (type) => {
-    const t = floorTiles.pop();
+    const t = out.takeTile();
     if (!t) return;
     const g = new THREE.Group();
     if (type === 'battery') {
@@ -348,17 +441,22 @@ export function buildLevel(L, mats) {
       led.position.y = 0.04;
       g.add(b, tip, led);
     } else {
-      const b = P.mesh(new THREE.BoxGeometry(0.16, 0.06, 0.1), mats.sheet);
-      const cr = P.mesh(new THREE.BoxGeometry(0.07, 0.062, 0.02), new THREE.MeshBasicMaterial({ color: 0x8a0a0a }), false);
-      const cr2 = P.mesh(new THREE.BoxGeometry(0.02, 0.062, 0.07), cr.material, false);
-      g.add(b, cr, cr2);
+      // a syringe of something bright red
+      const barrel = P.mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.14, 8), new THREE.MeshPhongMaterial({ color: 0xd8e0e0, transparent: true, opacity: 0.7, shininess: 100 }), false);
+      barrel.rotation.z = Math.PI / 2;
+      const fill = P.mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.1, 6), new THREE.MeshBasicMaterial({ color: 0xc01010, fog: false }), false);
+      fill.rotation.z = Math.PI / 2;
+      const needle = P.mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.07, 4), mats.steel, false);
+      needle.rotation.z = Math.PI / 2;
+      needle.position.x = 0.1;
+      g.add(barrel, fill, needle);
     }
     const x = tileCenter(t[0]) + (rng() - 0.5) * 1.2, z = tileCenter(t[1]) + (rng() - 0.5) * 1.2;
     add(g, x, z, rng() * 6).position.y = 0.04;
     out.pickups.push({ type, obj: g, pos: new THREE.Vector3(x, 0.1, z), taken: false });
   };
   for (let i = 0; i < D.batteries; i++) pickup('battery');
-  for (let i = 0; i < D.bandages; i++) pickup('bandage');
+  for (let i = 0; i < D.adrenaline; i++) pickup('adrenaline');
 
   // the lift
   const { x: ax, y: ay } = L.alcove;
@@ -369,7 +467,7 @@ export function buildLevel(L, mats) {
   out.spawn = { x: tileCenter(ax), z: tileCenter(ay) + 0.3, yaw: 0 };
 
   // the Foreman starts in the room furthest from you
-  const far = L.rooms.slice(1).sort((a, b) => L.dist[b.cy * W + b.cx] - L.dist[a.cy * W + a.cx]);
+  const far = L.rooms.slice(1).filter((r) => !inWing(r.cx, r.cy)).sort((a, b) => L.dist[b.cy * W + b.cx] - L.dist[a.cy * W + a.cx]);
   for (let i = 0; i < D.hunters; i++) {
     const r = far[Math.min(i * 2, far.length - 1)];
     out.hunterSpawns.push(new THREE.Vector3(tileCenter(r.cx), 0, tileCenter(r.cy)));
