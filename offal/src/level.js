@@ -538,13 +538,34 @@ export function buildLevel(L, mats) {
   };
   const centerOf = (x, y) => [tileCenter(x), tileCenter(y)];
   const blockTile = (x, y) => { L.block[y * W + x] = 1; used.add(x + ',' + y); };
+  // Can furniture fill tile (x, y) without walling anything off? Never a doorway (a room tile touching anything
+  // outside the room), and every walkable tile on the floor must still be reachable from the lift afterwards.
+  const doorAt = L.door ? L.door.y * W + L.door.x : -1;
+  const passable = (i) => grid[i] && (!L.block[i] || i === doorAt);
+  const reachAll = () => {
+    const seen = new Uint8Array(W * H), q = [L.alcove.y * W + L.alcove.x];
+    seen[q[0]] = 1;
+    for (let h = 0; h < q.length; h++) { const c = q[h], cx = c % W, cy = (c / W) | 0; for (const [dx, dy] of DIRS) { const n = (cy + dy) * W + cx + dx; if (!seen[n] && passable(n)) { seen[n] = 1; q.push(n); } } }
+    return q.length;
+  };
+  const canBlock = (x, y) => {
+    const i = y * W + x;
+    if (!passable(i) || i === doorAt || crawl[i]) return false;
+    const ri = L.roomOf[i];
+    for (const [dx, dy] of DIRS) { const n = (y + dy) * W + x + dx; if (grid[n] && L.roomOf[n] !== ri) return false; }
+    const before = reachAll();
+    L.block[i] = 1;
+    const ok = reachAll() === before - 1;
+    L.block[i] = 0;
+    return ok;
+  };
   function furnish(r, ri) {
     const rx = r.x * TILE, rz = r.y * TILE, rw = r.w * TILE, rh = r.h * TILE;
     const inner = rng.shuffle(interior(r).filter(([x, y]) => !used.has(x + ',' + y)));
     switch (r.type) {
       // ---- the hospital wing ----
       case 'autopsy': {
-        for (const [x, y] of inner.slice(0, r.w * r.h >= 15 ? 2 : 1)) {
+        for (const [x, y] of inner.filter(([x, y]) => canBlock(x, y)).slice(0, r.w * r.h >= 15 ? 2 : 1)) {
           const [cx, cz] = centerOf(x, y);
           add(P.autopsyTable(mats, rng), cx, cz, 0);
           collider(cx - 1, cz - 0.42, cx + 1, cz + 0.42);
@@ -561,9 +582,10 @@ export function buildLevel(L, mats) {
         // beds head-on to the walls, curtains between them, drips and a wheelchair
         let beds = 0;
         for (let k = 0; k < 6 && beds < Math.max(2, (r.w * r.h) / 4); k++) {
-          const sp = wallSpot(r, (x, y) => wallSides(x, y).length === 1);
+          const sp = wallSpot(r, (x, y) => wallSides(x, y).length === 1 && canBlock(x, y));
           if (!sp) break;
           const [x, y, [dx, dy]] = sp;
+          blockTile(x, y);
           const b = P2.hospitalBed(mats, rng);
           const ox = tileCenter(x) + dx * (TILE / 2 - 1.02), oz = tileCenter(y) + dy * (TILE / 2 - 1.02);
           add(b, ox, oz, Math.atan2(-dx, -dy));
@@ -578,7 +600,8 @@ export function buildLevel(L, mats) {
       }
       case 'records': {
         for (let k = 0; k < Math.min(6, r.w + r.h); k++) { const sp = wallSpot(r); if (!sp) break; const g = new THREE.Group(); for (const o of [-0.5, 0, 0.5]) { const fc = P2.filingCabinet(mats, rng); fc.position.set(o, 0, 0.32); g.add(fc); } onWall(g, sp, 0.62, 1.6); }
-        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.desk(mats, rng), cx, cz, rng() * 4); collider(cx - 0.8, cz - 0.8, cx + 0.8, cz + 0.8); blockTile(x, y); }
+        const dk = inner.find(([x, y]) => canBlock(x, y));
+        if (dk) { const [x, y] = dk, [cx, cz] = centerOf(x, y); add(P2.desk(mats, rng), cx, cz, rng() * 4); collider(cx - 0.8, cz - 0.8, cx + 0.8, cz + 0.8); blockTile(x, y); }
         for (let i = 0; i < 12; i++) { const p = P.mesh(new THREE.BoxGeometry(0.21, 0.003, 0.29), P2.p2mats(mats).paper, false); add(p, rx + 0.5 + rng() * (rw - 1), rz + 0.5 + rng() * (rh - 1), rng() * 6).position.y = 0.01; }
         return true;
       }
@@ -586,7 +609,8 @@ export function buildLevel(L, mats) {
       case 'openplan': {
         // rows of cubicles: every third column and every other row left clear as a walkway
         for (let y = r.y + 1; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
-          if ((x - r.x) % 3 === 0 || (y - r.y) % 2 === 0 || used.has(x + ',' + y)) continue;
+          if ((x - r.x) % 3 === 0 || (y - r.y) % 2 === 0 || used.has(x + ',' + y) || !canBlock(x, y)) continue;
+          blockTile(x, y);
           const x0 = x * TILE, z0 = y * TILE;
           add(P2.partition(mats, TILE), x0 + TILE / 2, z0 + 0.05);
           collider(x0, z0, x0 + TILE, z0 + 0.1);
@@ -604,11 +628,12 @@ export function buildLevel(L, mats) {
         return true;
       }
       case 'office': {
-        if (inner.length || allTiles(r).length) {
-          const [x, y] = inner[0] || allTiles(r)[0], [cx, cz] = centerOf(x, y);
+        const dk = inner.find(([x, y]) => canBlock(x, y));
+        if (dk) {
+          const [x, y] = dk, [cx, cz] = centerOf(x, y);
           add(P2.desk(mats, rng), cx, cz, rng.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]));
           collider(cx - 0.8, cz - 0.8, cx + 0.8, cz + 0.8);
-          used.add(x + ',' + y);
+          blockTile(x, y);
         }
         const fc = wallSpot(r); if (fc) onWall(P2.filingCabinet(mats, rng, true), fc, 0.62, 0.5);
         const wb = wallSpot(r); if (wb) onWall(P2.whiteboard(mats), wb, 0, 1, false);
@@ -630,7 +655,8 @@ export function buildLevel(L, mats) {
         const v = wallSpot(r); if (v) onWall(P2.vending(mats), v, 0.78, 0.9);
         const f = wallSpot(r); if (f) onWall(P2.fridge(mats), f, 0.7, 0.7);
         const wc = wallSpot(r); if (wc) onWall(P2.waterCooler(mats), wc, 0.35, 0.4);
-        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.meetingTable(mats, rng, 1.6), cx, cz, 0); collider(cx - 0.8, cz - 0.55, cx + 0.8, cz + 0.55); used.add(x + ',' + y); }
+        const tb = inner.find(([x, y]) => canBlock(x, y));
+        if (tb) { const [x, y] = tb, [cx, cz] = centerOf(x, y); add(P2.meetingTable(mats, rng, 1.6), cx, cz, 0); collider(cx - 0.8, cz - 0.55, cx + 0.8, cz + 0.55); blockTile(x, y); }
         return true;
       }
       case 'copy': {
@@ -644,7 +670,8 @@ export function buildLevel(L, mats) {
         for (let i = 0; i < 2; i++) { const sp = wallSpot(r); if (sp) onWall(P2.pipeRun(mats, TILE, rng), sp, 0, 1, false); }
         if (r.type !== 'nest') { const sp = wallSpot(r); if (sp) onWall(P2.outflow(mats, rng), sp, 0.6, 0.8); }
         if (r.type === 'junction') { const sp = wallSpot(r); if (sp) onWall(P2.ladder(mats), sp, 0.15, 0.5, false); }
-        if (r.type === 'pumproom' && inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); add(P2.pump(mats, rng), cx - 0.4, cz, 0); collider(cx - 1.0, cz - 0.6, cx + 1.1, cz + 0.6); blockTile(x, y); }
+        const pt = r.type === 'pumproom' && inner.find(([x, y]) => canBlock(x, y));
+        if (pt) { const [x, y] = pt, [cx, cz] = centerOf(x, y); add(P2.pump(mats, rng), cx - 0.4, cz, 0); collider(cx - 1.0, cz - 0.6, cx + 1.1, cz + 0.6); blockTile(x, y); }
         if (r.type === 'nest') {
           const [cx, cz] = [rx + rw / 2, rz + rh / 2];
           add(P2.nest(mats, rng), cx, cz, rng() * 6);
@@ -658,26 +685,31 @@ export function buildLevel(L, mats) {
         // long rows of racking with a gap every few bays to cut through
         for (let y = r.y + 1; y < r.y + r.h - 1; y += 2) {
           for (let x = r.x + 1; x < r.x + r.w - 1; x += 3) {
-            const n = Math.min(2, r.x + r.w - 1 - x);
-            if (n < 1) continue;
+            if (x >= r.x + r.w - 1 || !canBlock(x, y)) continue;
+            blockTile(x, y);
+            let n = 1;
+            if (x + 1 < r.x + r.w - 1 && canBlock(x + 1, y)) { blockTile(x + 1, y); n = 2; }
             const len = n * TILE - 0.3, cx = x * TILE + (n * TILE) / 2, cz = tileCenter(y);
             add(P2.palletRack(mats, rng, len), cx, cz);
             collider(cx - len / 2 - 0.05, cz - 0.55, cx + len / 2 + 0.05, cz + 0.55);
-            for (let k = 0; k < n; k++) blockTile(x + k, y);
           }
         }
         return true;
       }
       case 'dock': {
-        if (inner.length) { const [x, y] = inner[0], [cx, cz] = centerOf(x, y); const yaw = rng() * 6; add(P2.forklift(mats, rng), cx, cz, yaw); collider(cx - 0.9, cz - 0.9, cx + 0.9, cz + 0.9); blockTile(x, y); }
-        for (const [x, y] of inner.slice(1, 4)) { const [cx, cz] = centerOf(x, y); add(P2.crateStack(mats, rng), cx + (rng() - 0.5) * 0.4, cz + (rng() - 0.5) * 0.4, rng() * 0.3); collider(cx - 0.65, cz - 0.6, cx + 0.65, cz + 0.6); blockTile(x, y); }
+        const free = inner.filter(([x, y]) => !used.has(x + ',' + y));
+        const fk = free.find(([x, y]) => canBlock(x, y));
+        if (fk) { const [x, y] = fk, [cx, cz] = centerOf(x, y); const yaw = rng() * 6; add(P2.forklift(mats, rng), cx, cz, yaw); collider(cx - 0.9, cz - 0.9, cx + 0.9, cz + 0.9); blockTile(x, y); }
+        for (const [x, y] of free.filter(([x, y]) => !used.has(x + ',' + y)).slice(0, 3)) {
+          if (!canBlock(x, y)) continue; const [cx, cz] = centerOf(x, y); add(P2.crateStack(mats, rng), cx + (rng() - 0.5) * 0.4, cz + (rng() - 0.5) * 0.4, rng() * 0.3); collider(cx - 0.65, cz - 0.6, cx + 0.65, cz + 0.6); blockTile(x, y); }
         const cu = wallSpot(r); if (cu) onWall(P2.coolerUnit(mats, rng), cu, 0, 1, false);
         return true;
       }
       case 'blast': {
         for (let i = 0; i < 2; i++) { const cu = wallSpot(r); if (cu) onWall(P2.coolerUnit(mats, rng), cu, 0, 1, false); }
         // people, left standing in here until they froze
-        for (const [x, y] of inner.slice(0, 2)) {
+        for (const [x, y] of inner.filter(([x, y]) => canBlock(x, y)).slice(0, 2)) {
+          blockTile(x, y);
           const [cx, cz] = centerOf(x, y);
           const b = P.makeBody(mats, rng, { naked: rng() < 0.5 });
           b.arms.forEach((a, i) => { a.rotation.z = (i ? 1 : -1) * 0.2; a.rotation.x = -0.3; });
@@ -746,7 +778,7 @@ export function buildLevel(L, mats) {
       for (const b of out.drawerBanks.slice(-banks)) {
         for (let k = 0; k < 1 + (rng() * 2 | 0); k++) { const d = rng.pick(b.drawers); d.open = d.target = 0.5 + rng() * 0.9; d.grp.position.z = d.open; }
       }
-      const inner = rng.shuffle(interior(r));
+      const inner = rng.shuffle(interior(r)).filter(([x, y]) => L.theme === 'plant' || canBlock(x, y));
       if (inner.length) {
         const [x, y] = inner[0], cx = tileCenter(x), cz = tileCenter(y);
         add(P.autopsyTable(mats, rng), cx, cz, 0);

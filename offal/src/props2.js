@@ -148,8 +148,9 @@ export function hospitalBed(mats, rng) {
   g.add(at(mesh(box(0.95, 0.12, 2.0), m.porcelain), 0, 0.55, 0));
   for (const [x, z] of [[-0.42, -0.95], [0.42, -0.95], [-0.42, 0.95], [0.42, 0.95]]) g.add(at(mesh(cyl(0.02, 0.02, 0.55, 5), m.chrome, false), x, 0.27, z));
   const head = mesh(box(0.95, 0.5, 0.04), m.chrome); g.add(at(head, 0, 0.85, -1.0));
+  // trayBody lays its pelvis 0.55 m toward its own -Z; this puts the pelvis just off centre, head on the pillow end
   const body = trayBody(mats, rng);
-  body.position.set(0, 0.52, -0.4);
+  body.position.set(0, 0.5, 0.6);
   g.add(body);
   return g;
 }
