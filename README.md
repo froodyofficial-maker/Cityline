@@ -151,6 +151,23 @@ There are eleven chapters, from *Homecoming* to *Ember Falls*. They are fully st
 | T | Skip time (open world) |
 | F11 / Alt+Enter | Fullscreen (desktop app) |
 
+## Hype Cut (edit studio)
+
+`hypecut/index.html` is a separate app in this repo for making high-energy social media edits. It's one self-contained file: open it in Chrome, Edge, Firefox or Safari, straight from disk, with no install or build.
+
+- **One-click effects:** click an effect (or press 1 to 9) and it lands at the playhead. Near a cut, it snaps onto the cut. Every effect can be dragged, resized and given its own intensity on the timeline.
+  - Motion: Hard Shake, Rumble, Zoom Punch, Zoom Out, Whip Left/Right/Up, Spin 360, Beat Bounce
+  - Light: White Flash, Black Dip, Strobe, Invert Hit, Light Leak
+  - Glitch: RGB Split, Glitch, Pixelate In, VHS, Blur In
+  - Color grades (CCs): Teal & Orange, Mono Punch, Vivid Pop, Golden Hour, Ice Cold, Faded Film, Neon Night, Red Room
+  - Overlay: Text Slam, Cinema Bars, Vignette, Film Grain
+- **Beat sync:** add a song and its kick-drum hits and BPM are detected. You can also build a beat grid or tap B to mark beats. *Sync cuts to beats* retimes your clips so every cut lands on a beat. *On every cut* and *On every beat* copy an effect across the whole edit.
+- **Editing:** reorder clips by dragging, trim their edges, split (S), change speed, fill or fit the frame, and undo (Ctrl+Z).
+- **Formats:** 9:16, 4:5, 1:1 and 16:9.
+- **Export:** 720p or 1080p at 30 or 60 fps, as MP4 where the browser supports it and WebM otherwise. Export records the edit in real time, so keep the tab in front while it renders.
+
+It opens with a demo edit (generated footage and a 128 BPM beat) so you can try the effects straight away. Your first imported clip replaces the demo footage.
+
 ## Credits
 
 - three.js: MIT, © three.js authors. See `vendor/three/LICENSE`.
