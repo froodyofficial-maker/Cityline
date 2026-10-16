@@ -28,7 +28,7 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Music:** the heavy drone plays on the menu and under the death screen, always at its own pitch. On the floors it sits far back under a soft pad and a music box, and during a chase it drops out for your heartbeat.
 
-**Performance:** press **F3** to see frames per second and draw calls. When a floor loads, everything on it that never moves is merged into a few large meshes, which cuts draw calls by about 5 to 15 times. On a laptop with two GPUs, the launcher asks for the dedicated one. If it's still slow in a browser, set that browser to *High performance* in Windows Settings > System > Display > Graphics.
+**Performance:** press **F3** to see frames per second and draw calls. When a floor loads, everything on it that never moves is merged into a few large meshes, which cuts draw calls by about 5 to 15 times. On a laptop with two GPUs, set Microsoft Edge (which the launcher uses) to *High performance* in Windows Settings > System > Display > Graphics so it runs on the graphics card.
 
 **Windows launcher (small):** `npm run launcher:win` builds `offal-launcher/OFFAL.exe` (about 2 MB, needs Go). The game is embedded in the launcher. It opens the game in its own window using the Edge that comes with Windows, or Chrome, and saves to `%LOCALAPPDATA%\OFFAL`.
 

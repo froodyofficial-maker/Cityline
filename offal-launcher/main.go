@@ -46,11 +46,12 @@ func main() {
 			"--no-first-run",
 			"--no-default-browser-check",
 			"--ignore-gpu-blocklist",
-			"--force_high_performance_gpu", // laptops: the graphics card, not the chip built into the CPU
 			"--enable-gpu-rasterization",
 			"--disable-background-timer-throttling",
 			"--disable-renderer-backgrounding",
-			"--disable-features=Translate",
+			// RendererCodeIntegrity: some antivirus and security software makes Edge/Chrome pages crash with
+			// STATUS_ACCESS_VIOLATION when it is on
+			"--disable-features=Translate,RendererCodeIntegrity",
 			"--autoplay-policy=no-user-gesture-required",
 		}
 		if err := exec.Command(browser, args...).Start(); err == nil {
