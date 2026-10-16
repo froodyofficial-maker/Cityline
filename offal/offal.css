@@ -308,3 +308,5 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .dev-opt { display: flex; gap: 12px; align-items: center; justify-content: flex-start; text-align: left; padding: 9px 0; font-size: 14px; color: var(--bone); cursor: pointer; border-bottom: 1px solid rgba(80,60,30,.35); }
 .dev-btn { margin-top: 16px; font-size: 13px; letter-spacing: .2em; color: #d8b040; border: 1px solid #d8b040; padding: 9px 16px; }
 .dev-btn:hover { background: rgba(216,176,64,.15); }
+
+.safe-note { max-width: 520px; margin: -6px 0 18px; padding: 8px 12px; border: 1px dashed #4a3a20; font-size: 11px; line-height: 1.6; letter-spacing: .08em; color: #d8b040; }

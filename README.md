@@ -32,6 +32,8 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Windows launcher (small):** `npm run launcher:win` builds `offal-launcher/OFFAL.exe` (about 2 MB, needs Go). The game is embedded in the launcher. It opens the game in its own window using the Edge that comes with Windows, or Chrome, and saves to `%LOCALAPPDATA%\OFFAL`.
 
+**If the game crashes the browser or the PC:** the launcher passes no graphics flags, so Edge decides what the graphics driver can safely do. Run **OFFAL-safe.exe** (the same launcher under another name), or `OFFAL.exe --safe`, to draw everything on the processor without touching the graphics driver. It's slower but safe, and the menu says when it's on. If a session ends without the game window ever closing (the PC went down mid-game), the launcher switches to safe graphics by itself from then on. `OFFAL.exe --gpu` switches back.
+
 **Windows app (self-contained, about 80 MB):** `cd offal-desktop && npm ci && npm run dist:win` builds `offal-desktop/release/OFFAL-1.0.0-portable.exe` (run `npm run build:offal` in the repo root first). It needs no install. F11 or Alt+Enter toggles fullscreen. The *OFFAL desktop app* GitHub Actions workflow builds the same file.
 
 **Story mode (about 2.5 hours or more):** ten floors down to the bottom of the plant, and an ending.

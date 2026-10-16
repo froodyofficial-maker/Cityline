@@ -1369,6 +1369,9 @@ addEventListener('keydown', (e) => {
   } else if (e.code === 'Escape' && G.state === 'inv') closeInventory();
 });
 
+// the launcher opened us with safe graphics (no GPU): say so on the menu
+if (/[?&]safe=1/.test(window.location.search)) UI.$('safeNote').hidden = false;
+
 // ---------- dev mode ----------
 UI.$('devMode').addEventListener('change', (e) => { save.settings.dev = e.target.checked; writeSave(); });
 function openDevMenu() {

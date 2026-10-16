@@ -36,17 +36,32 @@ func main() {
 			fail("Could not unpack the game to " + page + ":\n" + err.Error())
 		}
 	}
-	u := (&url.URL{Scheme: "file", Path: "/" + filepath.ToSlash(page)}).String()
+	// safe graphics: the page is drawn on the processor and the graphics driver is never touched. Slower, but it
+	// can't take the machine down with it. Used when the exe is named OFFAL-safe (or run with --safe), and from the
+	// moment a session ends without the game window ever closing (the PC went down mid-game). --gpu turns it off again.
+	running, safeFile := filepath.Join(dir, "running"), filepath.Join(dir, "safe-graphics")
+	name := strings.ToLower(filepath.Base(os.Args[0]))
+	if hasArg("--gpu") {
+		os.Remove(safeFile)
+	} else if _, err := os.Stat(running); err == nil {
+		os.WriteFile(safeFile, []byte("The last session ended without the game closing, so OFFAL now starts with safe graphics.\nRun OFFAL.exe --gpu to use the graphics card again.\n"), 0o644)
+	}
+	_, safeErr := os.Stat(safeFile)
+	safe := safeErr == nil || hasArg("--safe") || strings.Contains(name, "safe")
+	q := ""
+	if safe {
+		q = "safe=1"
+	}
+	u := (&url.URL{Scheme: "file", Path: "/" + filepath.ToSlash(page), RawQuery: q}).String()
 
 	if browser := findBrowser(); browser != "" {
 		args := []string{
 			"--app=" + u,
 			"--user-data-dir=" + filepath.Join(dir, "profile"), // its own profile: own window, own save data
 			"--start-maximized",
+			// no graphics flags at all: Edge decides what the GPU and its driver can safely do
 			"--no-first-run",
 			"--no-default-browser-check",
-			"--ignore-gpu-blocklist",
-			"--enable-gpu-rasterization",
 			"--disable-background-timer-throttling",
 			"--disable-renderer-backgrounding",
 			// RendererCodeIntegrity: some antivirus and security software makes Edge/Chrome pages crash with
@@ -54,7 +69,15 @@ func main() {
 			"--disable-features=Translate,RendererCodeIntegrity",
 			"--autoplay-policy=no-user-gesture-required",
 		}
-		if err := exec.Command(browser, args...).Start(); err == nil {
+		if safe {
+			args = append(args, "--disable-gpu", "--disable-gpu-compositing", "--enable-unsafe-swiftshader")
+		}
+		cmd := exec.Command(browser, args...)
+		if err := cmd.Start(); err == nil {
+			// wait for the game window to close; if the machine goes down first, the marker is still there next time
+			os.WriteFile(running, []byte("1"), 0o644)
+			cmd.Wait()
+			os.Remove(running)
 			return
 		}
 	}
@@ -62,6 +85,15 @@ func main() {
 	if err := exec.Command("rundll32", "url.dll,FileProtocolHandler", page).Start(); err != nil {
 		fail("Could not open the game. You can open it yourself:\n" + page)
 	}
+}
+
+func hasArg(a string) bool {
+	for _, x := range os.Args[1:] {
+		if strings.EqualFold(x, a) {
+			return true
+		}
+	}
+	return false
 }
 
 func findBrowser() string {
