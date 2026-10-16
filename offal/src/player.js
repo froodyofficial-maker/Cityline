@@ -182,7 +182,7 @@ export class Player {
     this.vel.z += (tz - this.vel.z) * k;
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
-    collide(L, B, this.pos, 0.3, false, this.crouch && this.crouchT > 0.75); // crouched, you fit into a crouchway
+    if (!(w.dev && w.dev.noclip)) collide(L, B, this.pos, 0.3, false, this.crouch && this.crouchT > 0.75); // crouched, you fit into a crouchway (dev mode: walk through anything)
 
     // footsteps are noise
     const v = Math.hypot(this.vel.x, this.vel.z);

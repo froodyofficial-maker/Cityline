@@ -20,7 +20,6 @@
 <div id="slits"></div>
 <div id="fade"></div>
 <div id="skip">SPACE &middot; SKIP</div>
-<div id="radio"><i></i><b>WALKIE</b><span id="radioText"></span></div>
 
 <!-- content warning: also the click that unlocks audio -->
 <section id="warn" class="screen on">
@@ -88,6 +87,7 @@
       <button class="diff-card" data-act="diff" data-diff="hard"><b>HARD</b><span class="pace">He&rsquo;s a little faster than you</span><span>Footsteps, lockers and machinery carry further. He hears you breathe sooner.</span></button>
       <button class="diff-card" data-act="diff" data-diff="extreme"><b>EXTREME</b><span class="pace">He is faster than you</span><span>You will not outrun him. Everything is loud. Hide, or don&rsquo;t be seen.</span></button>
     </div>
+    <label class="dev-toggle"><input type="checkbox" id="devMode"><b>DEV MODE</b><span>Every floor&rsquo;s puzzle starts solved, and <kbd>~</kbd> (the key under Esc) opens a dev menu in game: walk through walls, make him unable to see or hear you, solve the floor.</span></label>
     <button class="back" data-act="back">Back</button>
   </div>
 </section>
@@ -140,6 +140,7 @@
     <div class="kp-help">TYPE THE CODE <kbd>0</kbd>&ndash;<kbd>9</kbd> &middot; <kbd>ENTER</kbd> TO TRY IT &middot; <kbd>E</kbd> TO STEP AWAY<br>A WRONG CODE SOUNDS THE ALARM</div>
   </div>
   <div id="pa"></div>
+  <div id="devBadge">DEV MODE &middot; <kbd>~</kbd> MENU</div>
 </section>
 
 <section id="inv" class="screen panel-screen">
@@ -148,13 +149,8 @@
     <div class="inv-grid" id="invParts"></div>
     <div class="inv-gun" id="invGun"></div>
     <div class="inv-row" id="invMisc"></div>
-    <div class="inv-log" id="invLog"></div>
     <p class="dim inv-help">TAB or ESC to put it away.</p>
   </div>
-</section>
-
-<section id="intro" class="screen">
-  <div class="intro-in"><div id="introLines"></div><p id="introGo" class="intro-go">PRESS ANY KEY TO CLOCK IN</p></div>
 </section>
 
 <section id="inspect" class="screen panel-screen">
@@ -169,6 +165,17 @@
   </div>
 </section>
 
+<section id="devmenu" class="screen panel-screen">
+  <div class="panel dark dev-panel">
+    <h2>DEV MENU</h2>
+    <label class="dev-opt"><input type="checkbox" id="devNoclip"> Walk through walls</label>
+    <label class="dev-opt"><input type="checkbox" id="devGhost"> The Foreman can&rsquo;t see or hear you</label>
+    <label class="dev-opt"><input type="checkbox" id="devPresolve"> Every floor&rsquo;s puzzle starts solved</label>
+    <button class="dev-btn" data-act="devsolve">Solve this floor&rsquo;s puzzle now</button>
+    <p class="dim inv-help"><kbd>~</kbd> or ESC to close.</p>
+  </div>
+</section>
+
 <section id="collection" class="screen panel-screen">
   <div class="panel paper coll-panel">
     <h2>COLLECTION</h2>
@@ -177,8 +184,6 @@
     <div class="coll-read" id="collRead"></div>
     <h3 class="set-h">WAYS YOU DIED, AND THE WAY OUT</h3>
     <div class="coll-cuts" id="collCuts"></div>
-    <h3 class="set-h">HIS NIGHT LOG <span id="collNoteCount"></span></h3>
-    <div class="coll-grid" id="collNotes"></div>
     <button class="back" data-act="back">Back</button>
   </div>
 </section>

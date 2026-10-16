@@ -120,30 +120,6 @@ export function pa(text) {
   paTimer = setTimeout(() => m.classList.remove('on'), 6500);
 }
 
-// the voice on the walkie: a few lines, one after another, each typed out with a squelch
-let radioTimers = [];
-export function radio(lines, sound, glitch = false) {
-  radioStop();
-  const r = $('radio'), t = $('radioText');
-  r.classList.toggle('glitch', glitch);
-  let at = 0;
-  lines.forEach((line, i) => {
-    radioTimers.push(setTimeout(() => {
-      r.classList.add('on');
-      if (sound) sound(line.length / 30 + 0.6, false);
-      typewrite(t, line, glitch ? 20 : 30);
-    }, at));
-    at += 900 + line.length * 55;
-    if (i === lines.length - 1) radioTimers.push(setTimeout(() => { r.classList.remove('on'); if (sound) sound(0, true); }, at + 800));
-  });
-  return at + 800;
-}
-export function radioStop() {
-  radioTimers.forEach(clearTimeout);
-  radioTimers = [];
-  $('radio').classList.remove('on');
-}
-
 let lastPrompt = null;
 export function prompt(text, progress = 0) {
   const p = $('prompt');

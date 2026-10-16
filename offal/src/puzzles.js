@@ -146,8 +146,7 @@ class Fuses {
       out.push({ pos: b.pos, range: 1.6, minFacing: 0.4, hold: 2.2, label: 'HOLD — SEARCH THE BODY BAG', tick: 'squelch', noise: 8,
         use: () => {
           b.searched = true;
-          b.obj.scale.y = 0.5;
-          b.obj.add(P.decal(this.ctx.mats.pool[0], 1.6, 0, 0, 1));
+          b.obj.userData.open();
           b.obj.add(P.entrails(this.ctx.mats, this.ctx.rng, new THREE.Vector3(0.2, 0.08, 0.1), 0.8, 9));
           this.ctx.G.audio.tear();
           if (b.hasFuse) { this.carry++; UI.message(['There’s a fuse in here, under the ribs. Wiped clean of nothing.', 'Your hand closes on glass. A fuse, still in one piece.'][this.carry % 2], 3); }
@@ -181,9 +180,11 @@ class Fuses {
   line() { return this.solved ? null : `FUSES ${this.inserted + this.carry}/${this.n}`; }
   title() { return `RESTORE POWER — FUSES <b>${this.inserted}/${this.n}</b>`; }
   liftMsg() { return 'NO POWER — THE FUSE BOX IS EMPTY'; }
+  // dev mode: as if you'd found and slotted every fuse
+  solve() { this.load({ ...this.save(), carry: 0, inserted: this.n, searched: this.bags.map(() => true) }); }
   save() { return { carry: this.carry, inserted: this.inserted, searched: this.bags.map((b) => b.searched) }; }
   load(s) {
-    s.searched.forEach((v, i) => { const b = this.bags[i]; if (v && b) { b.searched = true; b.obj.scale.y = 0.5; } });
+    s.searched.forEach((v, i) => { const b = this.bags[i]; if (v && b) { b.searched = true; b.obj.userData.open(); } });
     this.carry = s.carry;
     for (let i = 0; i < s.inserted; i++) this.sockets[i].material = new THREE.MeshBasicMaterial({ color: 0xffb040, fog: false });
     this.inserted = s.inserted;
@@ -294,6 +295,7 @@ class Keypad {
   line() { return this.opened ? null : `SHUTTER CODE ${this.known.map((k) => (k === null ? '_' : k)).join(' ')}`; }
   title() { return 'FIND THE SHUTTER CODE'; }
   liftMsg() { return null; }
+  solve() { this.load({ ...this.save(), read: this.notes.map(() => true), opened: true }); }
   save() { return { read: this.notes.map((n) => n.read), opened: this.opened }; }
   load(s) {
     s.read.forEach((r, i) => { const n = this.notes[i]; if (r && n) { n.read = true; this.known[n.i] = this.code[n.i]; } });
@@ -443,6 +445,7 @@ class Scale {
   }
   title() { return `BALANCE THE SCALE — EXACTLY <b>${this.target} KG</b>`; }
   liftMsg() { return `THE COUNTERWEIGHT IS JAMMED — THE SCALE MUST READ ${this.target} KG`; }
+  solve() { this.load({ on: [], carry: [], done: true }); }
   save() { return { on: this.on.map((c) => this.cuts.indexOf(c)), carry: this.carry.map((c) => this.cuts.indexOf(c)), done: this.done }; }
   load(s) {
     const take = (c) => { c.cut.visible = false; c.obj.children[c.obj.children.length - 1].visible = false; };
@@ -548,6 +551,7 @@ class Valves {
   line() { return this.solved ? null : this.known ? `VALVES ${this.glyphs()}` : 'VALVES: FIND THE RELEASE ORDER'; }
   title() { return 'RELEASE THE STEAM PRESSURE'; }
   liftMsg() { return 'THE BRAKE IS LOCKED BY STEAM — TURN THE VALVES IN ORDER'; }
+  solve() { if (!this.solved) this.load({ ...this.save(), progress: this.valves.length }); }
   save() { return { known: this.known, progress: this.progress }; }
   load(s) {
     this.known = s.known;
@@ -622,6 +626,11 @@ class Breakers {
   line() { return this.solved ? null : `KILL SWITCHES ${this.pulled}/${this.switches.length}`; }
   title() { return `STOP THE LINE — KILL SWITCHES <b>${this.pulled}/${this.switches.length}</b>`; }
   liftMsg() { return 'THE LIFT WON’T MOVE WHILE THE LINE IS RUNNING'; }
+  solve() {
+    const G = this.ctx.G;
+    for (const s of this.switches) if (!s.pulled) { s.pulled = true; s.lever.rotation.z = -0.6; s.lamp.material.color.setHex(0x30ff50); this.pulled++; }
+    G.audio.siren(true); G.audio.lineRunning(false); G.frenzy = true;
+  }
   save() { return { pulled: this.switches.map((s) => s.pulled) }; }
   load(st) {
     const G = this.ctx.G;
@@ -751,6 +760,7 @@ class Drawers {
   }
   title() { return `FIND THE WORKERS ON ICE \u2014 <b>${this.found}/${this.answers.length}</b>`; }
   liftMsg() { return 'THE MORGUE RELEASE ISN\u2019T SIGNED \u2014 FIND THE WORKERS IN THE INTAKE LOG'; }
+  solve() { this.load({ ...this.save(), found: this.answers.map(() => true) }); }
   save() { return { known: this.known, found: this.answers.map((a) => a.found), tried: this.banks.map((b) => b.drawers.map((d) => d.tried)) }; }
   load(s) {
     this.known = s.known;
@@ -819,6 +829,7 @@ class Sluices {
   line() { return this.solved ? null : `SLUICES ${this.opened}/${this.wheels.length}`; }
   title() { return `DRAIN THE SUMP — SLUICES <b>${this.opened}/${this.wheels.length}</b>`; }
   liftMsg() { return 'THE LIFT SUMP IS FLOODED — OPEN THE SLUICES'; }
+  solve() { this.load({ open: this.wheels.map(() => true) }); }
   save() { return { open: this.wheels.map((w) => w.open) }; }
   load(s) { s.open.forEach((v, i) => { if (this.wheels[i]) this.wheels[i].open = v; }); this.level = 1 - this.opened / Math.max(1, this.wheels.length); }
 }
@@ -873,6 +884,7 @@ class Keycard {
   line() { return this.found ? 'KEYCARD ✓' : `DESKS ${this.desks.filter((d) => d.searched).length}/${this.desks.length}`; }
   title() { return this.found ? 'KEYCARD FOUND — THE LIFT WILL TAKE IT' : 'FIND THE MANAGER’S KEYCARD — SEARCH THE DESKS'; }
   liftMsg() { return 'LOCKED — MANAGEMENT KEYCARD REQUIRED'; }
+  solve() { this.load({ ...this.save(), found: true }); }
   save() { return { found: this.found, searched: this.desks.map((d) => d.searched), has: this.desks.findIndex((d) => d.has) }; }
   load(s) { this.found = s.found; s.searched.forEach((v, i) => { if (this.desks[i]) this.desks[i].searched = v; }); this.desks.forEach((d, i) => (d.has = i === s.has)); }
 }
@@ -934,6 +946,7 @@ class MeatKey {
   line() { return this.found ? 'CAGE KEY ✓' : `CARCASSES ${this.sides.filter((c) => c.searched).length}/${this.sides.length}`; }
   title() { return this.found ? 'CAGE KEY FOUND — THE LIFT WILL OPEN' : 'FIND THE CAGE KEY — IT WAS HUNG UP WITH THE MEAT'; }
   liftMsg() { return 'THE LIFT CAGE IS PADLOCKED — FIND THE KEY'; }
+  solve() { this.load({ ...this.save(), found: true }); }
   save() { return { found: this.found, searched: this.sides.map((c) => c.searched), has: this.sides.findIndex((c) => c.has) }; }
   load(s) { this.found = s.found; s.searched.forEach((v, i) => { const c = this.sides[i]; if (c && v) { c.searched = true; c.wrap.visible = false; } }); this.sides.forEach((c, i) => (c.has = i === s.has)); }
 }
@@ -960,6 +973,8 @@ export class Puzzles {
   update(dt) { for (const p of this.list) if (p.update) p.update(dt); }
   dispose() { for (const p of this.list) if (p.dispose) p.dispose(); }
   get(kind) { return this.list.find((p) => p.kind === kind); }
+  // dev mode: every job on the floor done at once
+  solveAll() { for (const p of this.list) if (!p.solved && p.solve) p.solve(); }
   save() { return this.list.map((p) => ({ kind: p.kind, s: p.save() })); }
   load(arr) { for (const { kind, s } of arr || []) { const p = this.get(kind); if (p && s) p.load(s); } }
 }

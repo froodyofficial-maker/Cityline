@@ -108,7 +108,7 @@ export class Hunter {
 
   // anything loud: footsteps, cutting, a scream from a carcass
   hear(n) {
-    if (this.state === 'stunned') return;
+    if (this.state === 'stunned' || (this.w.dev && this.w.dev.ghost)) return;
     if (inCrawl(this.w.L, n.pos.x, n.pos.z)) return; // in a crouchway you're somewhere he can't go: he doesn't care
     if (this.state === 'chase' && this.pos.distanceTo(n.pos) < n.radius * this.w.D.hearing) { this.lastSeen = n.pos.clone(); this.lastVel = null; this.cast = null; return; } // still hunting: he follows the sound
     if (this.state === 'chase' || this.state === 'attack' || this.state === 'recover' || this.state === 'locker' || this.state === 'grab') return;
@@ -119,12 +119,17 @@ export class Hunter {
     this.target = n.pos.clone();
     this.lastSeen = n.pos.clone();
     if (this.state === 'patrol') this.w.audio.sniff(this.pos);
-    this.setState('investigate');
     this.awareness = Math.max(this.awareness, n.loud && d < r * 0.4 ? 0.7 : 0.3);
+    // he stops dead and turns toward it for a few seconds before he goes to look (less long the harder it is, and the closer and louder it was)
+    if (this.state !== 'heard' && this.state !== 'alert') {
+      this.setState('heard');
+      this.heardFor = (1.2 + this.w.D.alert * 1.6) * (this.awareness >= 0.7 ? 0.55 : 1) * (0.85 + Math.random() * 0.3);
+    }
   }
 
   canSee() {
     const pl = this.w.player;
+    if (this.w.dev && this.w.dev.ghost) return false; // dev mode: you're not there
     if (pl.hidden || pl.inLift && this.w.liftSealed || pl.inCrawl || this.state === 'stunned') return false;
     const dx = pl.pos.x - this.pos.x, dz = pl.pos.z - this.pos.z, d = Math.hypot(dx, dz);
     if (d > 26) return false;
@@ -176,7 +181,7 @@ export class Hunter {
     const dP = toP.length();
 
     // you went where he can't follow: he gives up and goes off somewhere else
-    if (pl.inCrawl && ['chase', 'attack', 'recover', 'alert', 'investigate', 'search', 'locker'].includes(this.state)) {
+    if (pl.inCrawl && ['chase', 'attack', 'recover', 'alert', 'heard', 'investigate', 'listen', 'search', 'locker'].includes(this.state)) {
       if (['chase', 'attack', 'recover'].includes(this.state)) w.audio.growl(this.pos, 1);
       this.awareness = 0;
       this.lastSeen = null;
@@ -223,11 +228,30 @@ export class Hunter {
         turn = 2;
         if (this.stateT > D.alert) { this.setState('investigate'); }
         break;
+      case 'heard': // stock still, turned toward the sound, listening
+        speed = 0;
+        goal = this.target;
+        turn = 2.2;
+        if (this.stateT > this.heardFor) this.setState('investigate');
+        break;
       case 'investigate':
         speed = 2.5 * D.speedMul;
         if (!this.path || this.pathT > 2) this.pathTo(this.target);
-        if (this.pos.distanceTo(this.target) < 1.2 || (this.path && !this.path.length)) this.setState('search');
+        if (this.pos.distanceTo(this.target) < 1.2 || (this.path && !this.path.length)) {
+          this.setState('listen');
+          this.lookBase = this.yaw;
+          this.listenFor = 3 + Math.random() * 1.5;
+          w.audio.sniff(this.pos);
+        }
         break;
+      case 'listen': { // where the sound was: stands there, the head going slowly left and right
+        speed = 0;
+        turn = 1.6;
+        const a = this.lookBase + Math.sin(this.stateT * 1.15) * 1.3;
+        goal = { x: this.pos.x + Math.sin(a), z: this.pos.z + Math.cos(a) };
+        if (this.stateT > this.listenFor) this.setState('search');
+        break;
+      }
       case 'search':
         speed = 1.7 * D.speedMul;
         if (this.stateT > 14) { this.setState('patrol'); this.awareness = 0; this.checked.clear(); break; }
@@ -334,7 +358,8 @@ export class Hunter {
     // steering
     if (!goal && this.path && this.path.length) {
       // cut corners wherever the straight line is clear
-      for (let k = 0; k < 16 && this.path.length > 1 && pathClear(L, w.B, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z); k++) this.path.shift();
+      // (not while he's working himself loose from something: then he keeps to the grid)
+      if (!(this.unstickT > 0)) for (let k = 0; k < 16 && this.path.length > 1 && pathClear(L, w.B, this.pos.x, this.pos.z, this.path[1].x, this.path[1].z); k++) this.path.shift();
       goal = this.path[0];
       if (this.pos.distanceTo(goal) < 0.3) { this.path.shift(); goal = this.path[0] || null; }
     }
@@ -347,8 +372,10 @@ export class Hunter {
         const want = Math.atan2(dx, dz);
         let diff = ((want - this.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
         this.yaw += Math.max(-turn * dt, Math.min(turn * dt, diff));
-        if (hunting) { moveSpeed = speed; mx = dx / dist; mz = dz / dist; }
-        else moveSpeed = speed * Math.max(0, Math.cos(diff));
+        // he always moves toward where he's going, never sideways along where he happens to face; walking,
+        // he slows right down for a sharp turn so the body has time to come round
+        mx = dx / dist; mz = dz / dist;
+        moveSpeed = hunting ? speed : speed * Math.max(0.2, Math.cos(diff));
       }
     }
     this.speed += (moveSpeed - this.speed) * Math.min(1, dt * (hunting ? 10 : 5));
@@ -362,7 +389,13 @@ export class Hunter {
     if (this.stuck.t > 1.5) {
       const moved = Math.hypot(this.pos.x - this.stuck.x, this.pos.z - this.stuck.z);
       // wedged on something: follow the grid path for a bit instead of pushing straight
-      if (moved < 0.15 && speed > 0.5) { this.path = null; this.unstickT = 1.5; if (this.state === 'patrol') this.pickPatrol(); }
+      if (moved < 0.15 && speed > 0.5) {
+        // wedged: back off a step, then follow the grid cell by cell for a while instead of cutting the corner again
+        this.pos.x -= Math.sin(this.yaw) * 0.3; this.pos.z -= Math.cos(this.yaw) * 0.3;
+        collide(L, w.B, this.pos, 0.34, true);
+        this.path = null; this.unstickT = 2.5;
+        if (this.state === 'patrol') this.pickPatrol();
+      }
       this.stuck = { t: 0, x: this.pos.x, z: this.pos.z };
     }
 

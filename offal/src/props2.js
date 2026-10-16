@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { keepsakeModel } from './keepsakes3d.js';
 import { WALL_H } from './config.js';
-import { mesh, geo, box, sph, cyl, cap, decal, makeBody, trayBody, meatChunk, severedArm } from './props.js';
+import { mesh, geo, box, sph, cyl, cap, decal, makeBody, trayBody, meatChunk, severedArm, layOn } from './props.js';
 import { canvas, BLOOD, wallSplat } from './textures.js';
 
 const phong = (o) => new THREE.MeshPhongMaterial(o);
@@ -149,10 +149,10 @@ export function hospitalBed(mats, rng) {
   g.add(at(mesh(box(0.95, 0.12, 2.0), m.porcelain), 0, 0.55, 0));
   for (const [x, z] of [[-0.42, -0.95], [0.42, -0.95], [-0.42, 0.95], [0.42, 0.95]]) g.add(at(mesh(cyl(0.02, 0.02, 0.55, 5), m.chrome, false), x, 0.27, z));
   const head = mesh(box(0.95, 0.5, 0.04), m.chrome); g.add(at(head, 0, 0.85, -1.0));
-  // trayBody lays its pelvis 0.55 m toward its own -Z; this puts the pelvis just off centre, head on the pillow end
+  // head on the pillow end, the whole of it on the mattress
   const body = trayBody(mats, rng);
-  body.position.set(0, 0.5, 0.6);
   g.add(body);
+  layOn(body, -0.47, 0.47, -0.96, 1.0, 0.61);
   return g;
 }
 // specimen jars on a shelf: things kept in fluid that should not have been kept

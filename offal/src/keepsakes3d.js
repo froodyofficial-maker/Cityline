@@ -3,7 +3,6 @@
 // keepsakeModel(id) builds one; KeepsakeViewer shows one big, lit, to drag round and zoom into.
 import * as THREE from 'three';
 import { canvas } from './textures.js';
-import { BEATS } from './story.js';
 
 const phong = (o) => new THREE.MeshPhongMaterial(o);
 const tex = (w, h, draw) => { const { c, g } = canvas(w, h); draw(g, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; };
@@ -208,46 +207,8 @@ function misc(id) {
   return g;
 }
 
-// a page torn out of your father's night log: lined, handwritten, folded once
-function logPage(n) {
-  const text = (BEATS[n - 1] || BEATS[0]).note;
-  const t = tex(384, 512, (g, w, h) => {
-    g.fillStyle = '#e4dcc4'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = 'rgba(70,110,170,.45)'; g.lineWidth = 1;
-    for (let y = 70; y < h; y += 26) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-    g.strokeStyle = 'rgba(190,60,60,.5)'; g.beginPath(); g.moveTo(44, 0); g.lineTo(44, h); g.stroke();
-    // the torn top edge
-    g.fillStyle = '#100a08'; g.beginPath(); g.moveTo(0, 0); for (let x = 0; x <= w; x += 8) g.lineTo(x, 4 + Math.random() * 9); g.lineTo(w, 0); g.fill();
-    g.fillStyle = '#7a1a10'; g.font = 'bold 13px monospace'; g.fillText(`D. HOLLIS  No. 0451  p.${n}`, 52, 40);
-    g.fillStyle = '#1c1a3a'; g.font = '19px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
-    // wrap the note onto the lines, a little drunkenly
-    let y = 92;
-    for (const para of text.split('\n')) {
-      let line = '';
-      for (const word of para.split(' ')) {
-        const tryL = line ? line + ' ' + word : word;
-        if (g.measureText(tryL).width > w - 70) { g.save(); g.translate(52, y); g.rotate((Math.random() - 0.5) * 0.02); g.fillText(line, 0, 0); g.restore(); y += 26; line = word; } else line = tryL;
-      }
-      g.save(); g.translate(52, y); g.rotate((Math.random() - 0.5) * 0.02); g.fillText(line, 0, 0); g.restore(); y += 34;
-    }
-    age(g, w, h, 140); blood(g, w, h, n > 6 ? 4 : 2);
-    g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke(); // the fold
-  });
-  const back = tex(64, 64, (g) => { g.fillStyle = '#d8d0b8'; g.fillRect(0, 0, 64, 64); age(g, 64, 64, 30); });
-  const side = phong({ color: 0xd8d0b8 });
-  const geo = new THREE.BoxGeometry(0.15, 0.2, 0.001, 1, 8, 1);
-  // a soft bow along the fold
-  const pos = geo.attributes.position;
-  for (let i = 0; i < pos.count; i++) pos.setZ(i, pos.getZ(i) + Math.abs(pos.getY(i)) * 0.08);
-  geo.computeVertexNormals();
-  const m = mesh(geo, [side, side, side, side, phong({ map: t, shininess: 8 }), phong({ map: back })]);
-  const g = new THREE.Group(); g.add(m);
-  return g;
-}
-
 export function keepsakeModel(id) {
   const kind = id.split('-')[0];
-  if (kind === 'note') return logPage(+id.split('-')[1]);
   if (kind === 'photo') return photo(id);
   if (kind === 'card') return card(id);
   if (id === 'toy-bear') return bear();

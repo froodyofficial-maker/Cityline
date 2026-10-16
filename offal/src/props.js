@@ -493,6 +493,21 @@ export function butcherTable(mats, rng) {
   return g;
 }
 
+// put something that's lying down fully on a surface: measures it, centres it on the rectangle x0..x1 / z0..z1,
+// sets it down on top, and shrinks it a little if it's longer than the surface (only the length counts: an elbow
+// over the edge of a narrow tray is fine). Call before the prop is placed.
+export function layOn(obj, x0, x1, z0, z1, top, margin = 0.04) {
+  obj.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(obj), size = bb.getSize(new THREE.Vector3());
+  const fit = Math.min(1, x1 - x0 > z1 - z0 ? (x1 - x0 - margin * 2) / Math.max(1e-3, size.x) : (z1 - z0 - margin * 2) / Math.max(1e-3, size.z));
+  if (fit < 1) { obj.scale.multiplyScalar(fit); obj.updateMatrixWorld(true); bb.setFromObject(obj); }
+  const c = bb.getCenter(new THREE.Vector3());
+  obj.position.x += (x0 + x1) / 2 - c.x;
+  obj.position.z += (z0 + z1) / 2 - c.z;
+  obj.position.y += top - bb.min.y;
+  return obj;
+}
+
 export function gurney(mats, rng) {
   const g = new THREE.Group();
   const frame = mesh(box(1.9, 0.04, 0.65), mats.steel);
@@ -517,6 +532,7 @@ export function gurney(mats, rng) {
   l.position.x = -0.65;
   body.add(t, h, l);
   g.add(body);
+  layOn(body, -0.95, 0.95, -0.325, 0.325, 0.77);
   if (rng() < 0.6) { // an arm slipped out from under the sheet
     const arm = limb(mats.skinGrey, 0.5, 0.045);
     arm.position.set(0.25, 0.8, 0.3);
@@ -527,17 +543,91 @@ export function gurney(mats, rng) {
   return g;
 }
 
-export function bodyBag(mats, rng) {
-  const g = new THREE.Group();
-  const b = mesh(cap(0.22, 1.2), mats.bag);
-  b.rotation.z = Math.PI / 2;
-  b.scale.set(0.5, 1, 1);
-  b.position.y = 0.11;
-  g.add(b);
-  if (rng() < 0.5) {
-    const ooze = decal(mats.pool[(rng() * 3) | 0], 1.4, 0.2, 0, rng() * 6);
-    g.add(ooze);
+// a body bag: heavy black vinyl taking the shape of whoever's inside (feet up, shoulders, the head), a zip
+// down the middle with its pull at the head, carrying handles down both sides, creased and filthy.
+// userData.open() unzips it to show what's in there (the fuse puzzle searches them).
+const BAG_L = 1.95;
+const BAG_PROFILE = [[-1, 0.1, 0.09], [-0.88, 0.15, 0.17], [-0.72, 0.15, 0.1], [-0.42, 0.19, 0.11], [-0.05, 0.25, 0.13], [0.25, 0.24, 0.15], [0.5, 0.28, 0.16], [0.68, 0.17, 0.11], [0.84, 0.15, 0.15], [1, 0.09, 0.09]];
+function bagAt(u) { // half-width and height of the bag at u (-1 feet .. 1 head)
+  let i = 0;
+  while (i < BAG_PROFILE.length - 2 && u > BAG_PROFILE[i + 1][0]) i++;
+  const [u0, w0, h0] = BAG_PROFILE[i], [u1, w1, h1] = BAG_PROFILE[i + 1], t = Math.min(1, Math.max(0, (u - u0) / (u1 - u0))), k = t * t * (3 - 2 * t);
+  return [w0 + (w1 - w0) * k, h0 + (h1 - h0) * k];
+}
+function bagMaterial(mats) {
+  if (mats.bagV) return mats.bagV;
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a1d1f'; g.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 260; i++) { // creases: the vinyl folds where it has been lifted and dropped
+    const x = Math.random() * 512, y = Math.random() * 256, l = 10 + Math.random() * 60, a = (Math.random() - 0.5) * 1.2 + (Math.random() < 0.5 ? 0 : Math.PI / 2);
+    g.strokeStyle = `rgba(${Math.random() < 0.5 ? '120,128,132' : '0,0,0'},${0.08 + Math.random() * 0.22})`; g.lineWidth = 0.6 + Math.random() * 1.8;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l * 0.5 + (Math.random() - 0.5) * 6, y + Math.sin(a) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
   }
+  for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${70 + Math.random() * 40 | 0},${60 + Math.random() * 30 | 0},50,${Math.random() * 0.12})`; g.beginPath(); g.arc(Math.random() * 512, Math.random() * 256, 3 + Math.random() * 18, 0, 7); g.fill(); } // dust and grime
+  for (let i = 0; i < 4; i++) { g.fillStyle = `rgba(60,4,2,${0.5 + Math.random() * 0.4})`; const x = Math.random() * 512, y = Math.random() * 256; g.beginPath(); g.ellipse(x, y, 8 + Math.random() * 30, 4 + Math.random() * 12, Math.random() * 3, 0, 7); g.fill(); } // old blood
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  mats.bagV = {
+    vinyl: new THREE.MeshPhongMaterial({ map: t, bumpMap: t, bumpScale: 2, shininess: 38, specular: 0x30363a }),
+    zip: new THREE.MeshPhongMaterial({ color: 0x3a3c3e, shininess: 90, specular: 0x888888 }),
+    strap: new THREE.MeshPhongMaterial({ color: 0x101112, shininess: 20 }),
+  };
+  return mats.bagV;
+}
+const bagGeo = () => geo('bodybag2', () => {
+  const g = new THREE.SphereGeometry(1, 48, 22);
+  g.rotateZ(Math.PI / 2); // the poles along x: feet at -x, head at +x
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const u = Math.max(-1, Math.min(1, p.getX(i))), ring = Math.sqrt(Math.max(0, 1 - u * u));
+    const dy = ring > 1e-5 ? p.getY(i) / ring : 0, dz = ring > 1e-5 ? p.getZ(i) / ring : 0;
+    const [w, h] = bagAt(u), e = Math.pow(ring, 0.3); // blunt, rounded ends
+    let y = dy * h * e;
+    if (y < 0) y *= 0.25; // it lies flat on the floor
+    p.setXYZ(i, (u * BAG_L) / 2, y + 0.03, dz * w * e);
+  }
+  g.computeVertexNormals();
+  return g;
+});
+export function bodyBag(mats, rng) {
+  const g = new THREE.Group(), m = bagMaterial(mats);
+  const bag = mesh(bagGeo(), m.vinyl);
+  g.add(bag);
+  // the zip, along the top from the shins to the head, and the pull
+  const pts = [];
+  for (let u = -0.74; u <= 0.86; u += 0.08) { const [, h] = bagAt(u); pts.push(new THREE.Vector3((u * BAG_L) / 2, h * Math.pow(Math.max(0, 1 - u * u), 0.15) + 0.033, 0)); }
+  const zip = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.008, 5, false), m.zip, false);
+  g.add(zip);
+  const pull = mesh(box(0.05, 0.008, 0.022), m.zip, false); pull.position.copy(pts[pts.length - 1]).add(new THREE.Vector3(0.03, 0.004, 0.012)); pull.rotation.y = 0.5; g.add(pull);
+  // carrying handles, three down each side
+  for (const sd of [-1, 1]) for (const u of [-0.55, 0.05, 0.6]) {
+    const [w] = bagAt(u);
+    const hd = mesh(geo('baghandle', () => new THREE.TorusGeometry(0.04, 0.009, 4, 10, Math.PI)), m.strap, false);
+    hd.position.set((u * BAG_L) / 2, 0.05, sd * (w + 0.005)); hd.rotation.set(sd * Math.PI / 2, 0, 0); g.add(hd);
+  }
+  if (rng() < 0.5) g.add(decal(mats.pool[(rng() * 3) | 0], 1.4, 0.2, 0, rng() * 6));
+  // searched: the zip pulled most of the way open, and a grey face and a hand in the gap
+  g.userData.open = () => {
+    if (g.userData.opened) return;
+    g.userData.opened = true;
+    zip.visible = false; pull.visible = false;
+    // the gap where the zip was, following the top of the bag, and its two edges peeled back
+    const curve = new THREE.CatmullRomCurve3(pts.slice(2).map((v) => v.clone().add(new THREE.Vector3(0, -0.006, 0))));
+    // a dark tube sunk into the top so only a strip of it shows: the opening
+    const sunk = new THREE.CatmullRomCurve3(curve.points.map((v) => v.clone().add(new THREE.Vector3(0, -0.018, 0))));
+    g.add(mesh(new THREE.TubeGeometry(sunk, 40, 0.034, 8, false), new THREE.MeshBasicMaterial({ color: 0x070404 }), false));
+    for (const sd of [-1, 1]) {
+      const edge = new THREE.CatmullRomCurve3(curve.points.map((v, i) => v.clone().add(new THREE.Vector3(0, 0.006, sd * (0.045 + Math.sin((i / curve.points.length) * Math.PI) * 0.03)))));
+      g.add(mesh(new THREE.TubeGeometry(edge, 40, 0.013, 6, false), m.vinyl, false));
+    }
+    // a grey face showing through at the head end, and a hand
+    const hp = pts[pts.length - 2];
+    const face = mesh(sph(0.085, 12), mats.skinGrey, false); face.scale.set(1.15, 0.5, 0.8); face.position.set(hp.x, hp.y - 0.025, 0); g.add(face);
+    const nose = mesh(sph(0.018, 6), mats.skinGrey, false); nose.position.set(hp.x + 0.01, hp.y + 0.012, 0); g.add(nose);
+    const mp = pts[Math.floor(pts.length * 0.45)];
+    const hand = mesh(box(0.11, 0.025, 0.06), mats.skinGrey, false); hand.position.set(mp.x, mp.y - 0.004, 0.02); hand.rotation.y = 0.35; g.add(hand);
+    g.add(decal(mats.pool[0], 1.6, 0, 0, 1));
+  };
   return g;
 }
 
@@ -724,7 +814,7 @@ export function drawerBank(mats, rng, labelTex, bodies = 0.6) {
     const tray = mesh(box(0.5, 0.03, 1.8), mats.steel, false);
     tray.position.set(0, -0.2, -0.62);
     grp.add(front, handle, tray);
-    if (rng() < bodies) { const b = trayBody(mats, rng); b.position.y = -0.2; grp.add(b); }
+    if (rng() < bodies) { const b = trayBody(mats, rng); grp.add(b); layOn(b, -0.25, 0.25, -1.5, 0.22, -0.185, 0.02); }
     group.add(grp);
     drawers.push({ grp, local: new THREE.Vector3(x, y, 0.3), open: 0, target: 0 });
   }
@@ -745,8 +835,8 @@ export function autopsyTable(mats, rng) {
   g.add(top, lip, lip2, ped);
   const body = trayBody(mats, rng);
   body.rotation.y = Math.PI / 2;
-  body.position.set(-0.4, 0.95, 0);
   g.add(body);
+  layOn(body, -1, 1, -0.36, 0.36, 0.95);
   if (rng() < 0.6) { const guts = entrails(mats, rng, new THREE.Vector3(0.2, 1.05, 0.1), 0.5, 7); g.add(guts); }
   g.add(decal(mats.pool[(rng() * 3) | 0], 1.4, 0, 0, rng() * 6));
   return g;

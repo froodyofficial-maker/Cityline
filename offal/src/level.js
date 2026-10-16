@@ -1019,6 +1019,12 @@ export function collide(L, B, p, r, hunter = false, crawlOpen = false) {
 export function pathClear(L, B, ax, az, bx, bz, r = 0.36) {
   if (!lineOfSight(L, ax, az, bx, bz)) return false;
   const dx = bx - ax, dz = bz - az;
+  // his shoulders as well as his middle: the two edges of the strip he sweeps must miss the walls too
+  const len = Math.hypot(dx, dz);
+  if (len > 1e-6) {
+    const nx = (-dz / len) * r, nz = (dx / len) * r;
+    if (!lineOfSight(L, ax + nx, az + nz, bx + nx, bz + nz) || !lineOfSight(L, ax - nx, az - nz, bx - nx, bz - nz)) return false;
+  }
   for (const c of B.colliders) {
     if (c.off || !c.hunters) continue;
     // slab test against the box grown by r
