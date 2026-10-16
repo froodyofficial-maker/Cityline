@@ -155,18 +155,23 @@ There are eleven chapters, from *Homecoming* to *Ember Falls*. They are fully st
 
 `hypecut/index.html` is a separate app in this repo for making high-energy social media edits. It's one self-contained file: open it in Chrome, Edge, Firefox or Safari, straight from disk, with no install or build.
 
-- **One-click effects:** click an effect (or press 1 to 9) and it lands at the playhead. Near a cut, it snaps onto the cut. Every effect can be dragged, resized and given its own intensity on the timeline.
-  - Motion: Hard Shake, Rumble, Zoom Punch, Zoom Out, Whip Left/Right/Up, Spin 360, Beat Bounce
-  - Light: White Flash, Black Dip, Strobe, Invert Hit, Light Leak
-  - Glitch: RGB Split, Glitch, Pixelate In, VHS, Blur In
-  - Color grades (CCs): Teal & Orange, Mono Punch, Vivid Pop, Golden Hour, Ice Cold, Faded Film, Neon Night, Red Room
-  - Overlay: Text Slam, Cinema Bars, Vignette, Film Grain
-- **Beat sync:** add a song and its kick-drum hits and BPM are detected. You can also build a beat grid or tap B to mark beats. *Sync cuts to beats* retimes your clips so every cut lands on a beat. *On every cut* and *On every beat* copy an effect across the whole edit.
-- **Editing:** reorder clips by dragging, trim their edges, split (S), change speed, fill or fit the frame, and undo (Ctrl+Z).
-- **Formats:** 9:16, 4:5, 1:1 and 16:9.
-- **Export:** 720p or 1080p at 30 or 60 fps, as MP4 where the browser supports it and WebM otherwise. Export records the edit in real time, so keep the tab in front while it renders.
-
-It opens with a demo edit (generated footage and a 128 BPM beat) so you can try the effects straight away. Your first imported clip replaces the demo footage.
+- **Home screen:** your projects with thumbnails (rename, duplicate, delete), new projects in 9:16, 4:5, 1:1 or 16:9, six one-click styles, and a demo edit. Projects and their media are saved in the browser (IndexedDB) as you work.
+- **79 built-in effects, each with its own settings:**
+  - **Shake:** Hard Shake, Handheld, Earthquake, Shake Sideways/Vertical, Twitch, Rumble, Wobble, Impact. Shakes use layered smooth noise with motion blur along the direction of travel, and you set strength, speed, rotation, blur, direction and fade.
+  - **Zoom:** Zoom Punch, Zoom In, Zoom Out, Crash Zoom, Zoom Bounce, Slow Push, Zoom Pulse (on the song's BPM), Tile Zoom Out. Zooms take a focus point and a curve (snap, smooth, overshoot, bounce, expo), and their blur follows zoom speed.
+  - **Motion:** whips in four directions, Spin, Tilt Hit, Swing, Slide In, Drop In, Squash, Flip, Beat Bounce.
+  - **Transitions that blend two clips across a cut:** Crossfade, Zoom Blend, Push, Slide Over, Spin Blend, Flash Blend, Blur Dissolve, Glitch Blend, Wipe, Iris, Stretch Blend.
+  - **Light:** white and color flashes, Black Dip, Strobe, Color Strobe, Invert Hit, Light Leak, Glow, Exposure Pulse.
+  - **Glitch and distort:** RGB Split, Glitch, Pixelate In, VHS, Blur In, Wave, Lens Bulge, Twirl, Echo Trails, Chroma Wobble.
+  - **Stylize:** Mirror, Kaleidoscope, Grid Split, Posterize, Duotone, Edge Glow, Thermal, Night Vision.
+  - **Color grades (CCs):** 14 presets, a Custom Grade, and your own .cube LUTs.
+  - **Text and overlay:** animated text (slam, pop, typewriter, flicker, rise, glitch) in six fonts or your own; Cinema Bars, Shutter Blink, Vignette, Film Grain, Dust & Scratches, Scanlines.
+- **Keyframes:** each clip has keyframes for zoom, position, rotation, opacity, blur, brightness, saturation and speed. Each keyframe has its own easing. There are presets (slow push, Ken Burns, sway, drop in, fade) and speed ramps (velocity, slow-mo hit, speed up/down, pulse) that keep the clip's slot on the timeline. Keyframe marks can be dragged on the timeline.
+- **Beats:** kick, snare or full-band detection with a sensitivity control; a BPM grid with tap tempo, half and double; snap to grid, keep every second beat, and nudge ±10 ms. Mark beats live with B, or click and drag in the beat lane. *Sync cuts to beats* retimes your clips.
+- **Audio:** 11 synthesised sound effects (whoosh, boom, impact, riser, bass drop and more), your own sounds, and per-clip sound volume.
+- **Your own files:** clips, music, sound effects, overlays (with blend modes and green-screen removal), fonts (.ttf/.otf/.woff) and LUTs (.cube).
+- **Tutorial:** a guided tour that runs on first launch. You can replay it from the ? button or the home screen.
+- **Export:** 720p or 1080p at 30 or 60 fps, as MP4 where the browser supports it and WebM otherwise. Export records in real time, so keep the tab in front while it renders.
 
 ## Credits
 
