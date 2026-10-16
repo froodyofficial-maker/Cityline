@@ -36,6 +36,14 @@ func main() {
 			fail("Could not unpack the game to " + page + ":\n" + err.Error())
 		}
 	}
+	// Edge keeps compiled graphics programs in the profile. If the PC goes down while it is writing them they are
+	// left corrupt, and every launch after that crashes the page (STATUS_ACCESS_VIOLATION, ILLEGAL_INSTRUCTION...).
+	// They are only a cache: throw them away every time. The saves are in Local Storage, which is left alone.
+	profile := filepath.Join(dir, "profile")
+	for _, c := range []string{"GrShaderCache", "ShaderCache", "GraphiteDawnCache", "Default/GPUCache", "Default/DawnGraphiteCache", "Default/DawnWebGPUCache", "Default/Code Cache"} {
+		os.RemoveAll(filepath.Join(profile, filepath.FromSlash(c)))
+	}
+
 	// safe graphics: the page is drawn on the processor and the graphics driver is never touched. Slower, but it
 	// can't take the machine down with it. Used when the exe is named OFFAL-safe (or run with --safe), and from the
 	// moment a session ends without the game window ever closing (the PC went down mid-game). --gpu turns it off again.
@@ -57,7 +65,7 @@ func main() {
 	if browser := findBrowser(); browser != "" {
 		args := []string{
 			"--app=" + u,
-			"--user-data-dir=" + filepath.Join(dir, "profile"), // its own profile: own window, own save data
+			"--user-data-dir=" + profile, // its own profile: own window, own save data
 			"--start-maximized",
 			// no graphics flags at all: Edge decides what the GPU and its driver can safely do
 			"--no-first-run",
