@@ -17,6 +17,18 @@ export const sph = (r, s = 10) => geo(`s${r}_${s}`, () => new THREE.SphereGeomet
 export const cyl = (r0, r1, h, s = 8) => geo(`c${r0}_${r1}_${h}_${s}`, () => new THREE.CylinderGeometry(r0, r1, h, s));
 export const cap = (r, len) => geo(`k${r}_${len}`, () => new THREE.CapsuleGeometry(r, len, 3, 8));
 
+// a turned (lathed) shape: profile is [[t, r], ...], t 0 at the joint .. 1 at the far end, hanging down -Y
+export const turned = (key, len, profile, seg = 12) => geo(`t_${key}`, () => {
+  const g = new THREE.LatheGeometry(profile.slice().reverse().map(([t, r]) => new THREE.Vector2(Math.max(0.001, r), -t * len)), seg);
+  g.computeVertexNormals();
+  return g;
+});
+// a limb with a real shape (thicker where the muscle is, thin at the joints) hanging from its joint
+export function shapedLimb(mat, key, len, profile) {
+  const g = new THREE.Group();
+  g.add(mesh(turned(key, len, profile), mat));
+  return g;
+}
 // a limb hanging from its joint: the group's origin is the joint, the limb runs down -Y
 export function limb(mat, len, r) {
   const g = new THREE.Group();
@@ -105,25 +117,33 @@ export function decal(mat, size, x, z, rot = 0, y = 0.012) {
 // and you, in the cutscenes. Built standing, facing +Z, origin at the pelvis; every joint is a group to pose.
 export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, bald = false, dead = true } = {}) {
   // the dead go grey and mottled; the bleach in the picture turns live-looking skin chalk white
-  mats.skinDead ||= [mats.skin, mats.skinGrey].map((m) => new THREE.MeshPhongMaterial({ map: m.map, color: 0x8c8a7e, shininess: 25, specular: 0x1a1a1a }));
+  mats.skinDead ||= [mats.skin, mats.skinGrey].map((m, i) => new THREE.MeshPhongMaterial({ map: m.map, color: i ? 0xa8a49c : 0xb4a89a, shininess: 25, specular: 0x1a1a1a }));
   skin ||= dead ? mats.skinDead[(rng() * 2) | 0] : rng() < 0.5 ? mats.skin : mats.skinGrey;
   cloth = naked ? skin : cloth || (rng() < 0.5 ? mats.coverall : mats.coverall2);
   const root = new THREE.Group();
-  const pelvis = mesh(cap(0.105, 0.17), cloth);
-  pelvis.rotation.z = Math.PI / 2;
-  pelvis.scale.set(1, 1, 0.78);
+  // the hips: a wide, flattened bowl the legs hang from
+  const pelvis = mesh(turned('pelvis', 0.2, [[0, 0.135], [0.35, 0.16], [0.7, 0.155], [1, 0.1]], 14), cloth);
+  pelvis.position.y = 0.09;
+  pelvis.scale.set(1, 1, 0.68);
   root.add(pelvis);
   const torso = new THREE.Group();
   torso.position.y = 0.07;
   root.add(torso);
-  const belly = mesh(cyl(0.15, 0.135, 0.24, 10), cloth);
-  belly.position.y = 0.12;
-  belly.scale.z = 0.72;
-  const chest = mesh(cyl(0.185, 0.152, 0.27, 10), cloth);
-  chest.position.y = 0.37;
-  chest.scale.z = 0.66;
+  // the trunk: a waist, the ribcage widening to the chest, the shoulders rounding off to the neck
+  const belly = mesh(turned('belly', 0.24, [[0, 0.142], [0.45, 0.13], [1, 0.145]], 14), cloth);
+  belly.rotation.x = Math.PI;
+  belly.position.y = 0.0;
+  belly.scale.z = 0.7;
+  const chest = mesh(turned('chest', 0.3, [[0, 0.145], [0.35, 0.168], [0.7, 0.178], [0.9, 0.15], [1, 0.07]], 14), cloth);
+  chest.rotation.x = Math.PI;
+  chest.position.y = 0.235;
+  chest.scale.set(1.08, 1, 0.64);
   torso.add(belly, chest);
-  for (const sx of [-1, 1]) { const sh = mesh(sph(0.07, 8), cloth); sh.position.set(sx * 0.175, 0.46, 0); sh.scale.set(1, 0.85, 0.9); torso.add(sh); }
+  for (const sx of [-1, 1]) {
+    const sh = mesh(sph(0.068, 10), cloth); sh.position.set(sx * 0.18, 0.455, 0); sh.scale.set(1, 0.9, 0.9); torso.add(sh); // deltoids
+    const pec = mesh(sph(0.08, 10), cloth); pec.position.set(sx * 0.075, 0.4, 0.07); pec.scale.set(1.1, 0.7, 0.45); torso.add(pec);
+  }
+  const trap = mesh(sph(0.1, 10), cloth); trap.position.set(0, 0.49, -0.015); trap.scale.set(1.65, 0.45, 0.8); torso.add(trap);
   const neck = new THREE.Group();
   neck.position.y = 0.5;
   torso.add(neck);
@@ -196,30 +216,39 @@ export function makeBody(mats, rng, { cloth = null, skin = null, naked = false, 
     head.add(hair);
   }
   const arms = [-1, 1].map((sx) => {
-    const sh = limb(cloth, 0.24, 0.046);
+    const sh = shapedLimb(cloth, 'uarm', 0.29, [[0, 0.052], [0.3, 0.05], [0.75, 0.039], [1, 0.035]]);
     sh.position.set(sx * 0.2, 0.44, 0);
-    const el = limb(rng() < 0.5 ? skin : cloth, 0.22, 0.038);
+    const el = shapedLimb(rng() < 0.5 ? skin : cloth, 'farm', 0.27, [[0, 0.037], [0.25, 0.042], [0.75, 0.029], [1, 0.024]]);
     el.position.y = -0.29;
     sh.add(el);
+    el.add(mesh(sph(0.038, 8), el.children[0].material, false)); // the elbow
     const hand = new THREE.Group();
     hand.position.y = -0.27;
-    const palm = mesh(box(0.065, 0.085, 0.026), skin, false);
-    palm.position.y = -0.045;
-    const thumb = mesh(cap(0.011, 0.04), skin, false);
-    thumb.position.set(sx * -0.035, -0.035, 0.012);
-    thumb.rotation.z = sx * 0.5;
+    const palm = mesh(sph(0.042, 8), skin, false);
+    palm.scale.set(0.85, 1.15, 0.42);
+    palm.position.y = -0.04;
+    const thumb = mesh(cap(0.01, 0.035), skin, false);
+    thumb.position.set(sx * -0.032, -0.035, 0.014);
+    thumb.rotation.z = sx * 0.55;
     hand.add(palm, thumb);
+    for (let f = 0; f < 4; f++) { const fg = mesh(cap(0.0085, 0.05 - Math.abs(f - 1.5) * 0.008), skin, false); fg.position.set((f - 1.5) * 0.017, -0.105, 0.004); fg.rotation.x = 0.25; hand.add(fg); } // fingers, slack
     el.add(hand);
     torso.add(sh);
     sh.userData = { el, hand };
     return sh;
   });
   const legs = [-1, 1].map((sx) => {
-    const hip = limb(cloth, 0.35, 0.066);
+    const hip = shapedLimb(cloth, 'thigh', 0.42, [[0, 0.08], [0.15, 0.082], [0.55, 0.066], [0.88, 0.05], [1, 0.047]]);
     hip.position.set(sx * 0.09, -0.04, 0);
-    const knee = limb(cloth, 0.35, 0.053);
+    const knee = shapedLimb(cloth, 'calf', 0.42, [[0, 0.05], [0.25, 0.057], [0.55, 0.045], [0.85, 0.031], [1, 0.03]]);
     knee.position.y = -0.42;
     hip.add(knee);
+    knee.add(mesh(sph(0.05, 8), cloth, false)); // the knee
+    // a bare foot (inside the boot when there is one)
+    const foot = mesh(sph(0.045, 8), skin, false);
+    foot.scale.set(0.85, 0.62, 1.95);
+    foot.position.set(0, -0.445, 0.055);
+    knee.add(foot);
     const boot = mesh(box(0.1, 0.09, 0.25), mats.bag, false);
     boot.position.set(0, -0.44, 0.055);
     knee.add(boot);
@@ -518,21 +547,11 @@ export function gurney(mats, rng) {
     l.position.set(x, 0.375, z);
     g.add(l);
   }
-  // a shape under the sheet
-  const body = new THREE.Group();
-  body.position.y = 0.85;
-  const t = mesh(cap(0.18, 0.6), mats.sheet);
-  t.rotation.z = Math.PI / 2;
-  t.scale.set(0.6, 1, 1.2);
-  const h = mesh(sph(0.13), mats.sheet);
-  h.position.x = 0.62;
-  const l = mesh(cap(0.12, 0.7), mats.sheet);
-  l.rotation.z = Math.PI / 2;
-  l.scale.set(0.6, 1, 1.4);
-  l.position.x = -0.65;
-  body.add(t, h, l);
+  // somebody under a sheet that hangs down over the sides
+  const body = shroud(mats, rng, 1.9, 0.65, 0.28);
+  body.rotation.y = Math.PI / 2;
+  body.position.y = 0.77;
   g.add(body);
-  layOn(body, -0.95, 0.95, -0.325, 0.325, 0.77);
   if (rng() < 0.6) { // an arm slipped out from under the sheet
     const arm = limb(mats.skinGrey, 0.5, 0.045);
     arm.position.set(0.25, 0.8, 0.3);
@@ -758,18 +777,79 @@ export function makeLift(mats, slots) {
   return g;
 }
 
+// a sheet over a body: the cloth drapes over a human shape (head, shoulders, chest, hips, two legs, arms at the
+// sides, the feet tenting it up), lies flat between the peaks, and hangs down over the edges of whatever it's on.
+// origin: the middle of the surface, on top of it; the head is toward -Z. len/wid: the size of the sheet;
+// hang: how far it may fall below the surface past its edges (0 when it's narrower than what it lies on)
+const SHROUD_FORM = (v) => [ // [x, z, rx, rz, height]: z from the crown (0) to the toes (1.8)
+  [0, 0.12, 0.095, 0.12, 0.2 + v * 0.01], // head
+  [0, 0.27, 0.06, 0.06, 0.12], // neck
+  [0, 0.44, 0.23, 0.17, 0.21], // chest and shoulders
+  [0, 0.66, 0.19, 0.17, 0.16], // belly
+  [0, 0.88, 0.2, 0.14, 0.15], // hips
+  [-0.09, 1.12, 0.085, 0.26, 0.12 + v * 0.02], [0.09, 1.12, 0.085, 0.26, 0.12], // thighs (one knee a little up)
+  [-0.09 - v * 0.02, 1.48, 0.065, 0.22, 0.095], [0.09 + v * 0.02, 1.48, 0.065, 0.22, 0.095], // shins
+  [-0.1 - v * 0.03, 1.74, 0.055, 0.07, 0.23], [0.1 + v * 0.03, 1.74, 0.055, 0.07, 0.23], // feet, toes up
+  [-0.25, 0.62, 0.05, 0.3, 0.085], [0.25, 0.62, 0.05, 0.3, 0.085], // arms down the sides
+];
+export function shroud(mats, rng, len = 1.95, wid = 0.62, hang = 0) {
+  const v = (rng() * 3) | 0;
+  const g = geo(`shroud${len}_${wid}_${hang}_${v}`, () => {
+    const NX = 36, NZ = 84, W = wid + hang * 2, Lz = len + hang * 2;
+    const pg = new THREE.PlaneGeometry(W, Lz, NX, NZ);
+    pg.rotateX(-Math.PI / 2);
+    const p = pg.attributes.position, H = new Float32Array((NX + 1) * (NZ + 1));
+    const form = SHROUD_FORM(v), z0 = -0.9; // the body is 1.8 long, centred
+    // each part of the body pushes the cloth up with a soft, rounded falloff past its own edge (cloth doesn't
+    // follow a body into every gap), and the parts blend into each other smoothly rather than meeting in creases
+    const k = 0.025;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i) - z0;
+      let sum = 0;
+      for (const [fx, fz, rx, rz, fh] of form) {
+        const d = Math.sqrt(((x - fx) / (rx * 1.35)) ** 2 + ((z - fz) / (rz * 1.25)) ** 2);
+        const h = d < 1 ? fh * Math.pow(Math.cos((d * Math.PI) / 2), 0.8) : 0;
+        sum += Math.exp(h / k);
+      }
+      let h = Math.max(0, k * Math.log(Math.max(1, sum - (form.length - 1)))); // a smooth max: 0 where nothing's under it, the tallest part where something is
+      // the cloth runs straight across from toe to toe, and bridges the gap between the legs
+      const fx = 0.1 + v * 0.03, fz = Math.abs(z - 1.74);
+      if (fz < 0.09 && Math.abs(x) < fx) h = Math.max(h, 0.21 * Math.cos((fz / 0.09) * Math.PI / 2));
+      if (z > 0.95 && z < 1.62 && Math.abs(x) < 0.09) h = Math.max(h, 0.075 - (z - 0.95) * 0.03);
+      H[i] = h;
+    }
+    const at = (ix, iz) => iz * (NX + 1) + ix;
+    // soften, then hang the edges over the side and add creases
+    let S = H;
+    for (let pass = 0; pass < 2; pass++) {
+      const T = new Float32Array(S.length);
+      for (let iz = 0; iz <= NZ; iz++) for (let ix = 0; ix <= NX; ix++) { let sum = 0, n = 0; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const jx = ix + dx, jz = iz + dz; if (jx < 0 || jz < 0 || jx > NX || jz > NZ) continue; sum += S[at(jx, jz)]; n++; } T[at(ix, iz)] = sum / n; }
+      S = T;
+    }
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i);
+      const out = Math.max(0, Math.abs(x) - wid / 2, Math.abs(z) - len / 2);
+      let y = S[i] + 0.006 + Math.sin(x * 40 + z * 9) * 0.004 * Math.min(1, S[i] * 12) + Math.sin(z * 23 + x * 5) * 0.003;
+      if (out > 0) y = Math.max(-hang, Math.min(y, 0.01) - out * 1.6) + Math.sin(z * 30) * 0.01 * Math.min(1, out * 8); // over the edge, in folds
+      p.setY(i, y);
+    }
+    pg.computeVertexNormals();
+    return pg;
+  });
+  const m = new THREE.Mesh(g, mats.sheetDS || (mats.sheetDS = Object.assign(mats.sheet.clone(), { side: THREE.DoubleSide })));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
 // ---------- the morgue ----------
 // a body on a drawer tray, feet toward you, the way they always come out
 export function trayBody(mats, rng) {
   const g = new THREE.Group();
   if (rng() < 0.45) { // under a sheet
-    const t = mesh(cap(0.17, 1.3), mats.sheet);
-    t.rotation.x = Math.PI / 2;
-    t.scale.set(1.25, 1, 0.55);
-    t.position.set(0, 0.13, -0.5);
-    const feet = mesh(box(0.2, 0.15, 0.08), mats.skinGrey);
-    feet.position.set(0, 0.16, 0.36);
-    g.add(t, feet);
+    const t = shroud(mats, rng, 1.95, 0.66, 0);
+    t.position.set(0, 0, -0.5);
+    g.add(t);
+    if (rng() < 0.4) { const foot = mesh(box(0.08, 0.15, 0.1), mats.skinGrey, false); foot.position.set(0.12, 0.08, 0.5); g.add(foot); } // a foot out from under it
   } else {
     const b = makeBody(mats, rng, { naked: true, bald: rng() < 0.5 });
     b.legs.forEach((l) => { l.userData.boot.visible = false; });
