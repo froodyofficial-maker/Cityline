@@ -28,11 +28,19 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 
 **Music:** the heavy drone plays on the menu and under the death screen, always at its own pitch. On the floors it sits far back under a soft pad and a music box, and during a chase it drops out for your heartbeat.
 
+**Performance:** press **F3** to see frames per second and draw calls. When a floor loads, everything on it that never moves is merged into a few large meshes, which cuts draw calls by about 5 to 15 times. On a laptop with two GPUs, the launcher asks for the dedicated one. If it's still slow in a browser, set that browser to *High performance* in Windows Settings > System > Display > Graphics.
+
 **Windows launcher (small):** `npm run launcher:win` builds `offal-launcher/OFFAL.exe` (about 2 MB, needs Go). The game is embedded in the launcher. It opens the game in its own window using the Edge that comes with Windows, or Chrome, and saves to `%LOCALAPPDATA%\OFFAL`.
 
 **Windows app (self-contained, about 80 MB):** `cd offal-desktop && npm ci && npm run dist:win` builds `offal-desktop/release/OFFAL-1.0.0-portable.exe` (run `npm run build:offal` in the repo root first). It needs no install. F11 or Alt+Enter toggles fullscreen. The *OFFAL desktop app* GitHub Actions workflow builds the same file.
 
 **Story mode (about 2.5 hours or more):** ten floors down to the bottom of the plant, and an ending.
+
+**The story:** your father worked nights at Hollow Pines. He clocked in on the night it closed, in 1998, and never came home. Last week his time card came in the post, stamped with tonight's date. A new shift opens on that, a line at a time (any key skips it). On the way down:
+- A voice on a walkie-talkie talks to you when each floor's gate goes up, and again when the lift starts to move. It knows more about your family than it should, and it gets worse the deeper you go.
+- Each floor has one page of his night log lying somewhere. Picking it up shows it in his handwriting. **TAB** lets you read the pages from this shift again, and the Collection keeps all ten.
+- The tannoy has its own line for each floor, plus another when the last tag is cut. It gets stranger, and by the bottom it is calling a name.
+- The ending ties it together and leaves a door open for the next shift.
 1. On every floor, find the dead workers and hold **E** to cut the brass ID tags out of them. It's slow, but silent: he can't hear it on any difficulty.
 2. From B2 on, most floors also have a job before the lift will move (B1 is just tags):
    - **No power:** search body bags for fuses and slot them into the fuse box.
@@ -87,7 +95,7 @@ A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extr
 
 **The bolt gun:** three parts of a captive-bolt gun (the barrel, the firing spring, the grip) turn up one per floor from B2 until you have them all. Press **TAB** to see what you're carrying and put the gun together. Bolts are scarce: a box or two per floor once you have most of the gun, at most 6 carried. **Left click** fires; a hit drops the Foreman to his knees for **20 s on Easy, 15 on Normal, 10 on Hard, 5 on Extreme**, then he comes looking. Firing is the loudest thing you can do. A story shift keeps what you carry from floor to floor (as it was at the start of the floor you're on).
 
-**Keepsakes and the Collection:** each floor has a keepsake or two lying about: a photo, a ring, a tape, a toy, a tooth. They do nothing for you; each is a few lines about somebody who worked there. There are 26, kept for good once found. **Collection** on the menu shows the keepsakes you've found (pick one to read it) and lets you watch any death scene you've seen again, and the ending.
+**Keepsakes and the Collection:** each floor has a keepsake or two lying about: a photo, a ring, a tape, a toy, a tooth. They do nothing for you; each is a few lines about somebody who worked there. There are 26, kept for good once found. Picking one up puts it in your hands as a 3D model: drag to turn it over, scroll to look closer, and press **E** or **Esc** to pocket it. **Collection** on the menu shows the keepsakes you've found (pick one to turn it over again) and the pages of his night log you've found, and lets you watch any death scene you've seen again, and the ending.
 
 **The ending:** a film. The lift climbs the last floors with light sliding past the gate, the gate goes up on dawn in the loading bay, you walk out toward the open door, then stop and turn round. He is standing in the lift, in the dark, watching you go. He doesn't follow. You walk out into the white.
 
@@ -125,7 +133,10 @@ Everything is procedural: textures, models and gore are painted and built in cod
 | R | Use a syringe (sprint without running out) |
 | 0–9, Enter | Type a code at a keypad |
 | F11 | Fullscreen |
+| F3 | Show frames per second |
+| Tab | What you're carrying: the bolt gun, and his night log |
 | Esc | Pause |
+| Drag, mouse wheel | Turn a keepsake or a page over, and look closer (E or Esc puts it away) |
 
 Source is in `offal/` (ES modules on the vendored three.js). `npm run build:offal` writes `dist/offal.html`.
 

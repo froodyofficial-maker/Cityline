@@ -6,8 +6,8 @@
 package main
 
 import (
-	_ "embed"
 	"bytes"
+	_ "embed"
 	"net/url"
 	"os"
 	"os/exec"
@@ -46,6 +46,7 @@ func main() {
 			"--no-first-run",
 			"--no-default-browser-check",
 			"--ignore-gpu-blocklist",
+			"--force_high_performance_gpu", // laptops: the graphics card, not the chip built into the CPU
 			"--enable-gpu-rasterization",
 			"--disable-background-timer-throttling",
 			"--disable-renderer-backgrounding",

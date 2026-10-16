@@ -281,3 +281,36 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .coll-cut b { display: block; font-family: var(--serif); font-weight: 400; letter-spacing: .25em; font-size: 13px; color: var(--fresh); }
 .coll-cut.locked { opacity: .4; pointer-events: none; }
 .coll-cut:not(.locked):hover { background: #3a0c08; }
+
+/* turning a keepsake over in your hands */
+#inspect { background: radial-gradient(ellipse at 38% 50%, rgba(30,10,8,.55), rgba(0,0,0,.92) 70%); }
+.insp { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); align-items: center; }
+#inspCv { width: 100%; height: 100%; cursor: grab; touch-action: none; display: block; }
+#inspCv:active { cursor: grabbing; }
+.insp-text { padding: 0 6vw 0 1vw; max-width: 520px; }
+.insp-text h2 { font-family: var(--serif); font-weight: 400; letter-spacing: .3em; font-size: 22px; color: var(--bone); margin-bottom: 14px; }
+.insp-text p { font-size: 15px; line-height: 1.7; color: #c8b8a0; }
+.insp-count { margin-top: 18px; font-size: 11px !important; letter-spacing: .25em; }
+.insp-help { margin-top: 26px; font-size: 11px !important; letter-spacing: .2em; }
+@media (max-width: 760px) { .insp { grid-template-columns: 1fr; grid-template-rows: 55vh auto; } .insp-text { padding: 0 20px 24px; } }
+
+/* the voice on the walkie: sits above everything, so it carries on over the floor card */
+#radio { position: fixed; left: 50%; bottom: 25%; transform: translateX(-50%); z-index: 27; max-width: min(720px, 90vw); display: flex; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.5; color: #d8e0c8; text-shadow: 0 0 8px #000, 0 0 2px #000; opacity: 0; transition: opacity .6s; pointer-events: none; }
+#radio.on { opacity: 1; transition: opacity .15s; }
+#radio b { font-size: 10px; letter-spacing: .35em; color: #8fbf6a; white-space: nowrap; }
+#radio i { width: 7px; height: 7px; border-radius: 50%; background: #8fbf6a; box-shadow: 0 0 8px #8fbf6a; align-self: center; animation: rblink .5s steps(2) infinite; }
+@keyframes rblink { 50% { opacity: .2; } }
+#radio.glitch span { color: #c8a0a0; letter-spacing: .04em; }
+
+/* before the first floor: why you're here */
+#intro { background: #000; align-items: center; justify-content: center; z-index: 24; cursor: pointer; }
+.intro-in { max-width: 640px; padding: 0 24px; }
+#introLines p { font-family: var(--serif); font-size: clamp(16px, 2.1vw, 21px); line-height: 1.65; color: var(--bone); margin: 0 0 18px; }
+.intro-go { margin-top: 34px; font-size: 11px; letter-spacing: .4em; color: var(--fresh); opacity: 0; transition: opacity 1s; }
+.intro-go.on { opacity: 1; animation: rblink 1.6s steps(2) infinite; }
+
+.inv-log { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11px; letter-spacing: .2em; color: var(--dim); }
+.inv-log button { font-size: 11px; letter-spacing: .15em; color: var(--bone); border: 1px solid #3a0a06; padding: 5px 9px; }
+.inv-log button:hover { border-color: var(--fresh); }
+
+#fps { position: fixed; top: 8px; right: 10px; z-index: 40; font: 11px monospace; letter-spacing: .1em; color: #9fdf7a; text-shadow: 0 0 4px #000; display: none; pointer-events: none; }

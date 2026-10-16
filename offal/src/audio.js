@@ -341,6 +341,13 @@ export class AudioEngine {
     this.tone(this.sfx, { type: 'square', f: 1400, dur: 0.03, vol: 0.05 });
     this.burst(this.sfx, { type: 'highpass', f: 2500, dur: 0.03, vol: 0.15, at: 0.04 });
   }
+  // the walkie keying up (and dropping off): a squelch, then a hiss under the voice
+  radio(dur = 2, end = false) {
+    if (!this.ctx) return;
+    this.tone(this.sfx, { type: 'square', f: end ? 900 : 1300, f2: end ? 600 : 1500, dur: 0.07, vol: 0.035 });
+    this.burst(this.sfx, { f: 1900, q: 0.6, dur: 0.18, vol: 0.09, at: 0.05 });
+    if (!end) this.burst(this.sfx, { f: 2200, q: 0.4, dur, vol: 0.02, a: 0.1, at: 0.15 });
+  }
   tick() {
     this.burst(this.sfx, { type: 'highpass', f: 3000, dur: 0.012, vol: 0.25 });
   }

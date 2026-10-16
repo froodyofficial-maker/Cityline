@@ -1,6 +1,7 @@
 // Props for the floors that aren't the meatworks: the hospital wing (morgue), the offices, the drains and the
 // deep freeze. Built from boxes and cylinders like everything else; materials are made the first time they're needed.
 import * as THREE from 'three';
+import { keepsakeModel } from './keepsakes3d.js';
 import { WALL_H } from './config.js';
 import { mesh, geo, box, sph, cyl, cap, decal, makeBody, trayBody, meatChunk, severedArm } from './props.js';
 import { canvas, BLOOD, wallSplat } from './textures.js';
@@ -387,16 +388,16 @@ export function lootMesh(mats, type, meta, rng) {
     if (meta.part === 'barrel') { const b = mesh(cyl(0.035, 0.04, 0.3, 10), mats.steel, false); b.rotation.z = Math.PI / 2; g.add(at(b, 0, 0.045, 0)); }
     else if (meta.part === 'spring') { const sp = mesh(geo('spring', () => new THREE.TorusKnotGeometry(0.035, 0.008, 40, 5, 1, 9)), mats.steel, false); sp.scale.set(1, 1, 2.2); sp.rotation.y = Math.PI / 2; g.add(at(sp, 0, 0.04, 0)); }
     else { const gr = mesh(box(0.05, 0.14, 0.07), phong({ color: 0x1a1612 }), false); gr.rotation.z = Math.PI / 2 - 0.3; g.add(at(gr, 0, 0.04, 0)); }
-  } else { // a keepsake
-    const k = meta.kind || 'photo';
-    if (k === 'photo') g.add(at(mesh(box(0.09, 0.004, 0.12), phong({ color: 0xc8b890 }), false), 0, 0.01, 0, 0.4));
-    else if (k === 'ring') { const r = mesh(geo('ring', () => new THREE.TorusGeometry(0.018, 0.005, 6, 14)), phong({ color: 0xd8b040, shininess: 140, specular: 0xffeeaa }), false); r.rotation.x = Math.PI / 2; g.add(at(r, 0, 0.006, 0)); }
-    else if (k === 'tooth') g.add(at(mesh(cyl(0.008, 0.004, 0.025, 5), mats.bone, false), 0, 0.012, 0));
-    else if (k === 'card') g.add(at(mesh(box(0.085, 0.003, 0.055), phong({ color: 0xd8d0b8 }), false), 0, 0.005, 0, 1));
-    else if (k === 'toy') { g.add(at(mesh(sph(0.04, 8), phong({ color: 0x8a6a4a }), false), 0, 0.04, 0)); g.add(at(mesh(sph(0.028, 8), phong({ color: 0x8a6a4a }), false), 0, 0.1, 0)); }
-    else if (k === 'tape') g.add(at(mesh(box(0.1, 0.015, 0.065), m.black, false), 0, 0.008, 0, 0.7));
-    else if (k === 'key') g.add(at(mesh(box(0.06, 0.004, 0.015), phong({ color: 0xa08a50, shininess: 100 }), false), 0, 0.004, 0, rng() * 6));
-    else g.add(at(mesh(box(0.06, 0.02, 0.04), phong({ color: 0x6a5a40 }), false), 0, 0.01, 0));
+  } else { // a keepsake: the same model you turn over in the viewer, set down where it was dropped
+    const k = meta.id ? keepsakeModel(meta.id) : new THREE.Group();
+    const upright = ['toy-bear', 'toy-car', 'tape-dictaphone', 'misc-lighter', 'tooth-milk'].includes(meta.id);
+    if (!upright) k.rotation.x = -Math.PI / 2;
+    if (upright) k.rotation.y = rng() * 6; else k.rotation.z = rng() * 6;
+    const hold = new THREE.Group(); hold.add(k);
+    hold.scale.setScalar(1.6); // a touch bigger than life, so it reads at the end of a torch beam
+    const bb = new THREE.Box3().setFromObject(hold);
+    k.position.y = -bb.min.y + 0.002;
+    g.add(hold);
   }
   return g;
 }

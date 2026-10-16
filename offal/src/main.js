@@ -19,12 +19,15 @@ import { floorInfo, difficulty, WALL_H, STORY_FLOORS, DIFFS, THEMES } from './co
 import { animateFlies } from './props.js';
 import { Gun, PARTS, PART_KEYS, AMMO_MAX, freshInv, cloneInv, missingParts } from './gun.js';
 import { KEEPSAKES, CUTSCENE_INFO } from './collection.js';
+import { KeepsakeViewer } from './keepsakes3d.js';
+import { bakeStatic } from './bake.js';
+import { INTRO, BEATS, NOTE_IDS, noteTitle, ENDING } from './story.js';
 
 // ---------- save ----------
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null, notes: [] }, collection: { keep: [], cuts: [], notes: [] }, settings: { sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
@@ -37,6 +40,7 @@ const writeSave = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(sa
 const canvas = UI.$('view');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
+renderer.info.autoReset = false; // reset once a frame instead (see frame), so F3 counts every pass
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 const post = new Post(renderer);
@@ -247,6 +251,10 @@ function loadFloor(depth, seed) {
   director.reset();
   guide.reset();
   audio.setDepth(depth);
+  // weld everything that never moves into a few big meshes (see bake.js), and stop drawing past the fog
+  if (!window.__noBake) G.bake = bakeStatic(B.group, [B, G.puzzles, G.hunters, director], B.swingers);
+  camera.far = Math.min(60, 2.4 / scene.fog.density);
+  camera.updateProjectionMatrix();
 }
 
 // what lies about on a floor that depends on the run: the next gun part you're missing, a few bolts, keepsakes
@@ -267,6 +275,9 @@ function placeLoot(depth, seed) {
   }
   G.floorKeeps = keeps;
   for (const id of keeps) { const k = KEEPSAKES.find((x) => x.id === id); if (k) B.addPickup('keepsake', { id, kind: k.kind }); }
+  // story: a page of your father's night log on every floor, until you've read it this shift (always last, so a resumed floor lines up)
+  const note = NOTE_IDS[depth - 1];
+  if (G.mode === 'story' && note && !(save.story.notes || []).includes(note)) B.addPickup('note', { id: note });
 }
 
 function inAlcove() {
@@ -284,7 +295,7 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   blood.clear();
   G.mode = mode;
   const st = save.story;
-  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv() });
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv(), notes: [] });
   // what you're carrying: a story shift keeps it from floor to floor (as it was when you started the floor)
   G.inv = mode === 'story' ? cloneInv(st.inv) : freshInv();
   G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
@@ -301,10 +312,61 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   if (snap) { G.diff = snap.diff; G.runTime = snap.runTime; G.runTags = snap.runTags; }
   else save.snap = null;
   G.trans = { t: 0.8, loaded: false, next: snap ? snap.depth : mode === 'story' ? st.floor : opts.floor || 1, snap };
+  if (opts.intro) { playIntro(); return; }
   G.state = 'transition';
   UI.$('fade').classList.add('on');
   UI.only();
   lockPointer();
+}
+
+// a new story shift opens on why you're here, a line at a time. Any key finishes the lines; then any key goes in
+function playIntro() {
+  G.state = 'intro';
+  audio.setMode('menu');
+  const host = UI.$('introLines'), go = UI.$('introGo');
+  host.innerHTML = '';
+  go.classList.remove('on');
+  UI.only('intro');
+  const timers = [];
+  const all = () => { timers.forEach(clearTimeout); host.innerHTML = INTRO.map((l) => `<p>${l}</p>`).join(''); go.classList.add('on'); };
+  let at = 600;
+  INTRO.forEach((line, i) => {
+    timers.push(setTimeout(() => {
+      if (G.state !== 'intro') return;
+      const p = document.createElement('p');
+      host.appendChild(p);
+      UI.typewrite(p, line, 34, () => Math.random() < 0.35 && audio.tick());
+      if (i === INTRO.length - 1) timers.push(setTimeout(() => go.classList.add('on'), line.length * 30 + 900));
+    }, at));
+    at += 800 + line.length * 36;
+  });
+  const next = (e) => {
+    if (G.state !== 'intro') { off(); return; }
+    if (e.type === 'keydown' && (e.repeat || ['Tab', 'F11'].includes(e.code))) return;
+    if (e.type === 'keydown' && e.code === 'Escape') { off(); timers.forEach(clearTimeout); toMenu(); return; }
+    if (!go.classList.contains('on')) { all(); return; }
+    off();
+    G.state = 'transition';
+    UI.$('fade').classList.add('on');
+    UI.only();
+    lockPointer();
+  };
+  const off = () => { window.removeEventListener('keydown', next); UI.$('intro').removeEventListener('click', next); };
+  setTimeout(() => { addEventListener('keydown', next); UI.$('intro').addEventListener('click', next); }, 300);
+}
+
+// ---------- the voice on the walkie, the tannoy, his notes ----------
+// story only. arrive: a few seconds after the gate goes up; pa: once you've been on the floor a while
+function storyBeats() {
+  if (G.mode !== 'story' || !G.beat) return;
+  const b = BEATS[G.depth - 1];
+  if (!b) return;
+  if (!G.beat.arrive && G.floorTime > 4) { G.beat.arrive = true; walkie(b.arrive); }
+  if (!G.beat.pa && G.floorTime > 55 && b.pa) { G.beat.pa = true; UI.pa(b.pa); }
+}
+function walkie(lines) {
+  if (!lines || !lines.length) return;
+  UI.radio(lines, (d, end) => audio.radio(d, end), G.depth >= 9);
 }
 
 // raw mouse input where the browser supports it: no OS acceleration, and none of Chrome's lock jitter
@@ -370,6 +432,8 @@ function updateTransition(dt) {
     G.state = 'play';
     G.saveT = 5;
     audio.setMode('roam');
+    // a resumed floor doesn't replay what you already heard on it
+    G.beat = { arrive: G.floorTime > 4, pa: G.floorTime > 55 };
     if (G.depth > 1 && G.D.tags) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the way.`, 4.5), 2500);
   }
 }
@@ -396,6 +460,7 @@ function hurt(h) {
 function startDeath(h, kind, locker) {
   if (G.state === 'dying' || G.state === 'dead') return;
   G.state = 'dying';
+  UI.radioStop();
   // which death: any of the five, but never the same one twice in a row
   const pool = CUTSCENES.filter((c) => c !== save.lastCut);
   const sceneKind = window.__forceCut || pool[(Math.random() * pool.length) | 0];
@@ -621,11 +686,7 @@ function endingText() {
   G.state = 'ending';
   const { time, deaths, tags } = G.endInfo;
   const fmt = (s) => `${(s / 3600) | 0}h ${String(((s / 60) | 0) % 60).padStart(2, '0')}m`;
-  const lines = [
-    '06:00. Somewhere outside, birds.',
-    'The car park is empty except for your car. You don\u2019t look back at the building again.',
-    'In your pocket, your time card has been stamped.',
-  ];
+  const lines = ENDING;
   UI.$('endStamp').classList.remove('on');
   UI.$('endStats').classList.remove('on');
   UI.$('endNav').classList.remove('on');
@@ -720,6 +781,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveS
 
 function toMenu() {
   G.state = 'menu';
+  UI.radioStop();
+  if (inspectFrom) { viewer.hide(); inspectFrom = null; }
   refreshMenu();
   audio.setMode('menu');
   audio.setDepth(0); // the menu drone at its own pitch, however deep you got
@@ -857,7 +920,19 @@ function handleInteract(dt) {
         if (!save.collection.keep.includes(k.id)) save.collection.keep.push(k.id);
         writeSave();
         audio.tick();
-        UI.note(k.name.toUpperCase(), '', k.text + `\n\nKEEPSAKE ${save.collection.keep.length}/${KEEPSAKES.length} — see COLLECTION on the menu`, 7);
+        inspectKeepsake(k.id, 'play');
+      }
+      break;
+    }
+    case 'note': {
+      UI.prompt('<kbd>E</kbd>&nbsp; PICK UP THE PAGE');
+      if (tapE) {
+        it.p.taken = true;
+        it.p.obj.visible = false;
+        for (const list of [save.story.notes, save.collection.notes]) if (!list.includes(it.p.id)) list.push(it.p.id);
+        writeSave();
+        audio.pickup();
+        inspectKeepsake(it.p.id, 'play');
       }
       break;
     }
@@ -939,7 +1014,8 @@ function harvest(c) {
     setTimeout(() => {
       if (G.state !== 'play') return;
       audio.chime();
-      setTimeout(() => G.state === 'play' && UI.pa('THE LINE IS SHORT ONE WORKER. FOREMAN TO THE FLOOR.'), 1300);
+      const line = (G.mode === 'story' && BEATS[G.depth - 1] && BEATS[G.depth - 1].last) || 'THE LINE IS SHORT ONE WORKER. FOREMAN TO THE FLOOR.';
+      setTimeout(() => G.state === 'play' && UI.pa(line), 1300);
       for (const h of G.hunters) if (h.state !== 'chase') h.hear({ pos: player.pos.clone(), radius: 999, loud: false });
     }, 2500);
   } else UI.message(CUT_LINES[(Math.random() * CUT_LINES.length) | 0], 3.5);
@@ -1010,7 +1086,12 @@ function updateLift(dt) {
       break;
     }
     case 'sealed':
-      if (lf.t > 0.8 && !lf.motor) { lf.motor = true; audio.liftMotor(true); UI.message(G.D.finale ? 'It\u2019s moving. It\u2019s going UP.' : 'It\u2019s moving. You\u2019re going down.', 3); }
+      if (lf.t > 0.8 && !lf.motor) {
+        lf.motor = true;
+        audio.liftMotor(true);
+        UI.message(G.D.finale ? 'It\u2019s moving. It\u2019s going UP.' : 'It\u2019s moving. You\u2019re going down.', 3);
+        if (G.mode === 'story' && BEATS[G.depth - 1]) setTimeout(() => walkie(BEATS[G.depth - 1].leave), 1200);
+      }
       if (lf.t > 0.8) player.shake = Math.max(player.shake, 0.3);
       if (lf.t > 2.2) { if (G.D.finale && G.mode === 'story') startEnding(); else nextFloor(); }
       break;
@@ -1077,6 +1158,7 @@ function updateGame(dt, t) {
   const B = G.B;
   G.runTime += dt;
   G.floorTime += dt;
+  storyBeats();
   updateWater(dt);
   audio.setMuffle(!!player.hidden); // follows you in and out, whatever path got you there
   // walking up to a crouchway standing: say how to get in (once in a while, not every time)
@@ -1245,7 +1327,7 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
-  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff);
+  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, { intro: diffIntent.mode === 'story' && diffIntent.fresh });
   else if (act === 'retry') {
     if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff); // a brand new shift, same difficulty
     else startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
@@ -1256,6 +1338,8 @@ document.addEventListener('click', (e) => {
   else if (act === 'build') buildGun();
   else if (act === 'replay') startReplay(b.dataset.cut);
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
+  else if (act === 'readnote' && G.state === 'inv') inspectKeepsake(b.dataset.id, 'inv');
+  else if (act === 'note') inspectKeepsake(b.dataset.id, 'menu');
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
   else if (act === 'back' && G.state === 'menu' && UI.$('collection').classList.contains('on')) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
@@ -1317,6 +1401,8 @@ function drawInventory() {
     ? `CAPTIVE-BOLT GUN — ${inv.ammo}/${AMMO_MAX} BOLTS<br><span class="dim">CLICK to fire. A hit drops him for ${G.D ? G.D.stun : 15} seconds. Everything on the floor hears it.</span>`
     : have >= PART_KEYS.length ? '<button data-act="build">PUT THE GUN TOGETHER</button>' : `${have}/${PART_KEYS.length} PARTS OF A CAPTIVE-BOLT GUN${inv.ammo ? ` · ${inv.ammo} BOLTS` : ''}`;
   UI.$('invMisc').textContent = `TAGS ${player.tags} · SYRINGES ${player.adrenaline} · TORCH ${Math.round(player.battery)}% · KEEPSAKES ${save.collection.keep.length}/${KEEPSAKES.length}`;
+  const notes = G.mode === 'story' ? NOTE_IDS.filter((id) => (save.story.notes || []).includes(id)) : [];
+  UI.$('invLog').innerHTML = notes.length ? 'HIS NIGHT LOG ' + notes.map((id) => `<button data-act="readnote" data-id="${id}">p.${NOTE_IDS.indexOf(id) + 1}</button>`).join('') : '';
 }
 function buildGun() {
   if (missingParts(G.inv).length) return;
@@ -1353,6 +1439,11 @@ function openCollection() {
   UI.$('collCuts').innerHTML = Object.keys(CUTSCENE_INFO).map((id) => c.cuts.includes(id)
     ? `<button class="coll-cut" data-act="replay" data-cut="${id}"><b>${CUTSCENE_INFO[id].name}</b>${CUTSCENE_INFO[id].text}</button>`
     : `<button class="coll-cut locked"><b>? ? ?</b>${id === 'ending' ? 'Finish the shift.' : 'Not yet.'}</button>`).join('');
+  const notes = c.notes || [];
+  UI.$('collNoteCount').textContent = `${notes.length}/${NOTE_IDS.length}`;
+  UI.$('collNotes').innerHTML = NOTE_IDS.map((id, i) => notes.includes(id)
+    ? `<button class="coll-item" data-act="note" data-id="${id}">Page ${i + 1}</button>`
+    : '<button class="coll-item locked">not yet found</button>').join('');
   UI.only('collection');
 }
 function readKeepsake(id, btn) {
@@ -1360,7 +1451,46 @@ function readKeepsake(id, btn) {
   document.querySelectorAll('.coll-item.sel').forEach((b) => b.classList.remove('sel'));
   btn.classList.add('sel');
   UI.$('collRead').innerHTML = `<b>${k.name}.</b> ${k.text}`;
+  inspectKeepsake(id, 'menu');
 }
+// picking one up (or choosing one in the collection) puts it in your hands: a lit 3D model to turn over
+const viewer = new KeepsakeViewer(UI.$('inspCv'));
+let inspectFrom = null;
+function inspectKeepsake(id, from) {
+  const page = NOTE_IDS.indexOf(id);
+  const k = page >= 0 ? { name: noteTitle(page), text: BEATS[page].note.replace(/\n/g, ' ') } : KEEPSAKES.find((x) => x.id === id);
+  inspectFrom = from;
+  UI.$('inspName').textContent = k.name.toUpperCase();
+  UI.$('inspText').textContent = k.text;
+  UI.$('inspCount').textContent = page >= 0
+    ? `HIS HANDWRITING. ${from === 'play' ? 'TAB TO READ IT AGAIN.' : `${save.collection.notes.length} OF ${NOTE_IDS.length} PAGES FOUND.`}`
+    : `KEEPSAKE ${save.collection.keep.length} OF ${KEEPSAKES.length}${from === 'play' ? ' · IT WON’T HELP YOU. IT WAS JUST THEIRS.' : ''}`;
+  UI.$('inspClose').textContent = from === 'menu' ? 'ESC OR CLICK OUTSIDE TO PUT IT BACK' : from === 'inv' ? 'E OR ESC TO PUT IT AWAY' : 'E OR ESC TO POCKET IT';
+  if (from === 'inv') { G.state = 'inspect'; G.inspT = 1; UI.only('inspect', 'hud'); }
+  else if (from === 'play') {
+    G.state = 'inspect';
+    G.inspT = 0;
+    UI.prompt(null);
+    try { document.exitPointerLock(); } catch {}
+    UI.only('inspect', 'hud');
+    UI.$('brief').classList.remove('on');
+  } else UI.only('inspect');
+  viewer.show(id);
+}
+function closeInspect() {
+  if (!inspectFrom) return;
+  viewer.hide();
+  if (inspectFrom === 'play' && G.state === 'inspect') { G.state = 'play'; G.kpCool = 0.35; UI.only('hud'); lockPointer(); }
+  else if (inspectFrom === 'inv' && G.state === 'inspect') { G.state = 'inv'; drawInventory(); UI.only('inv', 'hud'); }
+  else UI.only('collection');
+  inspectFrom = null;
+}
+addEventListener('keydown', (e) => {
+  if (!inspectFrom || e.repeat) return;
+  // E only once the pickup press has let go, so the same tap doesn't put it straight back down
+  if (e.code === 'Escape' || (e.code === 'KeyE' && (inspectFrom === 'inv' || (inspectFrom === 'play' && G.inspT > 0.25)))) { e.preventDefault(); closeInspect(); }
+});
+UI.$('inspect').addEventListener('click', (e) => { if (inspectFrom === 'menu' && e.target.id !== 'inspCv' && !e.target.closest('.insp-text')) closeInspect(); });
 function noteCutscene(id) {
   if (!save.collection.cuts.includes(id)) { save.collection.cuts.push(id); writeSave(); }
 }
@@ -1414,8 +1544,29 @@ UI.$('warn').addEventListener('click', () => {
 applySettings();
 
 let last = performance.now(), T = 0;
+// F3: frames per second, and draw calls, top right
+const fps = { on: false, n: 0, t: 0, el: null };
+addEventListener('keydown', (e) => {
+  if (e.code !== 'F3') return;
+  e.preventDefault();
+  fps.on = !fps.on;
+  if (!fps.el) { fps.el = document.createElement('div'); fps.el.id = 'fps'; document.body.appendChild(fps.el); }
+  fps.el.style.display = fps.on ? 'block' : 'none';
+});
+function countFrame(now) {
+  if (!fps.on) return;
+  fps.n++;
+  if (now - fps.t > 500) {
+    fps.el.textContent = `${Math.round((fps.n * 1000) / (now - fps.t))} FPS · ${renderer.info.render.calls} DRAWS`;
+    fps.n = 0;
+    fps.t = now;
+  }
+}
+
 function frame(now) {
   requestAnimationFrame(frame);
+  countFrame(now);
+  renderer.info.reset();
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   T += dt;
@@ -1442,7 +1593,8 @@ function frame(now) {
       updateEndCine(dt);
       break;
   }
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'inv' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'inspect') G.inspT += dt;
+  if (G.state === 'play' || G.state === 'paused' || G.state === 'inv' || G.state === 'inspect' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
@@ -1465,6 +1617,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, audio, gun, updateEndCine, openInventory, closeInventory, buildGun, openCollection, startReplay, startRun, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, gun, renderer, scene, updateEndCine, openInventory, closeInventory, buildGun, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };

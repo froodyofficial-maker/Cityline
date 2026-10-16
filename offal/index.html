@@ -20,6 +20,7 @@
 <div id="slits"></div>
 <div id="fade"></div>
 <div id="skip">SPACE &middot; SKIP</div>
+<div id="radio"><i></i><b>WALKIE</b><span id="radioText"></span></div>
 
 <!-- content warning: also the click that unlocks audio -->
 <section id="warn" class="screen on">
@@ -147,7 +148,24 @@
     <div class="inv-grid" id="invParts"></div>
     <div class="inv-gun" id="invGun"></div>
     <div class="inv-row" id="invMisc"></div>
+    <div class="inv-log" id="invLog"></div>
     <p class="dim inv-help">TAB or ESC to put it away.</p>
+  </div>
+</section>
+
+<section id="intro" class="screen">
+  <div class="intro-in"><div id="introLines"></div><p id="introGo" class="intro-go">PRESS ANY KEY TO CLOCK IN</p></div>
+</section>
+
+<section id="inspect" class="screen panel-screen">
+  <div class="insp">
+    <canvas id="inspCv"></canvas>
+    <div class="insp-text">
+      <h2 id="inspName"></h2>
+      <p id="inspText"></p>
+      <p id="inspCount" class="dim insp-count"></p>
+      <p class="dim insp-help">DRAG TO TURN IT OVER &middot; WHEEL TO LOOK CLOSER &middot; <span id="inspClose">E OR ESC TO POCKET IT</span></p>
+    </div>
   </div>
 </section>
 
@@ -159,6 +177,8 @@
     <div class="coll-read" id="collRead"></div>
     <h3 class="set-h">WAYS YOU DIED, AND THE WAY OUT</h3>
     <div class="coll-cuts" id="collCuts"></div>
+    <h3 class="set-h">HIS NIGHT LOG <span id="collNoteCount"></span></h3>
+    <div class="coll-grid" id="collNotes"></div>
     <button class="back" data-act="back">Back</button>
   </div>
 </section>
