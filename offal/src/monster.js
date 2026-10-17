@@ -27,13 +27,12 @@ export function poseForeman(f, s) {
   f.neck.rotation.x = -hunch * 0.7 + (twitch ? twitch.x : 0);
   f.head.rotation.set(twitch ? twitch.y : 0, twitch ? twitch.z : 0, twitch ? twitch.r : 0);
   f.jaw.rotation.x = 0.1 + jawOpen * 0.9;
-  if (f.apron) f.apron.rotation.x = -f.torso.rotation.x * 0.8; // the apron hangs straight down whatever he's doing
   if (mode === 'stunned') {
     // on his knees, folded over, arms hanging, head lolling
     f.hips.position.y = 0.62;
     f.legs.forEach((l) => { l.thigh.rotation.x = -1.3; l.knee.rotation.x = 2.2; });
     f.torso.rotation.x = 1.1;
-    if (f.apron) f.apron.rotation.x = -0.9;
+    if (f.apron) f.apron.update(f);
     f.neck.rotation.x = 0.6 + (twitch ? twitch.x * 0.3 : 0);
     f.jaw.rotation.x = 0.9;
     f.arms.forEach((a, i) => { a.sh.rotation.set(-1.1 + Math.sin(t * 7 + i) * 0.05, 0, (i ? -1 : 1) * 0.15); a.el.rotation.x = -0.1; });
@@ -50,6 +49,7 @@ export function poseForeman(f, s) {
     a.sh.rotation.set(sh, 0, side);
     a.el.rotation.x = el;
   });
+  if (f.apron) f.apron.update(f); // the apron follows the pose: leans with the chest, pushed out by the legs
 }
 
 // ---------- the AI ----------

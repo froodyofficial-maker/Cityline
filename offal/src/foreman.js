@@ -118,6 +118,76 @@ function M(mats) {
   return mats.fm;
 }
 
+// The apron as a cloth panel: a grid of points, NX across and rows down. Above the waist (UP rows) it lies on his
+// chest in the torso's space, curved a little round him. Below, it hangs from the waist in the hips' space and
+// falls straight down, except where a thigh or shin is in the way: there it's pushed out in front of the leg, and
+// everything below that point hangs from there (the cloth tents over the knee). Rows keep their length, so a
+// push lifts the hem rather than stretching it. update(f) runs after the pose is set.
+const AP = { W: 0.27, NX: 9, UP: 7, DOWN: 14, top: 0.68, waist: 0.15, hang: 0.86 };
+function apronCloth(fm) {
+  fm.apronDS ||= Object.assign(fm.apron.clone(), { side: THREE.DoubleSide });
+  const { NX, UP, DOWN } = AP, rows = UP + DOWN + 1, geo = new THREE.PlaneGeometry(AP.W * 2, AP.top - AP.waist + AP.hang, NX - 1, rows - 1);
+  const mesh = new THREE.Mesh(geo, fm.apronDS);
+  mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false; // it's moved every frame
+  const pos = geo.attributes.position, v = new THREE.Vector3(), seg = AP.hang / DOWN;
+  const curve = (x) => 0.165 - (x / AP.W) ** 2 * 0.07; // round the chest and belly, not round the back
+  const legZ = new Float32Array(NX), prevZ = new Float32Array(NX), prevY = new Float32Array(NX);
+  function update(f) {
+    f.torso.updateMatrix();
+    const floorY = -f.hips.position.y + 0.03;
+    // the legs, as segments in the hips' space: hip to knee, knee to ankle, with their radii
+    const segs = [];
+    for (const l of f.legs) {
+      const a = l.thigh.rotation.x, b = a + l.knee.rotation.x, hx = l.thigh.position.x;
+      const k = [hx, -0.62 * Math.cos(a), -0.62 * Math.sin(a)], ft = [hx, k[1] - 0.56 * Math.cos(b), k[2] - 0.56 * Math.sin(b)];
+      segs.push([[hx, 0, 0], k, 0.075], [k, ft, 0.06]);
+    }
+    // how far forward the cloth has to be at (x, y) to be in front of both legs
+    const legNeed = (x, y, z0) => {
+      let need = z0;
+      for (const [p0, p1, rad] of segs) {
+        const lo = Math.min(p0[1], p1[1]), hi = Math.max(p0[1], p1[1]);
+        if (y < lo - rad || y > hi + rad) continue;
+        const t = Math.abs(p1[1] - p0[1]) < 1e-4 ? 0.5 : Math.min(1, Math.max(0, (y - p0[1]) / (p1[1] - p0[1])));
+        const zl = p0[2] + (p1[2] - p0[2]) * t, side = Math.max(0, Math.abs(x - p0[0]) - 0.07);
+        need = Math.max(need, zl + rad + 0.03 - side * 0.9);
+      }
+      return need;
+    };
+    // above the waist: on the torso (and a thigh raised high pushes the lower part of the bib out too)
+    for (let r = 0; r <= UP; r++) {
+      const ty = AP.top - (AP.top - AP.waist) * (r / UP);
+      for (let c = 0; c < NX; c++) {
+        const x = -AP.W + (2 * AP.W * c) / (NX - 1);
+        v.set(x, ty, curve(x)).applyMatrix4(f.torso.matrix);
+        v.z = legNeed(x, v.y, v.z);
+        pos.setXYZ(r * NX + c, v.x, v.y, v.z);
+        if (r === UP) { prevZ[c] = v.z; prevY[c] = v.y; }
+      }
+    }
+    // below the waist: row by row, each point as far forward as the rest position, the legs, and the row above
+    for (let r = 1; r <= DOWN; r++) {
+      for (let c = 0; c < NX; c++) {
+        const x = -AP.W + (2 * AP.W * c) / (NX - 1);
+        legZ[c] = legNeed(x, prevY[c] - seg, prevZ[c]);
+      }
+      for (let c = 0; c < NX; c++) {
+        // keep the row's length: pushed forward, the cloth rises a little instead of stretching
+        // (a knee swinging up fast can want more than the row can give: then the leather stretches over it)
+        const want = Math.max(0, legZ[c] - prevZ[c]), dz = Math.min(seg * 0.95, want);
+        let y = prevY[c] - Math.max(seg * 0.3, Math.sqrt(seg * seg - dz * dz)), z = prevZ[c] + want;
+        if (y < floorY) { z += floorY - y; y = floorY; } // on its knees: the hem lies on the floor
+        const x = -AP.W + (2 * AP.W * c) / (NX - 1);
+        pos.setXYZ((UP + r) * NX + c, x, y, z);
+        prevZ[c] = z; prevY[c] = y;
+      }
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+  return { mesh, update };
+}
+
 export function createForemanMesh(mats) {
   const fm = M(mats);
   const root = new THREE.Group();
@@ -154,9 +224,11 @@ export function createForemanMesh(mats) {
   const spine = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.7, 5), mats.bone, false);
   spine.position.set(0, 0.45, -0.15);
   torso.add(spine);
-  const apron = mesh(new THREE.BoxGeometry(0.52, 1.15, 0.02), fm.apron);
-  apron.position.set(0, 0.1, 0.17);
-  torso.add(apron);
+  // the apron: one heavy leather panel, chest to just below the knee (see apronCloth). It lives in the hips' space
+  // and is re-shaped every frame by poseForeman, so it leans with him above the waist and the legs push it out
+  // in front of them below it instead of walking through it
+  const apron = apronCloth(fm);
+  hips.add(apron.mesh);
   for (const s of [-1, 1]) { // apron straps
     const st = mesh(new THREE.BoxGeometry(0.03, 0.4, 0.02), fm.apron, false);
     st.position.set(s * 0.12, 0.78, 0.12);
@@ -252,5 +324,6 @@ export function createForemanMesh(mats) {
   arms[0].hand.add(cleaverG);
 
   root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return { root, hips, torso, neck, head, jaw, legs, arms, eyes, hook };
+  apron.update({ torso, legs, hips }); // shaped once now, in case something shows him before posing him
+  return { root, hips, torso, neck, head, jaw, legs, arms, eyes, hook, apron };
 }

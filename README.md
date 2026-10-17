@@ -84,11 +84,11 @@ The dead are people: jointed bodies with grey, slack faces (half-closed eyes, ja
 
 A death that would send you to B1 (dying on B1 itself, Hard from B2, or any Extreme death) ends the shift: the next one starts fresh, with a new layout.
 
-**Dev mode:** a checkbox under the four difficulty cards. With it on, every floor's puzzle starts solved (you still cut the tags), a DEV MODE badge shows in the corner, and **~** (the key under Esc) opens a dev menu with these options:
+**Dev mode:** a checkbox under the four difficulty cards. With it on, every floor starts complete (every worker's tag is already in the lift and every puzzle is solved; you just pull the lever), a DEV MODE badge shows in the corner, and **~** (the key under Esc) opens a dev menu with these options:
 - walk through walls
 - make the Foreman unable to see or hear you
-- whether puzzles start solved
-- solve this floor's puzzle now
+- whether floors start complete
+- complete this floor now (tags and puzzles)
 
 It stays on until you untick it.
 

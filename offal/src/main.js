@@ -358,7 +358,7 @@ function updateTransition(dt) {
     G.invStart = cloneInv(G.inv);
     if (G.mode === 'story' && !tr.snap) { save.story.inv = cloneInv(G.inv); writeSave(); }
     if (tr.snap) restoreSnapshot(tr.snap);
-    if (G.dev && G.dev.presolve) G.puzzles.solveAll();
+    if (G.dev && G.dev.presolve) devComplete();
     const info = G.info;
     UI.$('cardB').textContent = info.label;
     UI.$('cardName').textContent = info.name;
@@ -1282,7 +1282,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'build') buildGun();
   else if (act === 'replay') startReplay(b.dataset.cut);
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
-  else if (act === 'devsolve' && G.dev && G.puzzles) { G.puzzles.solveAll(); UI.message('Dev: this floor\u2019s puzzle is solved.', 2.5); }
+  else if (act === 'devsolve' && G.dev && G.puzzles) { devComplete(); UI.message('Dev: floor complete. Every tag is in the lift and every puzzle is solved: pull the lever.', 3); }
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
   else if (act === 'back' && G.state === 'menu' && UI.$('collection').classList.contains('on')) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
@@ -1373,6 +1373,27 @@ addEventListener('keydown', (e) => {
 if (/[?&]safe=1/.test(window.location.search)) UI.$('safeNote').hidden = false;
 
 // ---------- dev mode ----------
+// the whole floor done at once: every worker's tag cut and already fed to the lift, and every puzzle solved.
+// All that's left is to walk to the lift and pull the lever
+function devComplete() {
+  if (!G.B || !G.puzzles) return;
+  G.puzzles.solveAll();
+  const B = G.B;
+  B.corpses.forEach((c, i) => {
+    if (c.harvested) return;
+    c.harvested = true;
+    c.tag.visible = false;
+    c.cavity.scale.multiplyScalar(1.35);
+    c.pool.scale.setScalar(1.4);
+    c.flies.visible = false;
+    if (G.flies[i]) { G.flies[i].stop(); G.flies[i] = null; }
+    G.runTags++;
+  });
+  player.tags = 0;
+  B.lift.inserted = Math.max(B.lift.inserted, G.D.tags);
+  B.lift.lights.forEach((l, i) => { if (i < B.lift.inserted) l.material.color.setHex(0xff3a10); });
+}
+
 UI.$('devMode').addEventListener('change', (e) => { save.settings.dev = e.target.checked; writeSave(); });
 function openDevMenu() {
   if (!G.dev || G.state !== 'play') return;
@@ -1395,7 +1416,7 @@ for (const [id, key] of [['devNoclip', 'noclip'], ['devGhost', 'ghost'], ['devPr
   UI.$(id).addEventListener('change', (e) => {
     if (!G.dev) return;
     G.dev[key] = e.target.checked;
-    if (key === 'presolve') { save.settings.devPresolve = e.target.checked; writeSave(); if (e.target.checked && G.puzzles) G.puzzles.solveAll(); }
+    if (key === 'presolve') { save.settings.devPresolve = e.target.checked; writeSave(); if (e.target.checked && G.puzzles) devComplete(); }
     // made invisible mid-chase: he loses you on the spot
     if (key === 'ghost' && e.target.checked) for (const h of G.hunters) if (['chase', 'attack', 'alert', 'heard', 'investigate'].includes(h.state)) { h.awareness = 0; h.setState('patrol'); }
   });
