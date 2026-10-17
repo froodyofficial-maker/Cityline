@@ -1512,7 +1512,7 @@ function endCinema() {
   openCinema();
 }
 addEventListener('beforeunload', () => { if (G.cineKeep) { Object.assign(save, { story: G.cineKeep.story, snap: G.cineKeep.snap, shifts: G.cineKeep.shifts }); writeSave(); } }); // closed mid-shot: the real save comes back
-addEventListener('keydown', (e) => { if (e.code === 'Escape' && (G.state === 'cinema' || (G.cine && G.state === 'transition'))) endCinema(); });
+addEventListener('keydown', (e) => { if ((e.code === 'Escape' || e.code === 'KeyE') && (G.state === 'cinema' || (G.cine && G.state === 'transition'))) endCinema(); });
 
 // the launcher opened us with safe graphics (no GPU): say so on the menu
 if (/[?&]safe=1/.test(window.location.search)) UI.$('safeNote').hidden = false;

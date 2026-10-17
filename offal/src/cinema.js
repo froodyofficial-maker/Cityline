@@ -1,8 +1,9 @@
 // Cinema: staged shots for trailers and thumbnails, played live (record them with OBS). The game loads a floor,
 // then holds it while a camera of our own moves and the Foreman does what the shot needs. No HUD, no torch,
-// full resolution. Esc goes back to the list.
+// full resolution. Esc or E goes back to the list.
 import * as THREE from 'three';
 import { findPath } from './level.js';
+import { poseForeman } from './monster.js';
 
 export const SHOTS = [
   { id: 'desk', name: 'Office desk', note: 'Slow push in on the papers', floor: 0, secs: 6 },
@@ -11,6 +12,7 @@ export const SHOTS = [
   { id: 'walkBehind', name: 'Walking: behind', note: 'Following him into the dark', floor: 3, secs: 7 },
   { id: 'walkLow', name: 'Walking: low angle', note: 'Looking up at him as he passes', floor: 5, secs: 7 },
   { id: 'thumb', name: 'In the aisle', note: 'Down the carcass aisle, him on the right, arms out; holds still', floor: 7, secs: 9999 },
+  { id: 'rise', name: 'Legs to face', note: 'Low at his boots, rising slowly up to his face', floor: 7, secs: 9 },
   { id: 'face', name: 'Face close-up', note: 'His face on the right, black beside it; holds still', floor: 7, secs: 9999 },
 ];
 
@@ -49,17 +51,24 @@ export class Cinema {
       }
       const d = this.door || { x: L.rooms[1].cx * 2 + 1, z: L.rooms[1].cy * 2 + 1, dx: -1 };
       this.door = d;
-      h.pos.set(d.x, 0, d.z); h.yaw = d.dx < 0 ? -Math.PI / 2 : Math.PI / 2;
-      h.setState('listen'); h.listenFor = 999; h.lookBase = h.yaw;
+      h.pos.set(d.x, 0, d.z); h.yaw = d.dx < 0 ? Math.PI / 2 : -Math.PI / 2; // facing back into the room, at the camera
     }
     if (shot.id.startsWith('walk')) {
-      const rooms = L.rooms.slice(1), a = rooms[0];
-      const b = rooms.slice().sort((p, q) => Math.hypot(q.cx - a.cx, q.cy - a.cy) - Math.hypot(p.cx - a.cx, p.cy - a.cy))[0];
-      const path = [{ x: a.cx * 2 + 1, z: a.cy * 2 + 1 }, ...(findPath(L, a.cx * 2 + 1, a.cy * 2 + 1, b.cx * 2 + 1, b.cy * 2 + 1) || [])];
+      // a long walk: room to room, always to the furthest one not yet visited, until there's plenty of route
+      const rooms = L.rooms.slice(1), seen = new Set([rooms[0]]);
+      let at = rooms[0], path = [{ x: at.cx * 2 + 1, z: at.cy * 2 + 1 }], len = 0;
+      while (len < 40 && seen.size < rooms.length) {
+        const b = rooms.filter((r) => !seen.has(r)).sort((p, q) => Math.hypot(q.cx - at.cx, q.cy - at.cy) - Math.hypot(p.cx - at.cx, p.cy - at.cy))[0];
+        seen.add(b);
+        const leg = findPath(L, at.cx * 2 + 1, at.cy * 2 + 1, b.cx * 2 + 1, b.cy * 2 + 1);
+        if (!leg || !leg.length) continue;
+        for (const q of leg) { const last = path[path.length - 1]; len += Math.hypot(q.x - last.x, q.z - last.z); path.push(q); }
+        at = b;
+      }
       let s = 0;
       this.route = path.map((q, i) => { if (i) s += Math.hypot(q.x - path[i - 1].x, q.z - path[i - 1].z); return { x: q.x, z: q.z, s }; });
       this.s = 3.5;
-      h.setState('patrol');
+      this.gait = 0;
     }
     if (shot.id === 'thumb') {
       // down the long axis of the processing line: you at one end, him five metres down it, right of centre
@@ -68,15 +77,17 @@ export class Cinema {
       const cam = { x: (r.x + r.w / 2) * 2 - f[0] * (half - 0.8), z: (r.y + r.h / 2) * 2 - f[1] * (half - 0.8) };
       this.c = { cam, f, him: { x: cam.x + f[0] * 5 + right[0] * 1.35, z: cam.z + f[1] * 5 + right[1] * 1.35 } };
       h.pos.set(this.c.him.x, 0, this.c.him.z); h.yaw = Math.atan2(cam.x - this.c.him.x, cam.z - this.c.him.z);
-      h.setState('listen'); h.listenFor = 999; h.lookBase = h.yaw;
     }
     if (shot.id === 'face') {
       const r = L.rooms.slice(1).sort((p, q) => q.w * q.h - p.w * p.h)[0];
       h.pos.set(r.cx * 2 + 1, 0, r.cy * 2 + 1); h.yaw = 0;
-      h.setState('listen'); h.listenFor = 999; h.lookBase = 0;
       // everything but his face goes to black
       this.fog = { c: scene.fog.color.getHex(), d: scene.fog.density };
       scene.fog.color.setHex(0x000000); scene.fog.density = 0.55;
+    }
+    if (shot.id === 'rise') {
+      const r = L.rooms.slice(1).sort((p, q) => q.w * q.h - p.w * p.h)[0];
+      h.pos.set(r.cx * 2 + 1, 0, r.cy * 2 + 1); h.yaw = 0; // facing +z, where the camera is
     }
     if (h) { h.obj.position.copy(h.pos); h.obj.rotation.y = h.yaw; } // the office has nobody in it
   }
@@ -109,7 +120,7 @@ export class Cinema {
       fill.position.set(c.position.x, c.position.y + 0.5, c.position.z); fill.intensity = 2.5;
     } else if (sh.id === 'doorway') {
       const d = this.door, side = (e - 0.5) * 7.5;
-      h.listenFor = 999; h.update(dt, this.t); h.body.head.rotation.y *= 0.3;
+      this.stand(0.2, Math.sin(this.t * 0.6) * 0.35); // only his head moves: nothing swings through the door frame
       c.position.set(d.x - d.dx * 5.2, 1.55, d.z + side);
       c.lookAt(d.x - d.dx * 0.5, 1.45, d.z + side * 0.85);
       c.fov = 52;
@@ -118,9 +129,10 @@ export class Cinema {
     } else if (sh.id.startsWith('walk')) {
       this.s += 1.25 * dt;
       const p0 = this.at(this.s), p1 = this.at(this.s + 0.6);
-      h.state = 'patrol'; h.speed = 1.25; h.gait = (h.gait || 0) + 1.25 * dt * 2.6;
-      h.update(0.0001, this.t);
-      h.pos.set(p0.x, 0, p0.z); h.yaw = Math.atan2(p1.x - p0.x, p1.z - p0.z) + Math.PI;
+      if (this.s > this.route[this.route.length - 1].s - 5) this.s = 3.5; // the end of the route: round again
+      this.gait += 1.25 * dt * 2.6;
+      poseForeman(h.body, { gait: this.gait, speed: 1.25, mode: 'walk', t: this.t, jawOpen: 0.15, twitch: { x: 0, y: 0, z: 0, r: 0 } });
+      h.pos.set(p0.x, 0, p0.z); h.yaw = Math.atan2(p1.x - p0.x, p1.z - p0.z); // facing the way he walks
       h.obj.position.copy(h.pos); h.obj.rotation.y = h.yaw;
       if (sh.id === 'walkFront') {
         const q = this.at(this.s + 3.2), r = this.at(this.s - 1.4);
@@ -137,7 +149,7 @@ export class Cinema {
       }
     } else if (sh.id === 'thumb') {
       const { cam, f, him } = this.c;
-      h.listenFor = 999; h.update(dt, this.t);
+      this.stand(0.8, 0);
       h.yaw = Math.atan2(cam.x - him.x, cam.z - him.z); h.obj.rotation.y = h.yaw;
       h.body.head.rotation.set(0.12, 0, 0.1); h.body.neck.rotation.y = 0; h.body.jaw.rotation.x = 0.8;
       h.body.arms.forEach((a, i) => { a.sh.rotation.set(-0.35, 0, i ? -1.25 : 1.25); a.el.rotation.x = -0.35; }); // arms out wide
@@ -146,7 +158,7 @@ export class Cinema {
       fill.position.set(him.x - f[0] * 1.8, 2.2, him.z - f[1] * 1.8); fill.intensity = 16;
       rim.position.set(him.x + f[0] * 1.6, 2.7, him.z + f[1] * 1.6); rim.intensity = 26;
     } else if (sh.id === 'face') {
-      h.listenFor = 999; h.update(dt, this.t);
+      this.stand(0.55, 0);
       h.yaw = 0; h.obj.rotation.y = 0;
       h.body.head.rotation.set(0.08, 0, -0.06); h.body.neck.rotation.set(-0.35, 0, 0); h.body.jaw.rotation.x = 0.55;
       h.obj.updateMatrixWorld(true);
@@ -155,8 +167,25 @@ export class Cinema {
       c.position.set(hp.x - 0.3, hp.y - 0.02, hp.z + 0.78); c.lookAt(hp.x - 0.3, hp.y - 0.02, hp.z); c.fov = 40;
       fill.position.set(hp.x - 0.95, hp.y + 0.3, hp.z + 0.4); fill.intensity = 10; fill.distance = 3.2; rim.distance = 1.6;
       rim.position.set(hp.x + 0.5, hp.y + 0.3, hp.z - 0.5); rim.intensity = 1.5;
+    } else if (sh.id === 'rise') {
+      // from his boots up to his face; at the top his head comes down to look at you
+      const look = ease(Math.max(0, (this.t - sh.secs * 0.7) / (sh.secs * 0.25)));
+      this.stand(0.15 + look * 0.5, 0);
+      h.body.neck.rotation.x += look * 0.35;
+      h.obj.position.copy(h.pos); h.obj.rotation.y = h.yaw;
+      h.obj.updateMatrixWorld(true);
+      const hp = h.body.head.getWorldPosition(c.position.clone());
+      const r = ease(Math.min(1, this.t / (sh.secs * 0.85)));
+      c.position.set(hp.x + 0.15, 0.25 + r * (hp.y - 0.35), hp.z + 1.7 - r * 0.45);
+      c.lookAt(hp.x, 0.3 + r * (hp.y - 0.3), hp.z); c.fov = 50;
+      fill.position.set(hp.x - 0.6, c.position.y + 0.4, hp.z + 1.2); fill.intensity = 6; fill.distance = 5;
+      rim.position.set(hp.x + 0.6, 2.6, hp.z - 1.0); rim.intensity = 14; rim.distance = 5;
     }
     c.updateProjectionMatrix();
     return this.t >= sh.secs;
+  }
+  // standing his ground: breathing, the jaw where the shot wants it, his head turned by look
+  stand(jaw, look) {
+    poseForeman(this.h.body, { gait: 0, speed: 0, mode: 'walk', t: this.t, jawOpen: jaw, twitch: { x: 0, y: 0, z: look, r: 0 } });
   }
 }
