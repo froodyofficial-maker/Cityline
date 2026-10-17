@@ -942,6 +942,10 @@ export class Cutscene {
       this.him.arms[1].sh.rotation.set(lerp(-0.2, -2.9, k), 0, -0.2);
       this.handPos(1, hand);
       you.root.position.set(hand.x, hand.y - 1.1, hand.z);
+      // until he's high enough to go over the rim, keep him off the machine: nothing passes through the steel
+      const over = clamp01((hand.y - 2.6) / 0.6);
+      you.root.position.x = lerp(Math.max(hand.x, 1.25), hand.x, over);
+      you.root.position.z = lerp(Math.max(hand.z, -1.75), hand.z, over);
       orient(you.root, V(0, -1, 0), V(0, 0, 1));
       this.at(3.2, 'growl', () => this.audio.growl({ x: 0.9, y: 2, z: -2 }, 1));
     } else {
