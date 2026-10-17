@@ -383,11 +383,11 @@ export function lootMesh(mats, type, meta, rng) {
   if (type === 'ammo') {
     g.add(at(mesh(box(0.16, 0.07, 0.1), m.cardboard), 0, 0.035, 0));
     for (let i = 0; i < 3; i++) { const b = mesh(cyl(0.008, 0.008, 0.09, 6), phong({ color: 0xc8a040, shininess: 120 }), false); b.rotation.z = Math.PI / 2; g.add(at(b, 0.02, 0.08, -0.03 + i * 0.03)); }
-  } else if (type === 'part') {
-    g.add(at(mesh(box(0.35, 0.01, 0.3), m.rag, false), 0, 0.005, 0, 0.3));
-    if (meta.part === 'barrel') { const b = mesh(cyl(0.035, 0.04, 0.3, 10), mats.steel, false); b.rotation.z = Math.PI / 2; g.add(at(b, 0, 0.045, 0)); }
-    else if (meta.part === 'spring') { const sp = mesh(geo('spring', () => new THREE.TorusKnotGeometry(0.035, 0.008, 40, 5, 1, 9)), mats.steel, false); sp.scale.set(1, 1, 2.2); sp.rotation.y = Math.PI / 2; g.add(at(sp, 0, 0.04, 0)); }
-    else { const gr = mesh(box(0.05, 0.14, 0.07), phong({ color: 0x1a1612 }), false); gr.rotation.z = Math.PI / 2 - 0.3; g.add(at(gr, 0, 0.04, 0)); }
+  } else if (type === 'gun') { // the bolt gun, whole, on an oily rag
+    g.add(at(mesh(box(0.42, 0.01, 0.32), m.rag, false), 0, 0.005, 0, 0.3));
+    const body = mesh(cyl(0.035, 0.04, 0.34, 10), mats.steel, false); body.rotation.z = Math.PI / 2; g.add(at(body, 0, 0.045, 0));
+    const capm = mesh(cyl(0.045, 0.045, 0.06, 10), phong({ color: 0x2a2826 }), false); capm.rotation.z = Math.PI / 2; g.add(at(capm, 0.17, 0.045, 0));
+    const gr = mesh(box(0.045, 0.06, 0.14), phong({ color: 0x1a1612 }), false); g.add(at(gr, 0.08, 0.04, 0.08));
   } else { // a keepsake: the same model you turn over in the viewer, set down where it was dropped
     const k = meta.id ? keepsakeModel(meta.id) : new THREE.Group();
     const upright = ['toy-bear', 'toy-car', 'tape-dictaphone', 'misc-lighter', 'tooth-milk'].includes(meta.id);

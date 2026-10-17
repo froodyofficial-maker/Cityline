@@ -66,7 +66,11 @@ export const THEMES = {
 // each kind of floor's own job, for overtime's lottery
 const THEME_PUZZLES = { morgue: ['drawers'], offices: ['keycard'], sewer: ['sluices'], freezer: ['meatkey'], processing: ['scale'] };
 
+// before B1: the office at the bottom of the building where you were hired. No tags, no Foreman, one notice.
+const INTRO = { name: 'THE HIRING OFFICE', quote: 'You answered an advertisement. Good pay. Nights. No experience necessary.', lamp: 0xfff0c8, fog: 0x050402, label: 'SUB-LEVEL', theme: 'offices' };
+
 export function floorInfo(depth, mode = 'story') {
+  if (depth === 0) return { ...INTRO };
   if (mode === 'story' || depth <= 6) {
     const f = STORY[Math.min(depth, STORY_FLOORS) - 1];
     return { name: f.name, quote: f.quote, lamp: f.lamp, fog: f.fog, label: 'B' + depth, theme: f.theme || 'plant' };
@@ -98,6 +102,7 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
     fogBoost: 0,
     finale: false,
   };
+  if (depth === 0) return { ...base, ...pace, batteries: 2, size: 24, rooms: 6, tags: 0, hunters: 0, puzzles: ['notice'], adrenaline: 0, gore: 0, screamers: 0, deadLamps: 0.1, theme: 'offices', intro: true };
   if (mode === 'story') {
     const f = STORY[Math.min(depth, STORY_FLOORS) - 1];
     return { ...base, ...pace, batteries: batteriesFor(f.size, diffKey), size: f.size, rooms: f.rooms, tags: f.tags, hunters: f.hunters, puzzles: f.puzzles, finale: !!f.finale,

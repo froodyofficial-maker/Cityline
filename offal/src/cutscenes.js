@@ -1244,12 +1244,6 @@ export class Cutscene {
     s.add(this.hook);
     this.hole = plane(0.5, 0.42, new THREE.MeshBasicMaterial({ map: yardTex('hole'), transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0, 0, 0, Math.PI);
     this.hole.visible = false;
-    this.eyes = new THREE.Group();
-    for (const dx of [-0.045, 0.045]) { const e = mesh(new THREE.SphereGeometry(0.014, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff3010, fog: false }), false); e.position.x = dx; this.eyes.add(e); }
-    this.eyes.visible = false;
-    s.add(this.eyes);
-    this.eyeLight = new THREE.PointLight(0xff2a10, 0, 2.5, 2);
-    s.add(this.eyeLight);
 
     // ---- the yard: asphalt, the dock lane, lamp posts still on, the fence, trees, the morning ----
     const asphalt = new THREE.MeshLambertMaterial({ map: yardTex('asphalt') });
@@ -1366,7 +1360,7 @@ export class Cutscene {
     this.audio.thud(V(x, y, YARD.Z1), 1.2 * loud);
     this.audio.clank(V(x, y, YARD.Z1), 0.9 * loud);
     setTimeout(() => this.audio.clank(V(x, 3, YARD.Z1), 0.3), 120); // the rest of it rattling in its guides
-    this.shake = Math.max(this.shake, 0.7 * loud);
+    this.shake = Math.max(this.shake, 0.3 * loud);
     this.puff(10, this.shut.mesh.position.y + this.shut.h / 2 - 0.1, 1);
     this.puff(4, 0.05, 1);
     for (const sw of this.swing) sw.a += 0.01 * loud;
@@ -1454,7 +1448,7 @@ export class Cutscene {
     } else if (t < 9.5) {
       // it stops; the gate goes up on the bay, and the morning at the far end of it
       this.shaftFront.position.y = -10;
-      this.at(6, 'stop', () => { this.audio.liftMotor(false); this.audio.clank({ x: 0, y: 1, z: -1 }, 1); this.shake = 0.6; });
+      this.at(6, 'stop', () => { this.audio.liftMotor(false); this.audio.clank({ x: 0, y: 1, z: -1 }, 1); this.shake = 0.25; });
       this.at(6.6, 'gate', () => this.audio.gateSlide({ x: 0, y: 1, z: -1 }));
       const k = ease((t - 6.6) / 2.2);
       this.bars.position.y = k * 2.7;
@@ -1480,7 +1474,7 @@ export class Cutscene {
       const hp = this.headPos();
       lookAt(hp, k * 0.85, k * Math.PI);
       this.at(15.6, 'click', () => this.audio.click(this.headPos()));
-      this.fear = 0.45;
+      this.fear = 0.35;
       this.liftLamp.intensity = 1.6;
     } else if (t < 17.9) {
       // he comes out of the cage at you
@@ -1489,12 +1483,12 @@ export class Cutscene {
       lookAt(this.headPos(), 0.9 + k * 0.1, Math.PI);
       cam.fov = lerp(70, 30, k);
       cam.updateProjectionMatrix();
-      this.at(16.6, 'roar', () => { this.audio.roar(this.headPos()); this.shake = 0.4; });
-      this.fear = 0.6 + k * 0.2;
+      this.at(16.6, 'roar', () => { this.audio.roar(this.headPos()); this.shake = 0.15; });
+      this.fear = 0.4 + k * 0.1;
     } else if (t < 21.1) {
       // run. Look back once.
       const tt = t - 17.9, z = -10.5 - (tt < 0.5 ? tt * tt * 5.5 : 1.375 + (tt - 0.5) * 5.6);
-      stride(z, 0.07, 9.5, 1.4);
+      stride(z, 0.04, 9.5);
       const turn = ease(tt / 0.45), back = t > 19.5 && t < 20.4 ? Math.sin((t - 19.5) / 0.9 * Math.PI) : 0;
       cam.fov = lerp(30, 74, turn) - back * 26; // and the look back narrows on him
       cam.updateProjectionMatrix();
@@ -1504,7 +1498,7 @@ export class Cutscene {
       this.at(18.6, 'gasp', () => this.audio.gasp());
       this.at(20.3, 'gasp2', () => this.audio.gasp());
       this.at(19.7, 'roar2', () => this.audio.roar(this.headPos()));
-      this.fear = 0.85;
+      this.fear = 0.5;
     } else if (t < 22.6) {
       // out under it, into the cold. Turn round, backing off, and it comes down.
       const tt = t - 21.1, z = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-tt * 1.6));
@@ -1523,15 +1517,15 @@ export class Cutscene {
           this.audio.thud({ x: 0, y: 0.2, z: Z1 }, 1.4);
           this.audio.clank({ x: 0, y: 0.3, z: Z1 }, 1.2);
           this.audio.shutter({ x: 0, y: 2, z: Z1 });
-          this.shake = 1.2;
+          this.shake = 0.5;
           this.puff(18, 0.08, 1);
           this.puff(10, this.shut.h - 0.1, 1);
         }
       }
       if (this.hitDoor !== undefined) this.at(this.hitDoor + 0.02, 'bang1', () => this.bang(0.15, 1.6, 0.2, 1.3));
-      this.fear = lerp(0.85, 0.55, k);
+      this.fear = lerp(0.5, 0.4, k);
     } else if (t < 29.2) {
-      // he hits it. Again. The hook comes through. Then nothing, and his eyes in the hole.
+      // he hits it. Again. The hook comes through, and pulls back. Then nothing: a dark hole, and him breathing behind it.
       const k = (t - 22.6) / 6.6;
       const tt = t - 21.1, z = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-tt * 1.6)) - k * 0.6;
       cam.position.set(Math.sin(t * 0.9) * 0.02, 1.62 + Math.sin(t * 1.3) * 0.01, z);
@@ -1553,35 +1547,27 @@ export class Cutscene {
       this.hook.rotation.x = Math.sin(t * 5) * 0.1;
       this.at(26.0, 'scrape', () => { this.audio.creak({ x: HOLE.x, y: HOLE.y, z: Z1 }); this.audio.burst(this.audio.sfx, { type: 'bandpass', f: 2400, q: 6, dur: 0.9, vol: 0.25, sweep: [2800, 1700] }); });
       if (push < -0.25) this.hook.visible = false;
-      // and then he looks
-      const eyesOn = t > 27.1 && t < 29.0;
-      this.eyes.visible = eyesOn && Math.sin(t * 2.2) > -0.97; // a blink
-      this.eyes.position.set(HOLE.x, HOLE.y + 0.01, hz - 0.016);
-      this.eyeLight.position.set(HOLE.x, HOLE.y, hz - 0.25);
-      this.eyeLight.intensity = eyesOn ? 1.4 : 0;
       this.at(27.3, 'growl', () => this.audio.growl({ x: HOLE.x, y: HOLE.y, z: Z1 + 0.3 }, 0.8));
       this.at(28.3, 'eclick', () => this.audio.click({ x: HOLE.x, y: HOLE.y, z: Z1 + 0.3 }));
       // where you look: the whole door, then into the hole
       const hk = ease((t - 24.9) / 1.5), ek = ease((t - 27.1) / 1.6);
       const aim = V(lerp(0, HOLE.x, hk), lerp(1.7, HOLE.y, hk), Z1);
       lookAt(aim, 1, Math.PI);
-      cam.fov = lerp(70, lerp(58, 30, ek), hk);
+      cam.fov = lerp(70, lerp(58, 46, ek), hk);
       cam.updateProjectionMatrix();
-      this.fear = t > 27.1 ? 0.5 + ek * 0.25 : 0.55 - k * 0.2;
+      this.fear = 0.4 - k * 0.1;
     } else {
       // you turn your back on him and walk away into the yard
       const k = ease((t - 29.2) / 1.4);
       const z0 = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-(29.2 - 21.1) * 1.6)) - 0.6;
-      cam.fov = lerp(30, 70, ease((t - 29.2) / 0.9));
+      cam.fov = lerp(46, 70, ease((t - 29.2) / 0.9));
       cam.updateProjectionMatrix();
       stride(z0 - Math.max(0, t - 29.9) * 1.25 * Math.min(1, (t - 29.9) * 1.5 + 0.2), 0.025 * clamp01(t - 29.9), 4.4);
       look(lerp(Math.PI, Math.PI * 2 + 0.25, k), lerp(0, 0.04, k));
-      this.eyes.visible = false;
-      this.eyeLight.intensity = 0;
       this.at(29.6, 'dawn', () => this.audio.dawn());
       this.at(31.6, 'last', () => this.bang(-0.3, 1.4, 0.05, 0.6)); // one more, behind you. You don't look.
       this.flash = Math.max(this.flash, clamp01((t - 32.6) / 3.2)); // into the white
-      this.fear = Math.max(0, 0.35 - (t - 29.2) * 0.15);
+      this.fear = Math.max(0, 0.3 - (t - 29.2) * 0.15);
     }
     if (t >= 6 && t < 9.5) this.shaftFront.position.y = -10;
     const fwd = V(0, 0, -1).applyQuaternion(cam.quaternion);

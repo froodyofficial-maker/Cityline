@@ -316,3 +316,19 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .tasks small { display: block; margin-top: 3px; font-size: 9px; letter-spacing: .18em; color: rgba(216,205,184,.4); text-decoration: none; }
 .tasks ul { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid rgba(58,10,6,.7); font-size: 10px; letter-spacing: .18em; color: rgba(216,205,184,.45); line-height: 1.9; }
 .tasks-help { margin: 10px 0 0; font-size: 9px; letter-spacing: .3em; color: rgba(216,205,184,.35); }
+
+/* the floor you start a new shift from, once you've finished one */
+.floor-pick { margin: 18px auto 0; text-align: center; }
+.floor-pick > b { display: block; font-size: 11px; letter-spacing: .4em; color: rgba(216,205,184,.6); font-weight: normal; margin-bottom: 8px; }
+.floor-pick #floorPickBtns { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 760px; margin: 0 auto; }
+.floor-pick button { font-size: 11px; letter-spacing: .15em; padding: 6px 10px; border: 1px solid #3a0a06; color: rgba(216,205,184,.65); background: rgba(10,4,4,.6); }
+.floor-pick button.sel { color: var(--bone); border-color: var(--fresh); box-shadow: 0 0 10px rgba(160,10,0,.35); }
+.floor-pick button small { display: block; font-size: 8px; letter-spacing: .1em; opacity: .7; }
+/* a letter you read on the floor */
+.letter { width: min(560px, 92vw); max-height: 88vh; overflow: auto; }
+.letter h2 { margin-bottom: 4px; }
+.letter-head { font-size: 11px; letter-spacing: .25em; opacity: .7; margin: 0 0 18px; }
+.letter-body p { margin: 0 0 12px; line-height: 1.6; }
+.letter-sign { margin: 18px 0 2px; }
+.letter-from { font-size: 20px; letter-spacing: .4em; color: #6a0a06; margin: 0 0 16px; }
+.letter-help { font-size: 11px; letter-spacing: .2em; }

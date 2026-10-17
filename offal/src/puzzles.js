@@ -951,7 +951,72 @@ class MeatKey {
   load(s) { this.found = s.found; s.searched.forEach((v, i) => { const c = this.sides[i]; if (c && v) { c.searched = true; c.wrap.visible = false; } }); this.sides.forEach((c, i) => (c.has = i === s.has)); }
 }
 
-const KINDS = { fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers, drawers: Drawers, sluices: Sluices, keycard: Keycard, meatkey: MeatKey };
+// ---------- the hiring office: the notice that was left for you ----------
+export const NOTICE = {
+  title: 'NOTICE OF EMPLOYMENT',
+  head: 'HOLLOW PINES MEATWORKS \u00B7 NIGHT SHIFT \u00B7 NEW HIRE',
+  body: [
+    'To the new hire.',
+    'You start tonight. Take the service lift behind this office all the way up to the top of the building: RECEIVING. That is where the line begins.',
+    'The line runs downward, and so will you. On every floor there are workers who did not finish their shift. Each of them swallowed a brass ID tag. The lift will not go down a floor until it has been fed their tags. Cut them out. Feed the lift. Go down. Do it again.',
+    'Some floors will have other work for you: power, pressure, paperwork. See to it.',
+    'You will not be alone on the floors. The Foreman is still on shift. Do not let him see you.',
+    'When the line at the bottom has stopped, you may clock out.',
+  ],
+  sign: 'Your employer,',
+  from: 'UNKNOWN',
+};
+class Notice {
+  constructor(ctx) {
+    const { G, B, mats, rng, add, maxDist } = ctx;
+    this.kind = 'notice';
+    this.gates = true;
+    this.ctx = ctx;
+    this.read = false;
+    // as far from the lift as the office goes, on a desk under the only lamp still working
+    const W = G.L.W;
+    const t = B.takeTile(([x, y]) => G.L.dist[y * W + x] > maxDist * 0.65 && !B.inWing(x, y)) || B.takeTile(([x, y]) => !B.inWing(x, y));
+    const x = tileCenter(t[0]), z = tileCenter(t[1]);
+    const d = P2.desk(mats, rng);
+    add(d, x, z, rng.pick([0, Math.PI / 2, Math.PI, -Math.PI / 2]));
+    B.colliders.push({ x0: x - 0.8, z0: z - 0.8, x1: x + 0.8, z1: z + 0.8, hunters: true });
+    // the envelope: cream paper, a red wax seal, your name left blank
+    const env = plane(0.32, 0.22, new THREE.MeshLambertMaterial({ map: plainTex(128, 88, (g) => {
+      g.fillStyle = '#e4dcc4'; g.fillRect(0, 0, 128, 88);
+      g.strokeStyle = 'rgba(120,100,70,.5)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(64, 46); g.lineTo(128, 0); g.stroke();
+      g.fillStyle = '#7a0a06'; g.beginPath(); g.arc(64, 46, 9, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2a2018'; g.font = '10px "Courier New", monospace'; g.textAlign = 'center'; g.fillText('NEW HIRE', 64, 78);
+    }).tex }));
+    env.rotation.x = -Math.PI / 2;
+    env.rotation.z = 0.2;
+    env.position.set(0.1, 0.775, 0.05);
+    d.add(env);
+    this.env = env;
+    const lamp = new THREE.PointLight(0xffe0a0, 3, 4, 1.6);
+    lamp.position.set(0, 1.8, 0);
+    d.add(lamp);
+    this.pos = new THREE.Vector3(x, 0.8, z);
+  }
+  get solved() { return this.read; }
+  interactables() {
+    if (this.read) return [];
+    return [{ pos: this.pos, range: 1.6, minFacing: 0.3, tap: true, label: 'READ THE NOTICE', use: () => {
+      this.read = true;
+      this.env.visible = false;
+      this.ctx.G.audio.pickup();
+      if (this.ctx.G.openLetter) this.ctx.G.openLetter(NOTICE);
+    } }];
+  }
+  goals() { return this.read ? [] : [this.pos]; }
+  line() { return null; }
+  title() { return this.read ? 'NOTICE READ' : 'FIND THE NOTICE LEFT FOR YOU'; }
+  liftMsg() { return 'THE LIFT IS LOCKED UNTIL YOU HAVE READ YOUR NOTICE'; }
+  solve() { this.load({ read: true }); }
+  save() { return { read: this.read }; }
+  load(s) { this.read = !!s.read; this.env.visible = !this.read; }
+}
+
+const KINDS = { notice: Notice, fuses: Fuses, keypad: Keypad, scale: Scale, valves: Valves, breakers: Breakers, drawers: Drawers, sluices: Sluices, keycard: Keycard, meatkey: MeatKey };
 
 export class Puzzles {
   constructor(G, kinds, seed) {

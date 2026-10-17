@@ -198,7 +198,7 @@ export class AudioEngine {
   setMode(mode) {
     if (!this.ctx) return;
     this.mode = mode;
-    if (mode !== 'ending' && this.dawnNodes) { this.dawnNodes.forEach((o) => o.stop(this.t + 0.5)); this.dawnNodes = null; }
+    if (mode !== 'ending') this.stopDawn();
     this.chaseLevel = 0;
     const drone = { menu: 1, roam: 0.22, ending: 0 }[mode], roam = { menu: 0, roam: 1, ending: 0 }[mode];
     this.droneBus.gain.setTargetAtTime(drone, this.t, 1.2);
@@ -702,15 +702,22 @@ export class AudioEngine {
       this.lineN = null;
     }
   }
+  // the morning stops: the pad, and the birds still waiting to sing
+  stopDawn() {
+    if (this.dawnNodes) { this.dawnNodes.forEach((o) => o.stop(this.t + 0.5)); this.dawnNodes = null; }
+    if (this.dawnBus) { const bus = this.dawnBus; bus.gain.setTargetAtTime(0, this.t, 0.15); setTimeout(() => bus.disconnect(), 800); this.dawnBus = null; }
+  }
   // the very end: morning
   dawn() {
     if (!this.ctx) return;
     this.setMode('ending');
-    const g = this.gain(0, this.mus), lp = this.filter('lowpass', 1400, 0.5, g);
+    this.stopDawn();
+    this.dawnBus = this.gain(1, this.mus); // the pad and every bird go through it, so it can all be shut off at once
+    const g = this.gain(0, this.dawnBus), lp = this.filter('lowpass', 1400, 0.5, g);
     this.dawnNodes = [130.81, 196, 261.63, 329.63, 392].map((f) => { const o = this.osc('sine', f, lp); o.start(); return o; });
     g.gain.setTargetAtTime(0.05, this.t, 3);
     const bird = (at) => {
-      const b = this.gain(0, this.mus), o = this.osc('sine', 3000, b), base = 2600 + Math.random() * 1400;
+      const b = this.gain(0, this.dawnBus), o = this.osc('sine', 3000, b), base = 2600 + Math.random() * 1400;
       const t = this.t + at;
       for (let k = 0; k < 5; k++) { o.frequency.setValueAtTime(base, t + k * 0.11); o.frequency.exponentialRampToValueAtTime(base * 1.35, t + k * 0.11 + 0.06); }
       b.gain.setValueAtTime(0, t);

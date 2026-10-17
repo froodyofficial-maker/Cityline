@@ -3,9 +3,9 @@
 // that teaches each mechanic and each puzzle the first time it matters.
 import { findPath, lineOfSight, tileCenter } from './level.js';
 import * as UI from './ui.js';
-import { PART_KEYS, missingParts } from './gun.js';
 
 const BRIEF = {
+  notice: 'You answered an advertisement. The letter said a notice would be waiting for you down here, in the office.\n\nFind it. Hold Q to listen: the red arrow shows the way.',
   start: 'Your shift has started. Somewhere on this floor are dead workers with brass ID tags inside them. The lift will not move without their tags.\n\nHold Q to listen. The flies get louder, and the red arrow shows the way to whatever you need next.',
   adrenaline: 'One hit from the hook kills you.\n\nIf you find a syringe, press R to use it: a few seconds of running that never runs out of breath.',
   near: 'That’s one of them. Look at the body and hold E to cut the tag out.\n\nIt takes a few seconds. It makes no sound he can hear, but keep an eye on the doors.',
@@ -79,8 +79,7 @@ export class Guide {
     const first = rows.find((r) => !r.done);
     if (first) first.now = true;
     const extra = [];
-    const parts = PART_KEYS.length - missingParts(G.inv).length;
-    if (!G.inv.built && G.depth > 1) extra.push(`OPTIONAL \u00B7 PARTS OF A BOLT GUN ${parts}/${PART_KEYS.length}, ON THE LOWER FLOORS`);
+    if (!G.inv.built && G.depth > 1) extra.push('OPTIONAL \u00B7 FIND THE BOLT GUN: IT IS ON THIS FLOOR SOMEWHERE');
     extra.push('<kbd>Q</kbd> HOLD TO LISTEN FOR THE WAY \u00B7 <kbd>F</kbd> TORCH \u00B7 <kbd>C</kbd> CROUCH');
     const key = now + rows.map((r) => r.text + r.count + r.done + r.sub).join('|') + extra.join('|');
     if (key === this.taskKey) return;

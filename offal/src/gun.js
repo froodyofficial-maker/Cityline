@@ -1,19 +1,18 @@
-// The captive-bolt gun: the thing they stunned cattle with, put back together from parts you find on the
-// floors. Three parts build it; bolts are scarce. A hit drops the Foreman where he stands for a while
-// (how long depends on the difficulty). Firing it is the loudest thing you can do.
+// The captive-bolt gun: the thing they stunned cattle with, found in one piece on one of the lower floors.
+// Bolts are scarce. A hit drops the Foreman where he stands for a while (how long depends on the
+// difficulty). Firing it is the loudest thing you can do.
 import * as THREE from 'three';
 import { lineOfSight } from './level.js';
 
-export const PARTS = {
-  barrel: { name: 'BOLT BARREL', desc: 'The steel barrel off a captive-bolt gun. The bolt inside it is still sharp.' },
-  spring: { name: 'FIRING SPRING', desc: 'A heavy coil spring and the sear that holds it. Pulled from a stunning box.' },
-  grip: { name: 'PISTOL GRIP', desc: 'A grip and trigger, wrapped in tape that has gone black with handling.' },
-};
-export const PART_KEYS = Object.keys(PARTS);
 export const AMMO_MAX = 6;
-export const freshInv = () => ({ parts: {}, built: false, ammo: 0 });
-export const cloneInv = (inv) => JSON.parse(JSON.stringify(inv || freshInv()));
-export const missingParts = (inv) => PART_KEYS.filter((k) => !inv.parts[k]);
+// built: you have the gun (the name is older than the gun being found whole)
+export const freshInv = () => ({ built: false, ammo: 0 });
+export function cloneInv(inv) {
+  const c = JSON.parse(JSON.stringify(inv || freshInv()));
+  // a save from when the gun came in three parts: any part found counts as the gun found
+  if (c.parts) { if (Object.values(c.parts).some(Boolean)) c.built = true; delete c.parts; }
+  return c;
+}
 
 // the gun in your hand, bottom right of the view
 export function makeViewmodel(mats) {

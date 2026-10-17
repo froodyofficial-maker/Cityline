@@ -64,7 +64,7 @@
       <li>Most floors have a job besides the tags: no power, a sealed shutter, a jammed counterweight, steam on the brake. The objective line at the top always says what&rsquo;s next.</li>
       <li>Hide in lockers with <kbd>E</kbd>. If he comes close, hold <kbd>SPACE</kbd> to hold your breath. If he watched you climb in, it will not help.</li>
       <li><b>Crouchways</b> (low tunnels with striped frames) lead out of dead ends. Crouch with <kbd>C</kbd> and crawl in: he can't follow, and he'll give up on you.</li>
-      <li>Parts of a <b>captive-bolt gun</b> are lying about the lower floors. Find all four and it goes together, and a bolt will drop him for a while. Bolts are scarce, and the shot is loud.</li>
+      <li>A <b>captive-bolt gun</b> is lying on one of the lower floors. A bolt will drop him for a while. Bolts are scarce, and the shot is loud. Batteries and bolts go straight into the torch and the gun when you walk over them.</li>
       <li>If you hear the hook dragging, it's patrolling. If it goes quiet, it's running.</li>
     </ol>
     <table class="keys">
@@ -88,6 +88,7 @@
       <button class="diff-card" data-act="diff" data-diff="hard"><b>HARD</b><span class="pace">He&rsquo;s a little faster than you</span><span>Footsteps, lockers and machinery carry further. He hears you breathe sooner.</span></button>
       <button class="diff-card" data-act="diff" data-diff="extreme"><b>EXTREME</b><span class="pace">He is faster than you</span><span>You will not outrun him. Everything is loud. Hide, or don&rsquo;t be seen.</span></button>
     </div>
+    <div id="floorPick" class="floor-pick" hidden><b>START FROM</b><div id="floorPickBtns"></div></div>
     <label class="dev-toggle"><input type="checkbox" id="devMode"><b>DEV MODE</b><span>Every floor starts complete (all the tags already in the lift, every puzzle solved: just pull the lever), and <kbd>~</kbd> (the key under Esc) opens a dev menu in game: walk through walls, make him unable to see or hear you, complete the floor.</span></label>
     <button class="back" data-act="back">Back</button>
   </div>
@@ -143,6 +144,17 @@
   </div>
   <div id="pa"></div>
   <div id="devBadge">DEV MODE &middot; <kbd>~</kbd> MENU</div>
+</section>
+
+<section id="letter" class="screen panel-screen">
+  <div class="panel paper letter">
+    <h2 id="letterTitle"></h2>
+    <p class="letter-head" id="letterHead"></p>
+    <div id="letterBody" class="letter-body"></div>
+    <p class="letter-sign" id="letterSign"></p>
+    <p class="letter-from" id="letterFrom"></p>
+    <p class="dim letter-help">E, ESC OR CLICK TO FOLD IT AWAY</p>
+  </div>
 </section>
 
 <section id="inspect" class="screen panel-screen">

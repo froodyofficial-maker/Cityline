@@ -17,7 +17,7 @@ import * as UI from './ui.js';
 import * as P from './props.js';
 import { floorInfo, difficulty, WALL_H, STORY_FLOORS, DIFFS, THEMES } from './config.js';
 import { animateFlies } from './props.js';
-import { Gun, PARTS, PART_KEYS, AMMO_MAX, freshInv, cloneInv, missingParts } from './gun.js';
+import { Gun, AMMO_MAX, freshInv, cloneInv } from './gun.js';
 import { KEEPSAKES, CUTSCENE_INFO } from './collection.js';
 import { KeepsakeViewer } from './keepsakes3d.js';
 import { bakeStatic } from './bake.js';
@@ -238,7 +238,7 @@ function loadFloor(depth, seed) {
   post.u.tint.value.set(...TH.tint);
   scene.fog.density = 0.085 + D.fogBoost + Math.min(depth, 10) * 0.003;
   for (const l of lampLights) l.color.setHex(G.info.lamp);
-  G.hunters = B.hunterSpawns.map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
+  G.hunters = B.hunterSpawns.slice(0, D.hunters).map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
   G.flies = B.corpses.map((c) => audio.flies(c.pos));
   // the gate across the lift mouth, as a collider that can be switched off
   const lp = B.lift.pos;
@@ -264,9 +264,8 @@ function loadFloor(depth, seed) {
 function placeLoot(depth, seed) {
   const B = G.B;
   if (depth >= 2) {
-    const miss = missingParts(G.inv);
-    if (miss.length) B.addPickup('part', { part: miss[0] });
-    if (G.inv.built || miss.length <= 1) for (let i = 0; i < ({ easy: 3, normal: 2, hard: 2, extreme: 1 }[G.diff] || 2); i++) B.addPickup('ammo');
+    if (!G.inv.built) B.addPickup('gun'); // on every floor from B2 until you've picked one up
+    if (G.inv.built) for (let i = 0; i < ({ easy: 3, normal: 2, hard: 2, extreme: 1 }[G.diff] || 2); i++) B.addPickup('ammo');
   }
   // keepsakes you haven't found yet (a resumed floor gets back exactly the ones it had)
   let keeps = G.floorKeeps;
@@ -295,7 +294,7 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   blood.clear();
   G.mode = mode;
   const st = save.story;
-  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv() });
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: opts.floor ?? 0, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv() });
   // what you're carrying: a story shift keeps it from floor to floor (as it was when you started the floor)
   G.inv = mode === 'story' ? cloneInv(st.inv) : freshInv();
   G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
@@ -303,7 +302,7 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   // dev mode: chosen on the difficulty screen, it stays with you until you turn it off there
   G.dev = save.settings.dev ? { noclip: false, ghost: false, presolve: save.settings.devPresolve !== false } : null;
   UI.$('devBadge').classList.toggle('on', !!G.dev);
-  if (mode === 'story' && (fresh || st.floor === 1)) guide.newRun();
+  if (mode === 'story' && (fresh || st.floor <= 1)) guide.newRun();
   if (mode === 'overtime') guide.newRun();
   save.shifts++;
   G.shift = save.shifts;
@@ -358,7 +357,6 @@ function updateTransition(dt) {
     if (tr.snap) { G.inv = cloneInv(tr.snap.invStart); G.floorKeeps = tr.snap.keeps || []; } else G.floorKeeps = null;
     loadFloor(tr.next, seed);
     player.tags = 0;
-    if (!G.inv.built && !missingParts(G.inv).length) G.inv.built = true; // an old save with every part, never put together
     G.invStart = cloneInv(G.inv);
     G.tasksOpen = false;
     UI.$('tasks').classList.remove('on');
@@ -674,7 +672,7 @@ function endingText() {
 
 function refreshMenu() {
   const st = save.story;
-  UI.$('btnStory').textContent = st.active ? `Continue \u2014 B${st.floor} \u00B7 ${floorInfo(st.floor).name} (${(DIFFS[st.diff] || DIFFS.normal).label.toLowerCase()})` : st.done ? 'Clock in again' : 'Clock in';
+  UI.$('btnStory').textContent = st.active ? `Continue \u2014 ${floorInfo(st.floor).label} \u00B7 ${floorInfo(st.floor).name} (${(DIFFS[st.diff] || DIFFS.normal).label.toLowerCase()})` : st.done ? 'Clock in again' : 'Clock in';
   UI.$('btnNew').hidden = !st.active;
   const ot = save.snap && save.snap.mode === 'overtime' ? save.snap : null;
   UI.$('btnOvertimeContinue').hidden = !ot;
@@ -789,13 +787,39 @@ function findInteract() {
     if (score > bs) { bs = score; best = it; }
   };
   for (const c of B.corpses) if (!c.harvested) consider({ type: 'corpse', c }, c.pos, Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z), 1.8, 0.4, 0.6);
-  for (const p of B.pickups) if (!p.taken) consider({ type: p.type, p }, p.pos, Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z), 1.5, 0.6);
+  for (const p of B.pickups) if (!p.taken && !AUTO[p.type]) consider({ type: p.type, p }, p.pos, Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z), 1.5, 0.6);
   for (const lk of B.lockers) {
     const fx = lk.pos.x + lk.facing.x * 0.6, fz = lk.pos.z + lk.facing.z * 0.6;
     consider({ type: 'locker', lk }, lk.pos, Math.hypot(fx - player.pos.x, fz - player.pos.z), 0.95, 0.4);
   }
   for (const p of G.puzzles.interactables()) consider({ type: 'puzzle', p }, p.pos, Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z), p.range, p.minFacing, 0.3);
   return best;
+}
+
+// batteries and bolts aren't things you hold: walk over them and they're in the torch, or in the box of bolts
+const AUTO = {
+  battery: () => {
+    if (player.battery >= 99) return false;
+    player.battery = Math.min(100, player.battery + 45);
+    UI.message('A battery. Still has some life in it.', 2);
+    return true;
+  },
+  ammo: () => {
+    if (G.inv.ammo >= AMMO_MAX) return false;
+    const got = Math.min(2, AMMO_MAX - G.inv.ammo);
+    G.inv.ammo += got;
+    UI.message(`Bolts for the gun: ${G.inv.ammo}/${AMMO_MAX}.`, 2.5);
+    return true;
+  },
+};
+function autoPickup() {
+  for (const p of G.B.pickups) {
+    if (p.taken || !AUTO[p.type] || Math.hypot(p.pos.x - player.pos.x, p.pos.z - player.pos.z) > 1.1) continue;
+    if (!AUTO[p.type](p)) continue;
+    p.taken = true;
+    p.obj.visible = false;
+    audio.pickup();
+  }
 }
 
 function handleInteract(dt) {
@@ -831,16 +855,6 @@ function handleInteract(dt) {
       if (c.progress >= 1) harvest(c);
       break;
     }
-    case 'battery':
-      UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE BATTERY');
-      if (tapE) {
-        it.p.taken = true;
-        it.p.obj.visible = false;
-        player.battery = Math.min(100, player.battery + 45);
-        audio.pickup();
-        UI.message('A battery. Still has some life in it.', 2);
-      }
-      break;
     case 'adrenaline':
       if (!hasRoom('syringe')) { UI.prompt(FULL); break; }
       UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE SYRINGE');
@@ -852,29 +866,15 @@ function handleInteract(dt) {
         UI.message('A syringe of something red. Press R when you need to run and keep running.', 3);
       }
       break;
-    case 'part':
-      if (!hasRoom(G.inv.built ? 'gun' : 'parts')) { UI.prompt(FULL); break; }
-      UI.prompt(`<kbd>E</kbd>&nbsp; TAKE THE ${PARTS[it.p.part].name}`);
+    case 'gun':
+      if (!hasRoom('gun')) { UI.prompt(FULL); break; }
+      UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE BOLT GUN');
       if (tapE) {
         it.p.taken = true;
         it.p.obj.visible = false;
-        G.inv.parts[it.p.part] = true;
-        audio.pickup();
-        const have = PART_KEYS.length - missingParts(G.inv).length;
-        if (have >= PART_KEYS.length) buildGun(); // the last piece: it goes together in your hands
-        else UI.message(`${PARTS[it.p.part].desc} (${have}/${PART_KEYS.length} gun parts)`, 4.5);
-      }
-      break;
-    case 'ammo':
-      if (!hasRoom(G.inv.built ? 'gun' : 'parts')) { UI.prompt(FULL); break; }
-      UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE BOLTS');
-      if (tapE) {
-        it.p.taken = true;
-        it.p.obj.visible = false;
-        const got = Math.min(2, AMMO_MAX - G.inv.ammo);
-        G.inv.ammo += got;
-        audio.pickup();
-        UI.message(got ? `A box of blank cartridges for a captive-bolt gun. ${got} you can use.${G.inv.built ? '' : ' Useless without the gun.'}` : 'You can’t carry any more.', 3.5);
+        G.inv.built = true;
+        audio.clank(player.pos, 0.6);
+        UI.message(G.inv.ammo ? 'A captive-bolt gun, the kind they stunned cattle with. It is loaded. Click to fire.' : 'A captive-bolt gun, the kind they stunned cattle with. Empty. Bolts turn up on the floors below.', 4.5);
       }
       break;
     case 'keepsake': {
@@ -1135,6 +1135,7 @@ function updateGame(dt, t) {
   if (G.state !== 'play') return; // a hunter may have just killed you
   updateLift(dt);
   if (G.state !== 'play') return;
+  autoPickup();
   handleInteract(dt);
   G.puzzles.update(dt);
   guide.update(dt);
@@ -1264,9 +1265,17 @@ function resume() {
 
 let settingsFrom = 'menu';
 let diffIntent = { mode: 'story', fresh: true };
+function drawFloorPick() {
+  const floors = [0, ...Array.from({ length: STORY_FLOORS }, (_, i) => i + 1)];
+  UI.$('floorPickBtns').innerHTML = floors.map((f) => { const i = floorInfo(f); return `<button data-act="floorpick" data-floor="${f}" class="${f === diffIntent.floor ? 'sel' : ''}">${f ? i.label : 'START'}<small>${f ? i.name : 'THE HIRING OFFICE'}</small></button>`; }).join('');
+}
 function pickDifficulty(mode, fresh) {
   UI.$('devMode').checked = !!save.settings.dev;
-  diffIntent = { mode, fresh };
+  diffIntent = { mode, fresh, floor: 0 };
+  // once you've clocked out, you can start a new shift from any floor
+  const pick = mode === 'story' && fresh && save.story.done > 0;
+  UI.$('floorPick').hidden = !pick;
+  if (pick) drawFloorPick();
   UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : 'OVERTIME: HOW HARD?';
   for (const el of document.querySelectorAll('[data-diff]')) el.classList.toggle('last', el.dataset.diff === (save.settings.lastDiff || 'normal'));
   UI.only('difficulty');
@@ -1282,7 +1291,8 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
-  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff);
+  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : {});
+  else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
   else if (act === 'retry') {
     if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff); // a brand new shift, same difficulty
     else startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
@@ -1337,9 +1347,7 @@ function carried() {
   const out = [], inv = G.inv;
   if (player.tags) out.push({ id: 'tag', name: 'TAGS', n: player.tags });
   if (player.adrenaline) out.push({ id: 'syringe', name: 'SYRINGE', n: player.adrenaline, key: 'R' });
-  const parts = PART_KEYS.length - missingParts(inv).length;
-  if (inv.built) out.push({ id: 'gun', name: 'BOLT GUN', sub: `${inv.ammo}/${AMMO_MAX}`, key: 'LMB' });
-  else if (parts || inv.ammo) out.push({ id: 'parts', name: 'GUN PARTS', sub: `${parts}/${PART_KEYS.length}${inv.ammo ? `, ${inv.ammo} BOLTS` : ''}` });
+  if (inv.built) out.push({ id: 'gun', name: 'BOLT GUN', sub: `${inv.ammo}/${AMMO_MAX} BOLTS`, key: 'LMB' });
   for (const p of G.puzzles ? G.puzzles.list : []) {
     if (p.kind === 'fuses' && p.carry) out.push({ id: 'fuse', name: 'FUSES', n: p.carry });
     if (p.kind === 'scale' && p.carry.length) out.push({ id: 'meat', name: 'MEAT', n: p.carry.length, sub: p.carry.map((c) => c.w).join('+') + ' KG' });
@@ -1353,13 +1361,6 @@ function carried() {
 }
 // room for one more of this kind: it stacks on its own box, or there's an empty one
 function hasRoom(id) { const c = carried(); return c.some((it) => it.id === id) || c.length < UI.SLOTS; }
-function buildGun() {
-  if (missingParts(G.inv).length) return;
-  G.inv.built = true;
-  audio.clank(player.pos, 0.6);
-  setTimeout(() => audio.clank(player.pos, 0.4), 250);
-  UI.message(G.inv.ammo ? 'That’s every part. It goes together with a heavy click, and it is loaded. Click to fire.' : 'That’s every part. It goes together with a heavy click. Now you need bolts for it.', 4.5);
-}
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0 || G.state !== 'play' || document.pointerLockElement !== canvas) return;
   if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
@@ -1457,6 +1458,31 @@ function readKeepsake(id, btn) {
 // picking one up (or choosing one in the collection) puts it in your hands: a lit 3D model to turn over
 const viewer = new KeepsakeViewer(UI.$('inspCv'));
 let inspectFrom = null;
+// a letter on the floor (the hiring notice): read it on paper, the shift waits
+G.openLetter = (l) => {
+  UI.$('letterTitle').textContent = l.title;
+  UI.$('letterHead').textContent = l.head;
+  UI.$('letterBody').innerHTML = l.body.map((p) => `<p>${p}</p>`).join('');
+  UI.$('letterSign').textContent = l.sign;
+  UI.$('letterFrom').textContent = l.from;
+  G.state = 'letter';
+  G.letterT = 0;
+  UI.prompt(null);
+  try { document.exitPointerLock(); } catch {}
+  UI.only('letter', 'hud');
+  UI.$('brief').classList.remove('on');
+};
+function closeLetter() {
+  if (G.state !== 'letter' || G.letterT < 0.4) return;
+  G.state = 'play';
+  G.kpCool = 0.35;
+  UI.only('hud');
+  lockPointer();
+  UI.message('The lift behind the office is unlocked. It only goes one way from here: up.', 4.5);
+}
+addEventListener('keydown', (e) => { if (G.state === 'letter' && !e.repeat && (e.code === 'KeyE' || e.code === 'Escape' || e.code === 'Space')) closeLetter(); });
+addEventListener('mousedown', () => { if (G.state === 'letter') closeLetter(); });
+
 function inspectKeepsake(id, from) {
   const k = KEEPSAKES.find((x) => x.id === id);
   inspectFrom = from;
@@ -1512,6 +1538,7 @@ function updateReplay(dt) {
   UI.$('skip').classList.toggle('on', skippable && cs.blackout < 1);
   if (done || (skippable && (tapped('Space') || tapped('Escape') || tapped('Enter')))) {
     cs.dispose();
+    audio.stopDawn(); // the ending's birds were scheduled to go on singing
     G.replay = null;
     UI.$('skip').classList.remove('on');
     blood.clear();
@@ -1590,7 +1617,8 @@ function frame(now) {
       break;
   }
   if (G.state === 'inspect') G.inspT += dt;
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'letter') G.letterT += dt;
+  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
@@ -1613,6 +1641,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, audio, gun, renderer, scene, updateEndCine, buildGun, carried, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, gun, renderer, scene, updateEndCine, carried, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };
