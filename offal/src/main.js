@@ -1390,7 +1390,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : diffIntent.mode === 'hunt' ? { floor: 3 + ((Math.random() * 5) | 0) } : {});
   else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
   else if (act === 'retry') {
-    if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff); // a brand new shift, same difficulty
+    if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff, { floor: 1 }); // a brand new shift, same difficulty (you've been hired already)
     else startRun(G.mode, false, G.mode === 'overtime' ? G.diff : null, { floor: G.retryFloor });
   }
   else if (act === 'overtimeContinue' && save.snap) startRun('overtime', false, save.snap.diff, { resume: save.snap });
