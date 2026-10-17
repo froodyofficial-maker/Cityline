@@ -64,7 +64,7 @@
       <li>Most floors have a job besides the tags: no power, a sealed shutter, a jammed counterweight, steam on the brake. The objective line at the top always says what&rsquo;s next.</li>
       <li>Hide in lockers with <kbd>E</kbd>. If he comes close, hold <kbd>SPACE</kbd> to hold your breath. If he watched you climb in, it will not help.</li>
       <li><b>Crouchways</b> (low tunnels with striped frames) lead out of dead ends. Crouch with <kbd>C</kbd> and crawl in: he can't follow, and he'll give up on you.</li>
-      <li>Parts of a <b>captive-bolt gun</b> are lying about the lower floors. Put it together (<kbd>TAB</kbd>) and a bolt will drop him for a while. Bolts are scarce, and the shot is loud.</li>
+      <li>Parts of a <b>captive-bolt gun</b> are lying about the lower floors. Find all four and it goes together, and a bolt will drop him for a while. Bolts are scarce, and the shot is loud.</li>
       <li>If you hear the hook dragging, it's patrolling. If it goes quiet, it's running.</li>
     </ol>
     <table class="keys">
@@ -72,7 +72,7 @@
       <tr><td><kbd>C</kbd></td><td>crouch on/off (quiet)</td><td><kbd>F</kbd></td><td>torch</td></tr>
       <tr><td><kbd>E</kbd></td><td>use / cut / hide</td><td><kbd>SPACE</kbd></td><td>hold breath</td></tr>
       <tr><td><kbd>Q</kbd> (hold)</td><td>listen: show the way</td><td><kbd>R</kbd></td><td>syringe: sprint</td></tr>
-      <tr><td><kbd>TAB</kbd></td><td>what you carry / build the gun</td><td>left click</td><td>fire the bolt gun</td></tr>
+      <tr><td><kbd>TAB</kbd></td><td>your tasks on this floor</td><td>left click</td><td>fire the bolt gun</td></tr>
       <tr><td><kbd>ESC</kbd></td><td>pause</td><td><kbd>F11</kbd></td><td>fullscreen</td></tr>
     </table>
     <button class="back" data-act="back">Back</button>
@@ -127,8 +127,9 @@
   <div id="objective" class="objective"></div>
   <div id="compass"><div class="needle" id="needle"><i></i></div><span id="compassD"></span></div>
   <div id="brief" class="brief"><b>SHIFT BRIEFING</b><p id="briefText"></p></div>
-  <div class="hud-bl"><div id="tags" class="tags"></div><div id="tagText" class="hud-small"></div></div>
-  <div class="hud-br"><div id="gunLine" class="syringes gunline"></div><div id="syringes" class="syringes"></div><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
+  <div id="hotbar" class="hotbar"></div>
+  <div class="hud-br"><div id="battery" class="battery"></div><div class="hud-small">TORCH</div></div>
+  <div id="tasks" class="tasks"><div id="tasksBody"></div><p class="tasks-help"><kbd>TAB</kbd> TO PUT IT AWAY</p></div>
   <div id="stamina"><div class="st-bar"><i id="staminaFill"></i></div><span id="staminaLabel">STAMINA</span></div>
   <div id="dot"></div>
   <div id="prompt"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="ring-bg"/><circle id="ring" cx="20" cy="20" r="16" class="ring"/></svg><span id="promptText"></span></div>
@@ -142,16 +143,6 @@
   </div>
   <div id="pa"></div>
   <div id="devBadge">DEV MODE &middot; <kbd>~</kbd> MENU</div>
-</section>
-
-<section id="inv" class="screen panel-screen">
-  <div class="panel dark inv-panel">
-    <h2>WHAT YOU'RE CARRYING</h2>
-    <div class="inv-grid" id="invParts"></div>
-    <div class="inv-gun" id="invGun"></div>
-    <div class="inv-row" id="invMisc"></div>
-    <p class="dim inv-help">TAB or ESC to put it away.</p>
-  </div>
 </section>
 
 <section id="inspect" class="screen panel-screen">

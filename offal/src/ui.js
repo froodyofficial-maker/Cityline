@@ -143,31 +143,55 @@ export function stamina(v, out, boost) {
   $('staminaLabel').textContent = boost ? 'ADRENALINE' : out ? 'OUT OF BREATH' : 'STAMINA';
 }
 
-export function hud({ floor, have, fed, need, battery, breath, hidden, breathUrgent, adrenaline = 0, gun = '' }) {
-  const key = [floor, have, fed, need, Math.ceil(battery / 20), battery < 20, adrenaline, gun].join('|');
+export function hud({ floor, battery, breath, hidden, breathUrgent, items = [] }) {
+  const key = [floor, Math.ceil(battery / 20), battery < 20, items.map((it) => [it.id, it.n, it.sub, it.key].join(':')).join(',')].join('|');
   if (key !== hudKey) {
     hudKey = key;
     $('floorLabel').textContent = floor;
-    const tags = $('tags');
-    tags.innerHTML = '';
-    for (let i = 0; i < need; i++) {
-      const t = document.createElement('i');
-      t.className = 'tag' + (i < fed ? ' fed' : i < fed + have ? ' got' : '');
-      tags.appendChild(t);
-    }
-    $('tagText').textContent = need === 0 ? '' : `TAGS ${have + fed}/${need}`;
     const b = $('battery');
     b.innerHTML = '';
     const bars = Math.ceil(battery / 20);
     for (let i = 0; i < 5; i++) { const x = document.createElement('i'); if (i >= bars) x.className = 'off'; b.appendChild(x); }
     b.classList.toggle('low', battery < 20);
-    $('syringes').textContent = adrenaline ? `R \u00B7 SYRINGE \u00D7${adrenaline}` : '';
-    $('gunLine').textContent = gun;
+    hotbar(items);
   }
   const br = $('breath');
   br.classList.toggle('on', !!hidden);
   br.classList.toggle('urgent', !!breathUrgent);
   if (hidden) $('breathFill').style.transform = `scaleX(${breath / 100})`;
+}
+
+// ---------- what you carry: five boxes along the bottom of the screen ----------
+// a box holds one kind of thing, as many of it as you like. items: [{ id, name, n, sub, key }]
+export const SLOTS = 5;
+const ICON = {
+  tag: '<rect x="11" y="5" width="18" height="28" rx="7" fill="#b08a3a" stroke="#e0bc64"/><circle cx="20" cy="11" r="2.2" fill="#140a06"/><path d="M13 24c4-2 9 1 14-1v7c-5 2-10 0-14 1z" fill="#7a0604"/>',
+  syringe: '<g transform="rotate(-40 20 20)"><rect x="16" y="9" width="8" height="20" rx="1.5" fill="none" stroke="#d8cdb8"/><rect x="17" y="17" width="6" height="11" fill="#b01008"/><path d="M14 9h12M20 9V4M18 4h4M20 29v8" stroke="#d8cdb8" stroke-width="1.6"/></g>',
+  gun: '<rect x="6" y="13" width="24" height="8" rx="2" fill="#5a5a58" stroke="#a8a49a"/><rect x="29" y="15" width="6" height="4" fill="#8a8680"/><path d="M12 21l-3 12h7l2-12z" fill="#3a2a20" stroke="#8a7a6a"/>',
+  parts: '<rect x="5" y="9" width="14" height="6" rx="1.5" fill="#5a5a58" stroke="#a8a49a"/><path d="M24 20l-3 12h6l2-12z" fill="#3a2a20" stroke="#8a7a6a"/><circle cx="12" cy="27" r="4" fill="none" stroke="#a8a49a" stroke-width="1.6"/><rect x="25" y="8" width="9" height="4" fill="#8a8680"/>',
+  fuse: '<rect x="11" y="14" width="18" height="12" rx="3" fill="rgba(200,220,230,.25)" stroke="#c8d8e0"/><rect x="6" y="15" width="6" height="10" fill="#b08a3a"/><rect x="28" y="15" width="6" height="10" fill="#b08a3a"/><path d="M12 20h16" stroke="#ffb040"/>',
+  meat: '<path d="M8 22c0-8 8-13 16-11s10 9 6 15-18 6-22-4z" fill="#8a1410" stroke="#c84a40"/><path d="M14 20c4-3 9-3 12 1" stroke="#e8c8a0" stroke-width="2" fill="none"/><circle cx="31" cy="12" r="3" fill="#e8dcc0"/>',
+  card: '<rect x="6" y="10" width="28" height="20" rx="2" fill="#d8d2bc" stroke="#f0e8d0"/><rect x="6" y="14" width="28" height="4" fill="#2a2622"/><rect x="9" y="21" width="7" height="7" fill="#7a6a5a"/>',
+  key: '<circle cx="12" cy="20" r="6" fill="none" stroke="#a8a49a" stroke-width="2.5"/><path d="M18 20h16M29 20v6M33 20v5" stroke="#a8a49a" stroke-width="2.5"/>',
+};
+function hotbar(items) {
+  const host = $('hotbar');
+  let html = '';
+  for (let i = 0; i < SLOTS; i++) {
+    const it = items[i];
+    if (!it) { html += '<div class="slot empty"></div>'; continue; }
+    html += `<div class="slot"><svg viewBox="0 0 40 40">${ICON[it.id] || ''}</svg>`
+      + (it.n > 1 ? `<span class="n">\u00D7${it.n}</span>` : '')
+      + (it.key ? `<kbd>${it.key}</kbd>` : '')
+      + `<span class="nm">${it.name}${it.sub ? `<i>${it.sub}</i>` : ''}</span></div>`;
+  }
+  host.innerHTML = html;
+}
+
+// the task sheet (TAB): rows of { text, count, done, now, sub }, then the extras underneath
+export function tasks(title, rows, extra) {
+  $('tasksBody').innerHTML = `<h3>${title}</h3><ol>${rows.map((r) => `<li class="${r.done ? 'done' : ''}${r.now ? ' now' : ''}"><span>${r.text}${r.sub ? `<small>${r.sub}</small>` : ''}</span>${r.count ? `<b>${r.count}</b>` : ''}</li>`).join('')}</ol>`
+    + (extra.length ? `<ul>${extra.map((e) => `<li>${e}</li>`).join('')}</ul>` : '');
 }
 
 // ---------- the shift log ----------

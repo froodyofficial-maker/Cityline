@@ -358,7 +358,10 @@ function updateTransition(dt) {
     if (tr.snap) { G.inv = cloneInv(tr.snap.invStart); G.floorKeeps = tr.snap.keeps || []; } else G.floorKeeps = null;
     loadFloor(tr.next, seed);
     player.tags = 0;
+    if (!G.inv.built && !missingParts(G.inv).length) G.inv.built = true; // an old save with every part, never put together
     G.invStart = cloneInv(G.inv);
+    G.tasksOpen = false;
+    UI.$('tasks').classList.remove('on');
     if (G.mode === 'story' && !tr.snap) { save.story.inv = cloneInv(G.inv); writeSave(); }
     if (tr.snap) restoreSnapshot(tr.snap);
     if (G.dev && G.dev.presolve) devComplete();
@@ -683,7 +686,7 @@ function refreshMenu() {
 // Everything that isn't rebuilt from the floor's seed: where you are and what you've done, what each
 // puzzle is up to, where they are, the clocks. Written every few seconds, on pause, and as the window goes.
 function snapshot() {
-  if (!G.B || !['play', 'paused', 'inv'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
+  if (!G.B || !['play', 'paused'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
   const B = G.B;
   return {
     v: 1, mode: G.mode, diff: G.diff, depth: G.depth, seed: G.floorSeed, at: Date.now(),
@@ -839,6 +842,7 @@ function handleInteract(dt) {
       }
       break;
     case 'adrenaline':
+      if (!hasRoom('syringe')) { UI.prompt(FULL); break; }
       UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE SYRINGE');
       if (tapE) {
         it.p.taken = true;
@@ -849,6 +853,7 @@ function handleInteract(dt) {
       }
       break;
     case 'part':
+      if (!hasRoom(G.inv.built ? 'gun' : 'parts')) { UI.prompt(FULL); break; }
       UI.prompt(`<kbd>E</kbd>&nbsp; TAKE THE ${PARTS[it.p.part].name}`);
       if (tapE) {
         it.p.taken = true;
@@ -856,10 +861,12 @@ function handleInteract(dt) {
         G.inv.parts[it.p.part] = true;
         audio.pickup();
         const have = PART_KEYS.length - missingParts(G.inv).length;
-        UI.message(have >= PART_KEYS.length ? 'That’s every part of a captive-bolt gun. Press TAB and put it together.' : `${PARTS[it.p.part].desc} (${have}/${PART_KEYS.length} gun parts — TAB to look)`, 4.5);
+        if (have >= PART_KEYS.length) buildGun(); // the last piece: it goes together in your hands
+        else UI.message(`${PARTS[it.p.part].desc} (${have}/${PART_KEYS.length} gun parts)`, 4.5);
       }
       break;
     case 'ammo':
+      if (!hasRoom(G.inv.built ? 'gun' : 'parts')) { UI.prompt(FULL); break; }
       UI.prompt('<kbd>E</kbd>&nbsp; TAKE THE BOLTS');
       if (tapE) {
         it.p.taken = true;
@@ -1187,9 +1194,8 @@ function updateGame(dt, t) {
   UI.stamina(player.stamina, player.exhausted, player.boostT > 0);
   gun.update(dt, player);
   UI.hud({
-    floor: `${G.info.label} · ${G.info.name}`, have: player.tags, fed: B.lift.inserted, need: G.D.tags, battery: player.battery,
-    breath: player.breath, hidden: !!player.hidden, breathUrgent: player.breathUrgent, adrenaline: player.adrenaline,
-    gun: G.inv.built ? `CLICK · BOLT GUN ${G.inv.ammo}/${AMMO_MAX}` : missingParts(G.inv).length < PART_KEYS.length ? `TAB · GUN PARTS ${PART_KEYS.length - missingParts(G.inv).length}/${PART_KEYS.length}` : '',
+    floor: `${G.info.label} · ${G.info.name}`, battery: player.battery,
+    breath: player.breath, hidden: !!player.hidden, breathUrgent: player.breathUrgent, items: carried(),
   });
 }
 
@@ -1284,7 +1290,6 @@ document.addEventListener('click', (e) => {
   else if (act === 'overtimeContinue' && save.snap) startRun('overtime', false, save.snap.diff, { resume: save.snap });
   else if (act === 'howto') UI.only('howto');
   else if (act === 'collection') openCollection();
-  else if (act === 'build') buildGun();
   else if (act === 'replay') startReplay(b.dataset.cut);
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
   else if (act === 'devsolve' && G.dev && G.puzzles) { devComplete(); UI.message('Dev: floor complete. Every tag is in the lift and every puzzle is solved: pull the lever.', 3); }
@@ -1325,38 +1330,35 @@ for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHEC
 }
 
 // ---------- inventory and the bolt gun ----------
-function openInventory() {
-  if (G.state !== 'play' || player.hidden) return;
-  G.state = 'inv';
-  try { document.exitPointerLock(); } catch {}
-  drawInventory();
-  UI.only('inv', 'hud');
-  UI.$('brief').classList.remove('on');
+// what's in the five boxes along the bottom: one kind of thing to a box, as many of it as you like. Each kind keeps
+// the box it first went into until you've none of it left.
+const FULL = 'YOUR HANDS ARE FULL \u00B7 FIVE THINGS AT A TIME';
+function carried() {
+  const out = [], inv = G.inv;
+  if (player.tags) out.push({ id: 'tag', name: 'TAGS', n: player.tags });
+  if (player.adrenaline) out.push({ id: 'syringe', name: 'SYRINGE', n: player.adrenaline, key: 'R' });
+  const parts = PART_KEYS.length - missingParts(inv).length;
+  if (inv.built) out.push({ id: 'gun', name: 'BOLT GUN', sub: `${inv.ammo}/${AMMO_MAX}`, key: 'LMB' });
+  else if (parts || inv.ammo) out.push({ id: 'parts', name: 'GUN PARTS', sub: `${parts}/${PART_KEYS.length}${inv.ammo ? `, ${inv.ammo} BOLTS` : ''}` });
+  for (const p of G.puzzles ? G.puzzles.list : []) {
+    if (p.kind === 'fuses' && p.carry) out.push({ id: 'fuse', name: 'FUSES', n: p.carry });
+    if (p.kind === 'scale' && p.carry.length) out.push({ id: 'meat', name: 'MEAT', n: p.carry.length, sub: p.carry.map((c) => c.w).join('+') + ' KG' });
+    if (p.kind === 'keycard' && p.found) out.push({ id: 'card', name: 'KEYCARD' });
+    if (p.kind === 'meatkey' && p.found) out.push({ id: 'key', name: 'CAGE KEY' });
+  }
+  const ids = out.map((it) => it.id);
+  G.slotOrder = (G.slotOrder || []).filter((id) => ids.includes(id));
+  for (const id of ids) if (!G.slotOrder.includes(id)) G.slotOrder.push(id);
+  return G.slotOrder.map((id) => out.find((it) => it.id === id));
 }
-function closeInventory() {
-  if (G.state !== 'inv') return;
-  G.state = 'play';
-  UI.only('hud');
-  lockPointer();
-}
-function drawInventory() {
-  const inv = G.inv;
-  UI.$('invParts').innerHTML = PART_KEYS.map((k) => inv.parts[k] || inv.built
-    ? `<div class="inv-slot"><b>${PARTS[k].name}</b>${PARTS[k].desc}</div>`
-    : `<div class="inv-slot missing"><b>${PARTS[k].name}</b>Not found yet. Somewhere further down.</div>`).join('');
-  const have = PART_KEYS.filter((k) => inv.parts[k]).length;
-  UI.$('invGun').innerHTML = inv.built
-    ? `CAPTIVE-BOLT GUN — ${inv.ammo}/${AMMO_MAX} BOLTS<br><span class="dim">CLICK to fire. A hit drops him for ${G.D ? G.D.stun : 15} seconds. Everything on the floor hears it.</span>`
-    : have >= PART_KEYS.length ? '<button data-act="build">PUT THE GUN TOGETHER</button>' : `${have}/${PART_KEYS.length} PARTS OF A CAPTIVE-BOLT GUN${inv.ammo ? ` · ${inv.ammo} BOLTS` : ''}`;
-  UI.$('invMisc').textContent = `TAGS ${player.tags} · SYRINGES ${player.adrenaline} · TORCH ${Math.round(player.battery)}% · KEEPSAKES ${save.collection.keep.length}/${KEEPSAKES.length}`;
-}
+// room for one more of this kind: it stacks on its own box, or there's an empty one
+function hasRoom(id) { const c = carried(); return c.some((it) => it.id === id) || c.length < UI.SLOTS; }
 function buildGun() {
   if (missingParts(G.inv).length) return;
   G.inv.built = true;
   audio.clank(player.pos, 0.6);
   setTimeout(() => audio.clank(player.pos, 0.4), 250);
-  drawInventory();
-  UI.message(G.inv.ammo ? 'It goes together with a heavy click. It is loaded.' : 'It goes together with a heavy click. Now you need bolts for it.', 4);
+  UI.message(G.inv.ammo ? 'That’s every part. It goes together with a heavy click, and it is loaded. Click to fire.' : 'That’s every part. It goes together with a heavy click. Now you need bolts for it.', 4.5);
 }
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0 || G.state !== 'play' || document.pointerLockElement !== canvas) return;
@@ -1370,8 +1372,8 @@ G.onStunned = (h) => {
 addEventListener('keydown', (e) => {
   if (e.code === 'Tab') {
     e.preventDefault();
-    if (G.state === 'play') openInventory(); else if (G.state === 'inv') closeInventory();
-  } else if (e.code === 'Escape' && G.state === 'inv') closeInventory();
+    if (G.state === 'play') { G.tasksOpen = !G.tasksOpen; UI.$('tasks').classList.toggle('on', G.tasksOpen); }
+  }
 });
 
 // the launcher opened us with safe graphics (no GPU): say so on the menu
@@ -1588,7 +1590,7 @@ function frame(now) {
       break;
   }
   if (G.state === 'inspect') G.inspT += dt;
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'inv' || G.state === 'inspect' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
@@ -1611,6 +1613,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, audio, gun, renderer, scene, updateEndCine, openInventory, closeInventory, buildGun, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, gun, renderer, scene, updateEndCine, buildGun, carried, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };

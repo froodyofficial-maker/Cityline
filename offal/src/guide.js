@@ -3,6 +3,7 @@
 // that teaches each mechanic and each puzzle the first time it matters.
 import { findPath, lineOfSight, tileCenter } from './level.js';
 import * as UI from './ui.js';
+import { PART_KEYS, missingParts } from './gun.js';
 
 const BRIEF = {
   start: 'Your shift has started. Somewhere on this floor are dead workers with brass ID tags inside them. The lift will not move without their tags.\n\nHold Q to listen. The flies get louder, and the red arrow shows the way to whatever you need next.',
@@ -22,6 +23,13 @@ const BRIEF = {
   meatkey: 'The deep freeze. The lift cage is padlocked, and the key was hung up with the meat.\n\nCut open the wrapped carcasses (hold E) until you find it. It is cold enough down here that you get your breath back slower.',
   breakers: 'This is the bottom. The line is still running.\n\nPull the three kill switches to stop it. The first one sets off the alarm. When the line stops, both of them will come for you. Get back to the lift and go UP.',
 };
+
+// a puzzle's title cut down to its first clause and its count: 'BALANCE THE SCALE — EXACTLY <b>32 KG</b>' -> 'BALANCE THE SCALE <b>32 KG</b>'
+function short(t) {
+  const [head, tail = ''] = t.split(' \u2014 ');
+  const b = tail.match(/<b>.*?<\/b>/);
+  return head + (b ? ' ' + b[0] : '');
+}
 
 export class Guide {
   constructor(G) {
@@ -54,6 +62,30 @@ export class Guide {
     UI.typewrite(UI.$('briefText'), BRIEF[id], 90);
     this.briefT = id === 'start' ? 20 : 15;
     this.G.audio.chime();
+  }
+
+  // the task sheet: every step of the floor in order, ticked off, the one you're on lit
+  taskSheet(now) {
+    const G = this.G, pl = G.player, B = G.B, pz = G.puzzles;
+    const have = pl.tags, fed = B.lift.inserted, need = G.D.tags;
+    const rows = [];
+    if (need) rows.push({ text: 'CUT THE TAGS OUT OF THE DEAD', count: `${have + fed}/${need}`, done: have + fed >= need });
+    for (const p of pz.list) rows.push({ text: short(p.title()).replace(/<[^>]+>/g, ''), sub: p.solved ? '' : (p.line() || ''), done: !!p.solved });
+    if (G.D.finale) rows.push({ text: 'GET TO THE LIFT. GO UP.', done: false });
+    else {
+      if (need) rows.push({ text: 'FEED THE TAGS TO THE LIFT', count: `${fed}/${need}`, done: fed >= need });
+      rows.push({ text: 'PULL THE LEVER IN THE LIFT', done: G.lift.phase === 'closing' || G.lift.phase === 'sealed' });
+    }
+    const first = rows.find((r) => !r.done);
+    if (first) first.now = true;
+    const extra = [];
+    const parts = PART_KEYS.length - missingParts(G.inv).length;
+    if (!G.inv.built && G.depth > 1) extra.push(`OPTIONAL \u00B7 PARTS OF A BOLT GUN ${parts}/${PART_KEYS.length}, ON THE LOWER FLOORS`);
+    extra.push('<kbd>Q</kbd> HOLD TO LISTEN FOR THE WAY \u00B7 <kbd>F</kbd> TORCH \u00B7 <kbd>C</kbd> CROUCH');
+    const key = now + rows.map((r) => r.text + r.count + r.done + r.sub).join('|') + extra.join('|');
+    if (key === this.taskKey) return;
+    this.taskKey = key;
+    UI.tasks(`${G.info.label} \u00B7 ${G.info.name}`, rows, extra);
   }
 
   // the shortest walk to any of the goals
@@ -106,21 +138,20 @@ export class Guide {
       }
     } else compass.classList.remove('on');
 
-    // the objective line
+    // the objective line: only the one thing to do next. Everything else is on the task sheet (TAB).
     let obj;
     const phase = G.lift.phase;
     if (phase === 'closing' || phase === 'sealed') obj = '<b>HOLD ON</b>';
     else if (phase === 'opening') obj = 'THE GATE IS OPENING';
     else if (G.D.finale && !blocker) obj = '<b>GET TO THE LIFT. GO UP.</b>';
-    else if (!blocker && fed >= need) obj = '<b>PULL THE LEVER</b> IN THE LIFT';
-    else if (!blocker && all) obj = pl.inLift ? '<b>FEED THE TAGS</b> TO THE PANEL' : '<b>GET BACK TO THE LIFT</b>';
-    else if (!all) obj = `CUT THE TAGS OUT OF THE DEAD  <b>${have + fed} / ${need}</b>`;
-    else obj = blocker.title();
-    const extra = pz.lines();
-    if (all && have && blocker) extra.unshift('FEED YOUR TAGS TO THE LIFT');
-    const sub = phase !== 'open' ? '' : `<small>${extra.length ? extra.join(' · ') + ' · ' : ''}<kbd>Q</kbd> LISTEN FOR THE WAY</small>`;
-    const key = obj + sub;
-    if (key !== this.objKey) { this.objKey = key; UI.$('objective').innerHTML = obj + sub; }
+    else if (!blocker && fed >= need) obj = '<b>PULL THE LEVER</b>';
+    else if (!blocker && all) obj = pl.inLift ? '<b>FEED THE TAGS</b> TO THE LIFT' : '<b>GET BACK TO THE LIFT</b>';
+    else if (!all) obj = `CUT THE TAGS  <b>${have + fed}/${need}</b>`;
+    else obj = short(blocker.title());
+    const hint = phase === 'open' && G.floorTime < 20 ? '<small><kbd>TAB</kbd> TASKS</small>' : ''; // the first moments of a floor only
+    const key = obj + hint;
+    if (key !== this.objKey) { this.objKey = key; UI.$('objective').innerHTML = key; }
+    if (G.tasksOpen) this.taskSheet(obj);
 
     // the briefing
     if (G.depth === 1 && G.floorTime > 2.5) this.brief('start');
