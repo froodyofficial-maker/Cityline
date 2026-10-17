@@ -368,3 +368,10 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 
 /* playing the Foreman: no torch, no stamina, nothing in your hands but the hook */
 #hud.foreman .hotbar, #hud.foreman .hud-br, #hud.foreman #stamina { display: none; }
+
+/* cinema: the list of staged shots */
+.cine-panel { width: min(620px, 92vw); }
+.cine-list { display: grid; gap: 8px; margin: 16px 0 20px; }
+.cine-list button { text-align: left; padding: 10px 14px; border: 1px solid #3a0a06; color: var(--bone); background: rgba(10,4,4,.6); letter-spacing: .15em; }
+.cine-list button small { display: block; margin-top: 3px; font-size: 11px; letter-spacing: .05em; color: rgba(216,205,184,.5); }
+.cine-list button:hover { border-color: var(--fresh); }

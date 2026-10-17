@@ -9,6 +9,7 @@ import { Puzzles } from './puzzles.js';
 import { Survivor } from './survivor.js';
 import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
 import { applyCrew } from './net.js';
+import { Cinema, SHOTS } from './cinema.js';
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
@@ -1392,6 +1393,8 @@ document.addEventListener('click', (e) => {
   else if (act === 'overtime') pickDifficulty('overtime', false);
   else if (act === 'hunt') startRun('hunt', false, 'normal', { floor: 3 + ((Math.random() * 5) | 0) }); // no difficulty: you are the Foreman, at his normal pace
   else if (act === 'lobby') openLobby(save);
+  else if (act === 'cinema') openCinema();
+  else if (act === 'cineShot') playShot(b.dataset.id);
   else if (act.startsWith('crew')) { lobbyAct(act, b, save); writeSave(); }
   else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : {});
   else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
@@ -1406,7 +1409,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
   else if (act === 'devsolve' && G.dev && G.puzzles) { devComplete(); UI.message('Dev: floor complete. Every tag is in the lift and every puzzle is solved: pull the lever.', 3); }
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
-  else if (act === 'back' && G.state === 'menu' && (UI.$('collection').classList.contains('on') || UI.$('lobby').classList.contains('on'))) UI.only('menu');
+  else if (act === 'back' && G.state === 'menu' && (UI.$('collection').classList.contains('on') || UI.$('lobby').classList.contains('on') || UI.$('cinema').classList.contains('on'))) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
   else if (act === 'fullscreen') setFullscreen(!document.fullscreenElement);
@@ -1481,6 +1484,31 @@ addEventListener('keydown', (e) => {
 });
 
 UI.$('crewName').addEventListener('change', (e) => { lobbyRename(e.target.value, save); writeSave(); });
+
+// ---------- cinema: staged shots for trailers (see cinema.js) ----------
+// A shot loads a story floor without touching the real story save, then holds it while the shot plays.
+const cinema = new Cinema({ G, camera, scene, post });
+function openCinema() {
+  UI.$('cineList').innerHTML = SHOTS.map((s) => `<button data-act="cineShot" data-id="${s.id}">${s.name.toUpperCase()}<small>${s.note}</small></button>`).join('');
+  UI.only('cinema');
+}
+function playShot(id) {
+  const shot = SHOTS.find((s) => s.id === id);
+  G.cineKeep ||= { story: JSON.parse(JSON.stringify(save.story)), snap: save.snap, shifts: save.shifts };
+  G.cine = { shot, on: false };
+  startRun('story', true, 'normal', { floor: shot.floor });
+  G.dev = { noclip: false, ghost: true, presolve: false };
+}
+function endCinema() {
+  if (G.cine && G.cine.on) cinema.end();
+  G.cine = null;
+  if (G.cineKeep) { Object.assign(save, { story: G.cineKeep.story, snap: G.cineKeep.snap, shifts: G.cineKeep.shifts }); G.cineKeep = null; writeSave(); }
+  disposeLevel(); G.B = null;
+  toMenu();
+  openCinema();
+}
+addEventListener('beforeunload', () => { if (G.cineKeep) { Object.assign(save, { story: G.cineKeep.story, snap: G.cineKeep.snap, shifts: G.cineKeep.shifts }); writeSave(); } }); // closed mid-shot: the real save comes back
+addEventListener('keydown', (e) => { if (e.code === 'Escape' && (G.state === 'cinema' || (G.cine && G.state === 'transition'))) endCinema(); });
 
 // the launcher opened us with safe graphics (no GPU): say so on the menu
 if (/[?&]safe=1/.test(window.location.search)) UI.$('safeNote').hidden = false;
@@ -1706,7 +1734,11 @@ function frame(now) {
       post.render(menu.scene, menu.cam);
       break;
     case 'play':
+      if (G.cine && !G.cine.on) { G.cine.on = true; cinema.begin(G.cine.shot); G.state = 'cinema'; UI.only(); UI.prompt(null); break; }
       updateGame(dt, T);
+      break;
+    case 'cinema':
+      if (cinema.update(dt)) cinema.begin(G.cine.shot); // a moving shot plays again from the top
       break;
     case 'transition':
       updateTransition(dt);
@@ -1723,7 +1755,7 @@ function frame(now) {
   }
   if (G.state === 'inspect') G.inspT += dt;
   if (G.state === 'letter') G.letterT += dt;
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'huntend' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'play' || G.state === 'cinema' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'huntend' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;

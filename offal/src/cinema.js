@@ -10,7 +10,8 @@ export const SHOTS = [
   { id: 'walkFront', name: 'Walking: front', note: 'He comes down the corridor at a low camera', floor: 7, secs: 7 },
   { id: 'walkBehind', name: 'Walking: behind', note: 'Following him into the dark', floor: 3, secs: 7 },
   { id: 'walkLow', name: 'Walking: low angle', note: 'Looking up at him as he passes', floor: 5, secs: 7 },
-  { id: 'thumb', name: 'Thumbnail pose', note: 'Him on the right third, rim lit; holds still', floor: 7, secs: 9999 },
+  { id: 'thumb', name: 'In the aisle', note: 'Down the carcass aisle, him on the right, arms out; holds still', floor: 7, secs: 9999 },
+  { id: 'face', name: 'Face close-up', note: 'His face on the right, black beside it; holds still', floor: 7, secs: 9999 },
 ];
 
 const ease = (k) => k * k * (3 - 2 * k);
@@ -35,6 +36,7 @@ export class Cinema {
     for (const h of G.hunters) { h.pos.set(-50, 0, -50); h.obj.position.copy(h.pos); }
     this.h = G.hunters[0];
     const L = G.L, h = this.h;
+    this.fill.distance = 14; this.rim.distance = 9;
     if (shot.id === 'desk') this.n = G.puzzles.get('notice');
     if (shot.id === 'doorway') {
       // a doorway: an edge tile of a big room with open floor straight through and solid wall either side
@@ -60,13 +62,23 @@ export class Cinema {
       h.setState('patrol');
     }
     if (shot.id === 'thumb') {
-      const r = L.rooms.slice(1).sort((p, q) => q.w * q.h - p.w * p.h)[0];
-      this.c = { x: r.cx * 2 + 1, z: r.cy * 2 + 1 };
-      h.pos.set(this.c.x, 0, this.c.z); h.yaw = 0;
-      h.setState('listen'); h.listenFor = 999; h.lookBase = 0;
+      // down the long axis of the processing line: you at one end, him five metres down it, right of centre
+      const r = L.rooms.find((q) => q.type === 'line') || L.rooms.slice(1).sort((p, q) => q.w * q.h - p.w * p.h)[0], long = r.w >= r.h;
+      const f = long ? [1, 0] : [0, 1], right = [-f[1], f[0]], half = (long ? r.w : r.h);
+      const cam = { x: (r.x + r.w / 2) * 2 - f[0] * (half - 0.8), z: (r.y + r.h / 2) * 2 - f[1] * (half - 0.8) };
+      this.c = { cam, f, him: { x: cam.x + f[0] * 5 + right[0] * 1.35, z: cam.z + f[1] * 5 + right[1] * 1.35 } };
+      h.pos.set(this.c.him.x, 0, this.c.him.z); h.yaw = Math.atan2(cam.x - this.c.him.x, cam.z - this.c.him.z);
+      h.setState('listen'); h.listenFor = 999; h.lookBase = h.yaw;
     }
-    h.obj.position.copy(h.pos);
-    h.obj.rotation.y = h.yaw;
+    if (shot.id === 'face') {
+      const r = L.rooms.slice(1).sort((p, q) => q.w * q.h - p.w * p.h)[0];
+      h.pos.set(r.cx * 2 + 1, 0, r.cy * 2 + 1); h.yaw = 0;
+      h.setState('listen'); h.listenFor = 999; h.lookBase = 0;
+      // everything but his face goes to black
+      this.fog = { c: scene.fog.color.getHex(), d: scene.fog.density };
+      scene.fog.color.setHex(0x000000); scene.fog.density = 0.55;
+    }
+    if (h) { h.obj.position.copy(h.pos); h.obj.rotation.y = h.yaw; } // the office has nobody in it
   }
   at(d) {
     const pts = this.route;
@@ -79,6 +91,7 @@ export class Cinema {
     post.height = this.hold;
     post.resize(innerWidth, innerHeight);
     scene.remove(this.fill, this.rim);
+    if (this.fog) { scene.fog.color.setHex(this.fog.c); scene.fog.density = this.fog.d; this.fog = null; }
     for (const c of camera.children) if (c.isLight) c.visible = true;
     this.shot = null;
     this.door = null;
@@ -123,12 +136,25 @@ export class Cinema {
         fill.position.set(q.x, 1.2, q.z); fill.intensity = 5; rim.position.set(r.x, 2.6, r.z); rim.intensity = 18;
       }
     } else if (sh.id === 'thumb') {
-      const { x, z } = this.c;
+      const { cam, f, him } = this.c;
       h.listenFor = 999; h.update(dt, this.t);
-      h.body.head.rotation.set(0.05, 0, 0.08); h.body.jaw.rotation.x = 0.75; // head down a touch, mouth open
-      c.position.set(x + 1.15, 1.4, z - 3.6); c.lookAt(x + 1.15, 1.55, z); c.fov = 46; // he faces the camera, in the right third
-      fill.position.set(x + 0.4, 2.2, z - 1.8); fill.intensity = 5;
-      rim.position.set(x - 0.8, 2.6, z + 1.4); rim.intensity = 30;
+      h.yaw = Math.atan2(cam.x - him.x, cam.z - him.z); h.obj.rotation.y = h.yaw;
+      h.body.head.rotation.set(0.12, 0, 0.1); h.body.neck.rotation.y = 0; h.body.jaw.rotation.x = 0.8;
+      h.body.arms.forEach((a, i) => { a.sh.rotation.set(-0.35, 0, i ? -1.25 : 1.25); a.el.rotation.x = -0.35; }); // arms out wide
+      if (h.body.apron) h.body.apron.update(h.body);
+      c.position.set(cam.x, 1.6, cam.z); c.lookAt(cam.x + f[0] * 10, 1.45, cam.z + f[1] * 10); c.fov = 62;
+      fill.position.set(him.x - f[0] * 1.8, 2.2, him.z - f[1] * 1.8); fill.intensity = 16;
+      rim.position.set(him.x + f[0] * 1.6, 2.7, him.z + f[1] * 1.6); rim.intensity = 26;
+    } else if (sh.id === 'face') {
+      h.listenFor = 999; h.update(dt, this.t);
+      h.yaw = 0; h.obj.rotation.y = 0;
+      h.body.head.rotation.set(0.08, 0, -0.06); h.body.neck.rotation.set(-0.35, 0, 0); h.body.jaw.rotation.x = 0.55;
+      h.obj.updateMatrixWorld(true);
+      const hp = h.body.head.getWorldPosition(c.position.clone());
+      // close in, his face cut by the right of the frame; one hard light from the left
+      c.position.set(hp.x - 0.3, hp.y - 0.02, hp.z + 0.78); c.lookAt(hp.x - 0.3, hp.y - 0.02, hp.z); c.fov = 40;
+      fill.position.set(hp.x - 0.95, hp.y + 0.3, hp.z + 0.4); fill.intensity = 10; fill.distance = 3.2; rim.distance = 1.6;
+      rim.position.set(hp.x + 0.5, hp.y + 0.3, hp.z - 0.5); rim.intensity = 1.5;
     }
     c.updateProjectionMatrix();
     return this.t >= sh.secs;
