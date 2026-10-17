@@ -957,6 +957,7 @@ export const NOTICE = {
   head: 'HOLLOW PINES MEATWORKS \u00B7 NIGHT SHIFT \u00B7 NEW HIRE',
   body: [
     'To the new hire.',
+    'Workers have been going missing at Hollow Pines. Night shift, every one of them. The company says they quit. Their families say they never came home. Nobody has been down to look. That is why you were hired: find out what happened to them.',
     'You start tonight. Take the service lift behind this office all the way up to the top of the building: RECEIVING. That is where the line begins.',
     'The line runs downward, and so will you. On every floor there are workers who did not finish their shift. Each of them swallowed a brass ID tag. The lift will not go down a floor until it has been fed their tags. Cut them out. Feed the lift. Go down. Do it again.',
     'Some floors will have other work for you: power, pressure, paperwork. See to it.',
