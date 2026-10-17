@@ -310,7 +310,7 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   // what you're carrying: a story shift keeps it from floor to floor (as it was when you started the floor)
   G.inv = mode === 'story' ? cloneInv(st.inv) : freshInv();
   G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
-  if (diff) save.settings.lastDiff = diff;
+  if (diff && mode !== 'hunt') save.settings.lastDiff = diff;
   // dev mode: chosen on the difficulty screen, it stays with you until you turn it off there
   G.dev = save.settings.dev ? { noclip: false, ghost: false, presolve: save.settings.devPresolve !== false } : null;
   UI.$('devBadge').classList.toggle('on', !!G.dev);
@@ -1375,7 +1375,7 @@ function pickDifficulty(mode, fresh) {
   const pick = mode === 'story' && fresh && save.story.done > 0;
   UI.$('floorPick').hidden = !pick;
   if (pick) drawFloorPick();
-  UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : mode === 'hunt' ? 'YOU ARE THE FOREMAN. HOW FAST ARE YOU?' : 'OVERTIME: HOW HARD?';
+  UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : 'OVERTIME: HOW HARD?';
   for (const el of document.querySelectorAll('[data-diff]')) el.classList.toggle('last', el.dataset.diff === (save.settings.lastDiff || 'normal'));
   UI.only('difficulty');
 }
@@ -1390,10 +1390,10 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
-  else if (act === 'hunt') pickDifficulty('hunt', false);
+  else if (act === 'hunt') startRun('hunt', false, 'normal', { floor: 3 + ((Math.random() * 5) | 0) }); // no difficulty: you are the Foreman, at his normal pace
   else if (act === 'lobby') openLobby(save);
   else if (act.startsWith('crew')) { lobbyAct(act, b, save); writeSave(); }
-  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : diffIntent.mode === 'hunt' ? { floor: 3 + ((Math.random() * 5) | 0) } : {});
+  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : {});
   else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
   else if (act === 'retry') {
     if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff, { floor: 1 }); // a brand new shift, same difficulty (you've been hired already)
