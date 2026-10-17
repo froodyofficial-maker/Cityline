@@ -101,12 +101,14 @@ export class Player {
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw), dx = p.x - this.pos.x, dz = p.z - this.pos.z, l = Math.hypot(dx, dz) || 1;
     return (fx * dx + fz * dz) / l;
   }
-  get eyeY() { return this.hidden ? 1.55 : this.crouchT !== undefined ? EYE + (CROUCH_EYE - EYE) * this.crouchT : EYE; }
+  get eyeY() { return this.foreman ? 2.05 : this.hidden ? 1.55 : this.crouchT !== undefined ? EYE + (CROUCH_EYE - EYE) * this.crouchT : EYE; }
 
   update(dt, w) {
     const { L, B, audio } = w;
-    if (tapped('KeyF') && this.battery > 0 && !this.hidden) { this.lightOn = !this.lightOn; audio.flashlight(); }
-    if (tapped('KeyC')) this.crouch = !this.crouch;
+    this.foreman = !!w.asForeman;
+    if (this.foreman) { this.lightOn = false; this.crouch = false; this.stamina = 100; }
+    if (tapped('KeyF') && this.battery > 0 && !this.hidden && !this.foreman) { this.lightOn = !this.lightOn; audio.flashlight(); }
+    if (tapped('KeyC') && !this.foreman) this.crouch = !this.crouch;
     this.inCrawl = !!(w.L && inCrawl(w.L, this.pos.x, this.pos.z));
     if (this.inCrawl) this.crouch = true; // no room to stand up in a crouchway
     const crouching = this.crouch; // C toggles. Not Ctrl: Ctrl+W closes the browser window
@@ -169,6 +171,7 @@ export class Player {
       if (this.stamina > 25) this.exhausted = false;
     }
     let speed = running ? (this.boostT > 0 ? 5.7 : 5.1) : crouching ? 1.35 : 2.6;
+    if (this.foreman) speed = running ? w.D.chaseSpeed : 1.9; // the Foreman's own pace: his chase when you run, his patrol walk
     if (w.slowT > 0) speed *= 0.5;
     // wading: the drains are knee deep until the sluices are open
     this.wading = !!(L.water && L.water[toTile(this.pos.z) * L.W + toTile(this.pos.x)] && (w.waterLevel ?? 1) > 0.2);
@@ -182,7 +185,7 @@ export class Player {
     this.vel.z += (tz - this.vel.z) * k;
     this.pos.x += this.vel.x * dt;
     this.pos.z += this.vel.z * dt;
-    if (!(w.dev && w.dev.noclip)) collide(L, B, this.pos, 0.3, false, this.crouch && this.crouchT > 0.75); // crouched, you fit into a crouchway (dev mode: walk through anything)
+    if (!(w.dev && w.dev.noclip)) collide(L, B, this.pos, this.foreman ? 0.4 : 0.3, this.foreman, !this.foreman && this.crouch && this.crouchT > 0.75); // the Foreman can't get into a crouchway // crouched, you fit into a crouchway (dev mode: walk through anything)
 
     // footsteps are noise
     const v = Math.hypot(this.vel.x, this.vel.z);
@@ -193,10 +196,10 @@ export class Player {
       this.stepAcc = 0;
       const wet = B.bloodTiles[toTile(this.pos.z) * L.W + toTile(this.pos.x)] === 1;
       const kind = running ? 'run' : crouching ? 'crouch' : 'walk';
-      audio.step(kind, wet || this.wading);
+      if (this.foreman) audio.thud(this.pos, running ? 0.35 : 0.2); else audio.step(kind, wet || this.wading);
       if (this.wading) audio.splash(running ? 1 : crouching ? 0.4 : 0.7);
       const base = running ? 15 : crouching ? 1.8 : wet ? 7.5 : 5.5;
-      w.noise(this.pos, this.wading ? base * 1.7 * (w.waterLevel ?? 1) + base * 0.3 : base, running, running ? 'run' : crouching ? 'crouch' : 'walk');
+      if (!this.foreman) w.noise(this.pos, this.wading ? base * 1.7 * (w.waterLevel ?? 1) + base * 0.3 : base, running, running ? 'run' : crouching ? 'crouch' : 'walk');
     }
     // breathing: from running, from being hurt, from being afraid
     const pant = Math.max((100 - this.stamina) / 100, this.exhausted ? 1 : 0, w.fear * 0.5, this.hp < 50 ? 0.4 : 0);

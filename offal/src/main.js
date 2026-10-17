@@ -6,6 +6,9 @@ import * as THREE from 'three';
 import { makeMaterials } from './textures.js';
 import { makeLayout, buildLevel, lineOfSight, toTile, findPath, collide, inCrawl } from './level.js';
 import { Puzzles } from './puzzles.js';
+import { Survivor } from './survivor.js';
+import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
+import { applyCrew } from './net.js';
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
@@ -223,6 +226,8 @@ function disposeLevel() {
 function loadFloor(depth, seed) {
   disposeLevel();
   const D = difficulty(depth, G.mode, Math.random, G.diff);
+  if (G.crew) Object.assign(D, applyCrew(D, G.crew.workers.length)); // a crew shift (Steam): a bigger floor, more to do
+  if (G.mode === 'hunt') Object.assign(D, { hunters: 0, puzzles: [], tags: Math.min(D.tags, 5), screamers: 0 }); // you are what hunts on this floor
   const L = makeLayout(depth, seed, D);
   G.floorSeed = seed;
   const B = buildLevel(L, mats);
@@ -253,6 +258,7 @@ function loadFloor(depth, seed) {
   G.waterLevel = 1;
   director.reset();
   guide.reset();
+  if (G.mode === 'hunt') setupHunt();
   audio.setDepth(depth);
   // weld everything that never moves into a few big meshes (see bake.js), and stop drawing past the fog
   if (!window.__noBake) G.bake = bakeStatic(B.group, [B, G.puzzles, G.hunters, director], B.swingers);
@@ -396,7 +402,7 @@ function updateTransition(dt) {
     audio.setMode('roam');
     // a resumed floor doesn't replay what you already heard on it
     G.beat = { pa: G.floorTime > 55 };
-    if (G.depth > 1 && G.D.tags) setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the way.`, 4.5), 2500);
+    if (G.depth > 1 && G.D.tags && G.mode !== 'hunt') setTimeout(() => G.state === 'play' && UI.message(`The lift wants ${G.D.tags} tags this time. Hold Q to listen for the way.`, 4.5), 2500);
   }
 }
 
@@ -684,7 +690,7 @@ function refreshMenu() {
 // Everything that isn't rebuilt from the floor's seed: where you are and what you've done, what each
 // puzzle is up to, where they are, the clocks. Written every few seconds, on pause, and as the window goes.
 function snapshot() {
-  if (!G.B || !['play', 'paused'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
+  if (!G.B || G.mode === 'hunt' || !['play', 'paused'].includes(G.state) || ['closing', 'sealed'].includes(G.lift.phase)) return null;
   const B = G.B;
   return {
     v: 1, mode: G.mode, diff: G.diff, depth: G.depth, seed: G.floorSeed, at: Date.now(),
@@ -741,6 +747,10 @@ addEventListener('beforeunload', saveSnapshot);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveSnapshot(); });
 
 function toMenu() {
+  G.asForeman = false;
+  if (G.sight) G.sight.visible = G.sightAmb.visible = false;
+  UI.$('hud').classList.remove('foreman');
+  if (G.bot) { scene.remove(G.bot.obj); G.bot = null; }
   G.state = 'menu';
   if (inspectFrom) { viewer.hide(); inspectFrom = null; }
   refreshMenu();
@@ -946,6 +956,88 @@ function handleInteract(dt) {
   }
 }
 
+// ---------- play as the Foreman: a worker does the floor, and you hunt him ----------
+function setupHunt() {
+  const B = G.B;
+  if (G.bot) scene.remove(G.bot.obj);
+  G.bot = new Survivor(G, mats, B.spawn);
+  scene.add(G.bot.obj);
+  // you start out on the floor, where he'd have started; the worker starts in the lift
+  const at = B.hunterSpawns[0] || B.spawn;
+  player.pos.set(at.x, 0, at.z);
+  player.inLift = false;
+  G.lift = { phase: 'open', t: 0 };
+  B.gate.off = true;
+  B.lift.bars.position.y = 2.6;
+  G.asForeman = true;
+  G.hearT = 0;
+  // you see in the dark the way he does: a dull red, close in
+  if (!G.sight) { G.sight = new THREE.PointLight(0xc04030, 30, 20, 1); camera.add(G.sight); G.sightAmb = new THREE.AmbientLight(0x6a2418, 2.2); scene.add(G.sightAmb); }
+  G.sight.visible = G.sightAmb.visible = true;
+  UI.$('hud').classList.add('foreman');
+  UI.message('You are the Foreman. There is a worker on your floor. He is cutting out the tags. Find him before he gets to the lift.', 6);
+}
+function updateHunt(dt) {
+  const bot = G.bot;
+  G.runTime += dt;
+  G.floorTime += dt;
+  player.update(dt, G);
+  bot.update(dt);
+  // what you heard, and which way
+  G.hearT -= dt;
+  const comp = UI.$('compass');
+  if (G.hearT > 0 && G.heard) {
+    const dx = G.heard.x - player.pos.x, dz = G.heard.z - player.pos.z;
+    const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);
+    UI.$('needle').style.transform = `rotate(${Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz)}rad)`;
+    UI.$('compassD').textContent = `YOU HEAR HIM \u00B7 ${Math.round(Math.hypot(dx, dz))} M`;
+    comp.classList.add('on');
+  } else comp.classList.remove('on');
+  const obj = `FIND HIM. PROCESS HIM.  <b>HIS TAGS ${bot.tags + bot.fed}/${G.D.tags}</b>`;
+  if (G.huntObj !== obj) { G.huntObj = obj; UI.$('objective').innerHTML = obj + '<small>CLICK TO SWING THE HOOK \u00B7 SHIFT TO CHASE</small>'; }
+  UI.hud({ floor: `${G.info.label} \u00B7 ${G.info.name}`, battery: 100, breath: 100, hidden: false, items: [] });
+  audio.listen(camera.position, player.forward(_fwd));
+}
+// his footsteps reach you the way yours reach the Foreman: by the same rules of noise
+G.botNoise = (pos, base, kind) => {
+  const n = (DIFFS[G.diff] || DIFFS.normal).noise, m = n[kind] ?? n.other ?? 1;
+  const r = base * m * (G.D.hearing || 1);
+  if (m <= 0 || Math.hypot(pos.x - player.pos.x, pos.z - player.pos.z) > r) return;
+  audio.thud(pos, kind === 'run' ? 0.45 : 0.2);
+  G.heard = { x: pos.x, z: pos.z };
+  G.hearT = 1.6;
+};
+G.botHarvest = (c) => {
+  c.harvested = true;
+  c.tag.visible = false;
+  c.flies.visible = false;
+  const i = G.B.corpses.indexOf(c);
+  if (G.flies[i]) { G.flies[i].stop(); G.flies[i] = null; }
+  audio.tear();
+};
+function huntSwing() {
+  if ((G.swingT || 0) > T) return;
+  G.swingT = T + 0.9;
+  audio.whoosh(player.pos);
+  const bot = G.bot, dx = bot.pos.x - player.pos.x, dz = bot.pos.z - player.pos.z, d = Math.hypot(dx, dz);
+  const facing = (-Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz) / (d || 1);
+  if (d < (G.D.reach || 2.1) + 0.3 && facing > 0.6 && !bot.safe) {
+    audio.squelch(1); audio.crack();
+    blood.splash(0.6, true);
+    bot.done = 'caught';
+    bot.obj.rotation.x = -1.4;
+    G.huntOver('caught');
+  }
+}
+G.huntOver = (how) => {
+  if (G.state !== 'play') return;
+  G.state = 'huntend';
+  try { document.exitPointerLock(); } catch {}
+  UI.message(how === 'caught' ? 'You got him. He goes on the rail with the others.' : 'The gate comes down. He got away with the tags. He will tell someone.', 5);
+  if (how === 'escaped') audio.clank(G.B.lift.pos, 1);
+  setTimeout(() => { if (G.state === 'huntend') toMenu(); }, 5000);
+};
+
 function harvest(c) {
   c.harvested = true;
   c.tag.visible = false;
@@ -1110,6 +1202,7 @@ function updateLockers(dt) {
 }
 
 function updateGame(dt, t) {
+  if (G.mode === 'hunt') { updateHunt(dt); return; }
   const B = G.B;
   G.runTime += dt;
   G.floorTime += dt;
@@ -1276,7 +1369,7 @@ function pickDifficulty(mode, fresh) {
   const pick = mode === 'story' && fresh && save.story.done > 0;
   UI.$('floorPick').hidden = !pick;
   if (pick) drawFloorPick();
-  UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : 'OVERTIME: HOW HARD?';
+  UI.$('diffTitle').textContent = mode === 'story' ? 'HOW HARD IS THIS SHIFT?' : mode === 'hunt' ? 'YOU ARE THE FOREMAN. HOW FAST ARE YOU?' : 'OVERTIME: HOW HARD?';
   for (const el of document.querySelectorAll('[data-diff]')) el.classList.toggle('last', el.dataset.diff === (save.settings.lastDiff || 'normal'));
   UI.only('difficulty');
 }
@@ -1291,7 +1384,10 @@ document.addEventListener('click', (e) => {
   }
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
-  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : {});
+  else if (act === 'hunt') pickDifficulty('hunt', false);
+  else if (act === 'lobby') openLobby(save);
+  else if (act.startsWith('crew')) { lobbyAct(act, b, save); writeSave(); }
+  else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : diffIntent.mode === 'hunt' ? { floor: 3 + ((Math.random() * 5) | 0) } : {});
   else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
   else if (act === 'retry') {
     if (G.mode === 'story' && !save.story.active) startRun('story', true, G.diff); // a brand new shift, same difficulty
@@ -1304,7 +1400,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
   else if (act === 'devsolve' && G.dev && G.puzzles) { devComplete(); UI.message('Dev: floor complete. Every tag is in the lift and every puzzle is solved: pull the lever.', 3); }
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
-  else if (act === 'back' && G.state === 'menu' && UI.$('collection').classList.contains('on')) UI.only('menu');
+  else if (act === 'back' && G.state === 'menu' && (UI.$('collection').classList.contains('on') || UI.$('lobby').classList.contains('on'))) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
   else if (act === 'fullscreen') setFullscreen(!document.fullscreenElement);
@@ -1363,6 +1459,7 @@ function carried() {
 function hasRoom(id) { const c = carried(); return c.some((it) => it.id === id) || c.length < UI.SLOTS; }
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0 || G.state !== 'play' || document.pointerLockElement !== canvas) return;
+  if (G.mode === 'hunt') { huntSwing(); return; }
   if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
 });
 G.onStunned = (h) => {
@@ -1376,6 +1473,8 @@ addEventListener('keydown', (e) => {
     if (G.state === 'play') { G.tasksOpen = !G.tasksOpen; UI.$('tasks').classList.toggle('on', G.tasksOpen); }
   }
 });
+
+UI.$('crewName').addEventListener('change', (e) => { lobbyRename(e.target.value, save); writeSave(); });
 
 // the launcher opened us with safe graphics (no GPU): say so on the menu
 if (/[?&]safe=1/.test(window.location.search)) UI.$('safeNote').hidden = false;
@@ -1618,7 +1717,7 @@ function frame(now) {
   }
   if (G.state === 'inspect') G.inspT += dt;
   if (G.state === 'letter') G.letterT += dt;
-  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'play' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'huntend' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
