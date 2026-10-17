@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node copy-game.cjs && electron .",
     "dist:win": "node copy-game.cjs && electron-builder --win portable zip --x64",
-    "dist:linux": "node copy-game.cjs && electron-builder --linux AppImage --x64"
+    "dist:linux": "node copy-game.cjs && electron-builder --linux AppImage --x64",
+    "dist:cinema": "node copy-game.cjs --cinema && electron-builder --win portable --x64 -c.productName=\"OFFAL Cinema\" -c.appId=games.offal.cinema -c.directories.output=release-cinema -c.portable.artifactName=OFFAL-Cinema-${version}-portable.exe"
   },
   "devDependencies": {
     "electron": "38.8.6",
@@ -20,12 +21,26 @@
     "appId": "games.offal.nightshift",
     "productName": "OFFAL",
     "artifactName": "OFFAL-${version}-${os}-${arch}.${ext}",
-    "directories": { "output": "release" },
-    "files": ["main.cjs", "icon.png", "game/**"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "icon.png",
+      "game/**"
+    ],
     "asar": true,
     "compression": "maximum",
-    "win": { "icon": "icon.png", "signExecutable": false },
-    "portable": { "artifactName": "OFFAL-${version}-portable.exe" },
-    "linux": { "icon": "icon.png", "category": "Game" }
+    "win": {
+      "icon": "icon.png",
+      "signExecutable": false
+    },
+    "portable": {
+      "artifactName": "OFFAL-${version}-portable.exe"
+    },
+    "linux": {
+      "icon": "icon.png",
+      "category": "Game"
+    }
   }
 }

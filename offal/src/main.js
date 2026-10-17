@@ -1486,9 +1486,13 @@ addEventListener('keydown', (e) => {
 UI.$('crewName').addEventListener('change', (e) => { lobbyRename(e.target.value, save); writeSave(); });
 
 // ---------- cinema: staged shots for trailers (see cinema.js) ----------
-// A shot loads a story floor without touching the real story save, then holds it while the shot plays.
+// Only in the OFFAL Cinema app (its build sets window.OFFAL_CINEMA): players never see it. A shot loads a story
+// floor without touching the story save, then holds it while the shot plays.
+const CINEMA_APP = !!window.OFFAL_CINEMA;
 const cinema = new Cinema({ G, camera, scene, post });
 function openCinema() {
+  if (!CINEMA_APP) return;
+  UI.$('cinema').querySelector('.back').hidden = true; // the app is only this list
   UI.$('cineList').innerHTML = SHOTS.map((s) => `<button data-act="cineShot" data-id="${s.id}">${s.name.toUpperCase()}<small>${s.note}</small></button>`).join('');
   UI.only('cinema');
 }
@@ -1695,7 +1699,7 @@ UI.$('warn').addEventListener('click', () => {
   audio.chime();
   audio.setMode('menu');
   G.state = 'menu';
-  UI.only('menu');
+  if (CINEMA_APP) openCinema(); else UI.only('menu');
 });
 applySettings();
 
