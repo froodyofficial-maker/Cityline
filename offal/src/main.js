@@ -977,8 +977,8 @@ function setupHunt() {
   B.lift.bars.position.y = 2.6;
   G.asForeman = true;
   G.hearT = 0;
-  // you see in the dark the way he does: a dull red, close in
-  if (!G.sight) { G.sight = new THREE.PointLight(0xff6040, 80, 26, 0.8); camera.add(G.sight); G.sightAmb = new THREE.HemisphereLight(0xd06048, 0x501810, 6); scene.add(G.sightAmb); }
+  // he knows these floors in the dark: you see them plainly
+  if (!G.sight) { G.sight = new THREE.PointLight(0xfff0e0, 60, 26, 0.8); camera.add(G.sight); G.sightAmb = new THREE.HemisphereLight(0xe8e4dc, 0x40403c, 4); scene.add(G.sightAmb); }
   G.sight.visible = G.sightAmb.visible = true;
   UI.$('hud').classList.add('foreman');
   UI.message('You are the Foreman. There is a worker on your floor. He is cutting out the tags. Find him before he gets to the lift.', 6);
