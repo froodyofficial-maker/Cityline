@@ -413,7 +413,7 @@ export function buildLevel(L, mats) {
       const n = [-dx, 0, -dy];
       const r = [-dy, 0, dx]; // so that r x up points along n: the face is front-facing from inside the tile
       const p0 = [cx + dx * TILE / 2 - r[0] * TILE / 2, 0, cz + dy * TILE / 2 - r[2] * TILE / 2];
-      let gore = rng() < 0.3 + 0.17 * D.gore + goreBoost * 0.2 ? Math.min(3, 1 + Math.floor(rng() * (D.gore + 1 + goreBoost))) : 0;
+      let gore = D.intro ? 0 : rng() < 0.3 + 0.17 * D.gore + goreBoost * 0.2 ? Math.min(3, 1 + Math.floor(rng() * (D.gore + 1 + goreBoost))) : 0;
       const flip = rng() < 0.5;
       // a crouchway's mouth: only the wall above it
       if (crawl[nb]) buf(wallBufs, gore * 3 + style).quad([p0[0], CRAWL_H, p0[2]], [r[0] * TILE, 0, r[2] * TILE], [0, WALL_H - CRAWL_H, 0], n, flip);
@@ -421,7 +421,7 @@ export function buildLevel(L, mats) {
     }
     let fk = 0;
     if (room && room.type === 'pit' && x === room.cx && y === room.cy) fk = 2;
-    else if (rng() < 0.06 + D.gore * 0.05 + goreBoost * 0.1) fk = 1;
+    else if (!D.intro && rng() < 0.06 + D.gore * 0.05 + goreBoost * 0.1) fk = 1;
     else if (L.corridor[i] && rng() < 0.08) fk = 3;
     if (fk) out.bloodTiles[i] = 1;
     buf(floorBufs, fk).quad([x * TILE, 0, (y + 1) * TILE], [TILE, 0, 0], [0, 0, -TILE], [0, 1, 0], rng() < 0.5);
@@ -471,7 +471,7 @@ export function buildLevel(L, mats) {
 
   const lampAt = (x, z, kind, room) => {
     const r = rng();
-    const state = r < D.deadLamps ? 'dead' : r < D.deadLamps + 0.3 ? 'flicker' : 'ok';
+    const state = D.intro ? 'ok' : r < D.deadLamps ? 'dead' : r < D.deadLamps + 0.3 ? 'flicker' : 'ok'; // the office: every light works
     const o = add(P.makeLamp(mats, kind), x, z, rng() < 0.5 ? 0 : Math.PI / 2);
     out.lamps.push({ pos: new THREE.Vector3(x, WALL_H - (kind === 'tube' ? 0.2 : 0.75), z), obj: o, state, phase: rng() * 100, room, on: 1 });
     if (state === 'dead') o.userData.bulb.material = mats.lampOff;

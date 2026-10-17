@@ -242,6 +242,12 @@ function loadFloor(depth, seed) {
   scene.background.setHex(G.info.fog);
   post.u.tint.value.set(...TH.tint);
   scene.fog.density = 0.085 + D.fogBoost + Math.min(depth, 10) * 0.003;
+  // the hiring office is just an office: lit, clean, nothing wrong with it yet. The torch can stay off.
+  G.officeLight ||= scene.add(new THREE.HemisphereLight(0xfff2dc, 0x5a5044, 0)) && scene.children[scene.children.length - 1];
+  G.officeLight.intensity = D.intro ? 3.2 : 0;
+  if (D.intro) { scene.fog.density = 0.022; player.lightOn = false; }
+  // playing the Foreman: you see what he sees, in red, a good way off
+  if (G.mode === 'hunt') scene.fog.density = 0.035;
   for (const l of lampLights) l.color.setHex(G.info.lamp);
   G.hunters = B.hunterSpawns.slice(0, D.hunters).map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
   G.flies = B.corpses.map((c) => audio.flies(c.pos));
@@ -972,7 +978,7 @@ function setupHunt() {
   G.asForeman = true;
   G.hearT = 0;
   // you see in the dark the way he does: a dull red, close in
-  if (!G.sight) { G.sight = new THREE.PointLight(0xc04030, 30, 20, 1); camera.add(G.sight); G.sightAmb = new THREE.AmbientLight(0x6a2418, 2.2); scene.add(G.sightAmb); }
+  if (!G.sight) { G.sight = new THREE.PointLight(0xff6040, 80, 26, 0.8); camera.add(G.sight); G.sightAmb = new THREE.HemisphereLight(0xd06048, 0x501810, 6); scene.add(G.sightAmb); }
   G.sight.visible = G.sightAmb.visible = true;
   UI.$('hud').classList.add('foreman');
   UI.message('You are the Foreman. There is a worker on your floor. He is cutting out the tags. Find him before he gets to the lift.', 6);

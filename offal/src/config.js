@@ -102,7 +102,7 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
     fogBoost: 0,
     finale: false,
   };
-  if (depth === 0) return { ...base, ...pace, batteries: 2, size: 24, rooms: 6, tags: 0, hunters: 0, puzzles: ['notice'], adrenaline: 0, gore: 0, screamers: 0, deadLamps: 0.1, theme: 'offices', intro: true };
+  if (depth === 0) return { ...base, ...pace, batteries: 0, size: 14, rooms: 4, tags: 0, hunters: 0, puzzles: ['notice'], adrenaline: 0, gore: 0, screamers: 0, deadLamps: 0.1, theme: 'offices', intro: true };
   if (mode === 'story') {
     const f = STORY[Math.min(depth, STORY_FLOORS) - 1];
     return { ...base, ...pace, batteries: batteriesFor(f.size, diffKey), size: f.size, rooms: f.rooms, tags: f.tags, hunters: f.hunters, puzzles: f.puzzles, finale: !!f.finale,
