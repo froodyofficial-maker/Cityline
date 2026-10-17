@@ -35,8 +35,8 @@ const STORY = [
     size: 46, rooms: 14, tags: 5, hunters: 2, puzzles: ['fuses', 'keypad'] },
   { name: 'ADMINISTRATION', quote: 'Somebody up here signed off on all of it. Every quarter. In triplicate.', lamp: 0xfff0c8, fog: 0x050402, theme: 'offices',
     size: 48, rooms: 15, tags: 5, hunters: 2, puzzles: ['keycard'] },
-  { name: 'THE COLD ROOM', quote: 'Every drawer is full. Somebody has been keeping count on the walls.', lamp: 0xe8f2ff, fog: 0x050608, theme: 'morgue',
-    size: 50, rooms: 16, tags: 6, hunters: 2, puzzles: ['keypad', 'drawers'] },
+  { name: 'THE PROCESSING LINE', quote: 'The belts stopped in 1998. Nobody told the meat.', lamp: 0xffcf90, fog: 0x070403, theme: 'processing',
+    size: 50, rooms: 14, tags: 6, hunters: 2, puzzles: ['scale', 'keypad'] },
   { name: 'DEEP FREEZE', quote: 'Minus twenty. The meat is racked to the ceiling, and some of it is wrapped like people.', lamp: 0xd8ecff, fog: 0x0c1014, theme: 'freezer',
     size: 52, rooms: 16, tags: 6, hunters: 2, puzzles: ['meatkey'] },
   { name: 'THE QUIET LINE', quote: 'You can hear the line running below you now. It sounds like breathing.', lamp: 0xd0c0a0, fog: 0x030201,
@@ -61,9 +61,10 @@ export const THEMES = {
   offices: { tint: [1.06, 1.0, 0.86], lamp: 0xfff0c8, fog: 0x050402, label: 'ADMINISTRATION' },
   sewer: { tint: [0.95, 1.0, 0.86], lamp: 0xe8e0b0, fog: 0x040504, fogBoost: 0.008, label: 'THE DRAINS' },
   freezer: { tint: [0.84, 0.95, 1.14], lamp: 0xd8ecff, fog: 0x0c1014, fogBoost: 0.015, label: 'DEEP FREEZE' },
+  processing: { tint: [1.06, 0.98, 0.86], lamp: 0xffcf90, fog: 0x070403, label: 'PROCESSING LINE' },
 };
 // each kind of floor's own job, for overtime's lottery
-const THEME_PUZZLES = { morgue: ['drawers'], offices: ['keycard'], sewer: ['sluices'], freezer: ['meatkey'] };
+const THEME_PUZZLES = { morgue: ['drawers'], offices: ['keycard'], sewer: ['sluices'], freezer: ['meatkey'], processing: ['scale'] };
 
 export function floorInfo(depth, mode = 'story') {
   if (mode === 'story' || depth <= 6) {
@@ -76,6 +77,11 @@ export function floorInfo(depth, mode = 'story') {
 
 const PUZZLE_KINDS = ['fuses', 'keypad', 'scale', 'valves'];
 
+// torch batteries: enough for the size of the floor (the torch burns one down in under three minutes, and the
+// big floors take ten), a spare on easy, one fewer on hard and extreme
+const BATTERY_DIFF = { easy: 1, normal: 0, hard: -1, extreme: -1 };
+const batteriesFor = (size, diffKey) => Math.max(3, Math.min(9, Math.round((size * size) / 330) + (BATTERY_DIFF[diffKey] || 0)));
+
 // everything a floor needs to know about how hard it is
 export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = 'normal') {
   const d = depth - 1;
@@ -85,7 +91,6 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
   const pace = { chaseSpeed: RUN_SPEED * chaseRatio, speedMul: chaseRatio / 0.92, diff: diffKey, windup: df.windup, reach: df.reach, recover: df.recover, alert: df.alert, breathDrain: df.breathDrain, stun: df.stun };
   const base = {
     hearing: (1 + d * 0.06) * df.hear,
-    batteries: Math.max(2, 5 - Math.floor(d / 2)),
     adrenaline: d < 2 ? 1 : 2,
     deadLamps: Math.min(0.15 + d * 0.06, 0.55),
     gore: Math.min(d, 3),
@@ -95,13 +100,13 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
   };
   if (mode === 'story') {
     const f = STORY[Math.min(depth, STORY_FLOORS) - 1];
-    return { ...base, ...pace, size: f.size, rooms: f.rooms, tags: f.tags, hunters: f.hunters, puzzles: f.puzzles, finale: !!f.finale,
+    return { ...base, ...pace, batteries: batteriesFor(f.size, diffKey), size: f.size, rooms: f.rooms, tags: f.tags, hunters: f.hunters, puzzles: f.puzzles, finale: !!f.finale,
       fogBoost: (f.fogBoost || 0) + ((THEMES[f.theme || 'plant'] || {}).fogBoost || 0), deadLamps: f.deadLamps ?? base.deadLamps, theme: f.theme || 'plant' };
   }
   // overtime: endless, and the puzzles are a lottery
   const puzzles = [];
   const r = rng();
-  const theme = depth < 2 ? 'plant' : r < 0.4 ? 'plant' : r < 0.55 ? 'morgue' : r < 0.7 ? 'sewer' : r < 0.85 ? 'offices' : 'freezer';
+  const theme = depth < 2 ? 'plant' : r < 0.34 ? 'plant' : r < 0.47 ? 'morgue' : r < 0.6 ? 'sewer' : r < 0.73 ? 'offices' : r < 0.86 ? 'freezer' : 'processing';
   const n = depth >= 5 ? 2 : depth >= 2 ? 1 : 0;
   // a floor of its own kind always has its own job first
   if (THEME_PUZZLES[theme] && n) puzzles.push(THEME_PUZZLES[theme][0]);
@@ -117,6 +122,7 @@ export function difficulty(depth, mode = 'story', rng = Math.random, diffKey = '
     ...pace,
     theme,
     size: Math.min(26 + d * 4, 50),
+    batteries: batteriesFor(Math.min(26 + d * 4, 50), diffKey),
     rooms: Math.min(7 + d, 16),
     tags: Math.min(3 + Math.floor((d + 1) / 2), 6),
     hunters: 1 + Math.floor(depth / 5),

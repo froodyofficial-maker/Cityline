@@ -596,6 +596,66 @@ function freezeFloorCanvas(kind) {
   speckle(g, S, S, 12, rng);
   return c;
 }
+// ---- the processing line: a meat factory floor ----
+// painted blockwork: grubby cream above, a dark green dado, a black-and-yellow guard band at knee height where the
+// carts hit it, conduit and a pipe run along the top
+function factoryWallCanvas(gore) {
+  const W = 256, H = 384, { c, g } = canvas(W, H), rng = makeRng(911 + gore * 13);
+  g.fillStyle = '#b8b29a'; g.fillRect(0, 0, W, H);
+  // the blocks, each a slightly different shade, with mortar lines
+  for (let y = 0; y < H; y += 32) for (let x = (y / 32) % 2 ? -32 : 0; x < W; x += 64) { g.fillStyle = `rgba(${90 + rng() * 40 | 0},${85 + rng() * 35 | 0},${60 + rng() * 30 | 0},${0.06 + rng() * 0.1})`; g.fillRect(x + 1, y + 1, 62, 30); }
+  g.fillStyle = 'rgba(60,56,44,.45)'; for (let y = 0; y < H; y += 32) g.fillRect(0, y, W, 2);
+  for (let y = 0; y < H; y += 32) for (let x = (y / 32) % 2 ? 32 : 0; x < W; x += 64) g.fillRect(x, y, 2, 32);
+  blotches(g, W, H * 0.6, 120, 4, 26, '90,80,50', 0.18, rng);
+  streaks(g, W, H, 18, '110,80,40', 0.35, rng, true); // rust running down from the pipes
+  // pipe and conduit along the top
+  const pipe = g.createLinearGradient(0, 14, 0, 34); pipe.addColorStop(0, '#5a5e5a'); pipe.addColorStop(0.5, '#9aa09a'); pipe.addColorStop(1, '#3a3e3a');
+  g.fillStyle = pipe; g.fillRect(0, 14, W, 20);
+  for (let x = 20; x < W; x += 96) { g.fillStyle = '#2a2c2a'; g.fillRect(x, 10, 10, 28); } // brackets
+  g.fillStyle = '#4a4e4a'; g.fillRect(0, 44, W, 5);
+  // the dado: dark green paint, scuffed through to the block in places
+  g.fillStyle = '#2e4234'; g.fillRect(0, H - 150, W, 150);
+  blotches(g, W, H, 40, 3, 12, '140,135,110', 0.35, rng);
+  // guard band at knee height
+  g.fillStyle = '#141410'; g.fillRect(0, H - 96, W, 28);
+  g.fillStyle = '#c8a21a'; for (let x = -28; x < W; x += 28) { g.beginPath(); g.moveTo(x, H - 68); g.lineTo(x + 14, H - 68); g.lineTo(x + 28, H - 96); g.lineTo(x + 14, H - 96); g.fill(); }
+  for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(20,20,16,${rng() * 0.5})`; g.fillRect(rng() * W, H - 100 + rng() * 34, 10 + rng() * 40, 2); } // cart scrapes
+  g.fillStyle = '#1e2a22'; g.fillRect(0, H - 14, W, 14); // the cove at the floor
+  streaks(g, W, H, 14, '70,10,6', 0.4, rng, false); // splash-back from the line
+  wallBlood(g, W, H, gore, rng);
+  speckle(g, W, H, 12, rng);
+  return c;
+}
+// the factory floor: red-brown resin, worn grey in the walkways, yellow lane lines, a steel drain; kind 1 blood,
+// kind 2 a grated drain with the floor running into it, kind 3 the walkway
+function factoryFloorCanvas(kind) {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(931 + kind * 7);
+  g.fillStyle = '#5a4038'; g.fillRect(0, 0, S, S); // oxblood resin, mostly worn down to the concrete
+  blotches(g, S, S, 140, 4, 34, '40,24,18', 0.3, rng);
+  blotches(g, S, S, 110, 6, 44, '130,118,106', 0.3, rng); // worn through to the concrete
+  for (let i = 0; i < 30; i++) { g.strokeStyle = `rgba(20,8,4,${rng() * 0.4})`; g.lineWidth = 1; g.beginPath(); const x = rng() * S, y = rng() * S; g.moveTo(x, y); g.lineTo(x + (rng() - 0.5) * 60, y + (rng() - 0.5) * 60); g.stroke(); } // cracks
+  if (kind === 3) { g.fillStyle = '#c8a21a'; g.fillRect(18, 0, 12, S); g.fillRect(S - 30, 0, 12, S); blotches(g, S, S, 40, 2, 8, '30,24,10', 0.6, rng); }
+  if (kind === 2) {
+    g.fillStyle = '#2a2a28'; g.fillRect(S / 2 - 40, S / 2 - 40, 80, 80);
+    g.fillStyle = '#0a0a08'; for (let y = S / 2 - 36; y < S / 2 + 36; y += 8) g.fillRect(S / 2 - 36, y, 72, 4);
+    const r = makeRng(77); bloodPool(g, S / 2, S / 2, 52, r);
+  }
+  if (kind === 1) { const r = makeRng(kind + 3); bloodPool(g, S / 2, S / 2, 44, r); }
+  g.fillStyle = 'rgba(255,230,210,.06)'; for (let i = 0; i < 40; i++) g.fillRect(rng() * S, rng() * S, 2 + rng() * 10, 1); // wet sheen
+  speckle(g, S, S, 12, rng);
+  return c;
+}
+// the ceiling: open steel decking with the ducting and cable trays left exposed
+function factoryCeilCanvas() {
+  const S = 256, { c, g } = canvas(S, S), rng = makeRng(951);
+  for (let x = 0; x < S; x += 32) { const gr = g.createLinearGradient(x, 0, x + 32, 0); gr.addColorStop(0, '#2c2e2c'); gr.addColorStop(0.5, '#4a4e4a'); gr.addColorStop(1, '#262826'); g.fillStyle = gr; g.fillRect(x, 0, 32, S); }
+  g.fillStyle = '#5a5e5a'; g.fillRect(0, 100, S, 26); g.fillStyle = '#3a3c3a'; g.fillRect(0, 104, S, 3); g.fillRect(0, 120, S, 3); // a duct
+  g.fillStyle = '#1e201e'; for (let x = 0; x < S; x += 12) g.fillRect(x, 190, 3, 18); g.fillRect(0, 190, S, 3); // a cable tray
+  blotches(g, S, S, 60, 4, 24, '20,16,10', 0.4, rng);
+  speckle(g, S, S, 10, rng);
+  return c;
+}
+
 function freezeCeilCanvas() {
   const S = 256, { c, g } = canvas(S, S), rng = makeRng(877);
   for (let x = 0; x < S; x += 16) { const gr = g.createLinearGradient(x, 0, x + 16, 0); gr.addColorStop(0, '#5c646a'); gr.addColorStop(0.5, '#8a949a'); gr.addColorStop(1, '#4a5258'); g.fillStyle = gr; g.fillRect(x, 0, 16, S); } // corrugated
@@ -616,6 +676,7 @@ export function themeMaterials(mats, theme) {
   if (theme === 'morgue') m = { walls: wall(wardWallCanvas, 60, 0x445048, 0.8), floors: floor(wardFloorCanvas, 70, 0x333833), ceil: phong({ map: tx(dropCeiling(951, [190, 188, 172], '#4e4c44')), shininess: 4 }) };
   else if (theme === 'offices') m = { walls: wall(officeWallCanvas, 8, 0x111111), floors: floor(officeFloorCanvas, 2, 0x000000), ceil: phong({ map: tx(dropCeiling(661, [168, 160, 136], '#3e3a30')), shininess: 4 }) };
   else if (theme === 'sewer') m = { walls: wall(sewerWallCanvas, 70, 0x334422, 2), floors: floor(sewerFloorCanvas, 110, 0x445533), ceil: phong({ map: tx(sewerCeilCanvas()), shininess: 30, specular: 0x222222 }) };
+  else if (theme === 'processing') m = { walls: wall(factoryWallCanvas, 30, 0x2a2a22, 1.4), floors: floor(factoryFloorCanvas, 90, 0x4a2a22), ceil: phong({ map: tx(factoryCeilCanvas()), shininess: 30, specular: 0x222222 }) };
   else if (theme === 'freezer') m = { walls: wall(freezeWallCanvas, 50, 0x8899aa, 0.6), floors: floor(freezeFloorCanvas, 60, 0x99aabb), ceil: phong({ map: tx(freezeCeilCanvas()), shininess: 40, specular: 0x666666 }) };
   else m = null;
   mats.themes[theme] = m;

@@ -58,12 +58,13 @@ The repo also holds **OFFAL**, a separate first-person horror game. You work the
 | Floor | Kind | Layout | What it looks like |
 | --- | --- | --- | --- |
 | B1, B2, B5, B9, B10 | The meatworks | Rooms joined by narrow corridors | Tiled kill rooms, meat on rails, butcher tables, the pit |
-| B3, B7 | Hospital wing (morgue) | Long two-tile halls with rows of rooms off them, joined by stairwell passages | Small white tiles over green paint, chequered lino, drop ceilings with missing panels; wards with beds, curtains and drips; autopsy rooms with instrument carts, sinks and specimen jars; records rooms; freezer rooms of body drawers |
+| B3 | Hospital wing (morgue) | Long two-tile halls with rows of rooms off them, joined by stairwell passages | Small white tiles over green paint, chequered lino, drop ceilings with missing panels; wards with beds, curtains and drips; autopsy rooms with instrument carts, sinks and specimen jars; records rooms; freezer rooms of body drawers |
 | B4 | The drains | Ragged, winding tunnels between cisterns and pump rooms | Victorian brick with a slime line, cobbles, dark water you wade through, pipes, outflows, ladders, and his nest of bones and rags |
 | B6 | Administration | Big open-plan offices of cubicles, joined by two-tile corridors | Wallpaper over wood panelling, carpet tiles, drop ceilings; desks with dead terminals, meeting rooms, a break room with a glowing vending machine, copier rooms, whiteboards (the headcount is going down) |
+| B7 | The processing line | Big production halls joined by wide aisles, with packing, mincing and wash-down rooms off them | Painted blockwork with a green dado and a black-and-yellow guard band, red resin floors with yellow walkway lines and drains, exposed steel ceilings, sodium light; rows of conveyors with meat still on them and gaps to cut through, band saws, carcasses on the overhead rail, a mincer with an arm going in, packing tables of film-wrapped cuts, troughs, hoses and rubber aprons on pegs |
 | B8 | Deep freeze | A few huge rooms joined by wide aisles | Frosted insulated panels, painted floors, rows of pallet racking with boxes and shrink-wrapped meat, forklifts, coolers with icicles, people frozen standing up |
 
-Overtime mixes all five kinds at random from B2.
+Overtime mixes all six kinds at random from B2.
 
 **The tannoy:** on every story floor the PA has a line of its own, plus another when the last tag is cut and he's sent after you. It gets stranger the deeper you go.
 

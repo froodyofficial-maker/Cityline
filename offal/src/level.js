@@ -248,6 +248,7 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
   const { ax, ay } = theme === 'morgue' ? wardRooms(c)
     : theme === 'offices' ? standardRooms(c, D.rooms, { size: (i) => (i < 3 ? [rng.int(8, 12), rng.int(6, 9)] : [rng.int(3, 5), rng.int(3, 4)]), wide: true, extra: 0.4 })
     : theme === 'sewer' ? standardRooms(c, D.rooms, { size: () => { const k = rng.int(3, 5); return [k, k + rng.int(-1, 1)]; }, meander: true, extra: 0.6 })
+    : theme === 'processing' ? standardRooms(c, D.rooms, { size: (i) => (i < 4 ? [rng.int(9, 13), rng.int(5, 7)] : [rng.int(4, 6), rng.int(3, 5)]), wide: true, extra: 0.45 })
     : theme === 'freezer' ? standardRooms(c, Math.max(5, Math.round(D.rooms * 0.6)), { size: () => [rng.int(7, 11), rng.int(6, 9)], wide: true, extra: 0.5 })
     : standardRooms(c, D.rooms, { size: () => [rng.int(3, 7), rng.int(3, 6)], extra: c.keypad ? 0.2 : 0.45 });
   grid[ay * W + ax] = 1;
@@ -330,6 +331,7 @@ export function generateLayout(depth, seed, D = difficulty(depth)) {
       offices: { first: ['office', 'meeting', 'breakroom', 'copy', 'lockers'], then: ['office', 'office', 'meeting', 'copy', 'lockers'] },
       sewer: { first: ['cistern', 'pumproom', 'nest', 'lockers', 'junction'], then: ['junction', 'junction', 'cistern', 'pumproom', 'lockers'] },
       freezer: { first: ['racks', 'hanging', 'dock', 'blast', 'lockers'], then: ['racks', 'hanging', 'racks', 'blast'] },
+      processing: { first: ['line', 'line', 'packing', 'mincer', 'wash', 'lockers'], then: ['line', 'packing', 'mincer', 'wash'] },
     }[theme];
     const shuffled = rng.shuffle(others.slice());
     let k = 0;
@@ -680,6 +682,69 @@ export function buildLevel(L, mats) {
         }
         return true;
       }
+      // ---- the processing line ----
+      case 'line': {
+        // conveyors down the length of the hall in rows, broken every few metres so you can cut across; a band saw
+        // at the head of each run; carcasses still hanging off the rail above
+        const along = r.w >= r.h, len = along ? r.w : r.h, rows = along ? r.h : r.w;
+        for (let k = 1; k < rows - 1; k += 2) {
+          for (let s = 1; s < len - 1; s += 4) {
+            const n = Math.min(3, len - 1 - s);
+            const tiles = [];
+            for (let t = 0; t < n; t++) tiles.push(along ? [r.x + s + t, r.y + k] : [r.x + k, r.y + s + t]);
+            const ok = [];
+            for (const [x, y] of tiles) { if (!canBlock(x, y)) break; blockTile(x, y); ok.push([x, y]); }
+            if (!ok.length) continue;
+            const L2 = ok.length * TILE - 0.2, [x0, y0] = ok[0], [x1, y1] = ok[ok.length - 1];
+            const cx = (tileCenter(x0) + tileCenter(x1)) / 2, cz = (tileCenter(y0) + tileCenter(y1)) / 2;
+            add(P2.conveyor(mats, rng, L2), cx, cz, along ? 0 : Math.PI / 2);
+            if (along) collider(cx - L2 / 2, cz - 0.42, cx + L2 / 2, cz + 0.42); else collider(cx - 0.42, cz - L2 / 2, cx + 0.42, cz + L2 / 2);
+            if (s === 1 && rng() < 0.7) {
+              // the band saw at the head of the run, if there's room beside it
+              const sx = along ? cx - L2 / 2 - 0.1 : cx, sz = along ? cz + 0.9 : cz - L2 / 2 - 0.1;
+              const [tx, ty] = [toTile(sx), toTile(sz)];
+              if (grid[ty * W + tx] && L.roomOf[ty * W + tx] === ri && !used.has(tx + ',' + ty) && canBlock(tx, ty)) { blockTile(tx, ty); add(P2.bandsaw(mats, rng), tileCenter(tx), tileCenter(ty), rng() * 6); collider(tileCenter(tx) - 0.5, tileCenter(ty) - 0.5, tileCenter(tx) + 0.5, tileCenter(ty) + 0.5); }
+            }
+          }
+          // the overhead rail along the row, with what's still on it
+          const [ax0, az0] = along ? [r.x * TILE + 0.3, tileCenter(r.y + k) + 1] : [tileCenter(r.x + k) + 1, r.y * TILE + 0.3];
+          const railLen = len * TILE - 0.6;
+          const rail = P2.overheadRail(mats, rng, railLen, WALL_H);
+          add(rail, along ? ax0 + railLen / 2 : ax0, along ? az0 : az0 + railLen / 2, along ? 0 : Math.PI / 2);
+          for (let d = 1.2; d < railLen - 0.6; d += 1.6 + rng() * 1.6) {
+            if (rng() < 0.35) continue;
+            const hx = along ? ax0 + d : ax0, hz = along ? az0 : az0 + d;
+            const c2 = add(P.makeCarcass(mats, rng, rng() < 0.2), hx, hz, rng() * 6);
+            c2.position.y = WALL_H - 0.25;
+            out.swingers.push(c2);
+            collider(hx - 0.26, hz - 0.26, hx + 0.26, hz + 0.26, false);
+          }
+        }
+        for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (rng() < 0.25) out.bloodTiles[y * W + x] = 1;
+        return true;
+      }
+      case 'packing': {
+        for (const [x, y] of inner.filter(([x, y]) => canBlock(x, y)).slice(0, Math.max(1, Math.floor((r.w * r.h) / 8)))) {
+          blockTile(x, y); const [cx, cz] = centerOf(x, y), yaw = rng() < 0.5 ? 0 : Math.PI / 2;
+          add(P2.packTable(mats, rng), cx, cz, yaw);
+          if (yaw) collider(cx - 0.45, cz - 0.95, cx + 0.45, cz + 0.95); else collider(cx - 0.95, cz - 0.45, cx + 0.95, cz + 0.45);
+        }
+        for (let k = 0; k < 2; k++) { const free = inner.find(([x, y]) => !used.has(x + ',' + y) && canBlock(x, y)); if (!free) break; const [x, y] = free, [cx, cz] = centerOf(x, y); blockTile(x, y); add(P2.crateStack(mats, rng), cx, cz, rng() * 0.3); collider(cx - 0.65, cz - 0.6, cx + 0.65, cz + 0.6); }
+        return true;
+      }
+      case 'mincer': {
+        const t = inner.find(([x, y]) => canBlock(x, y));
+        if (t) { const [x, y] = t, [cx, cz] = centerOf(x, y); blockTile(x, y); add(P2.mincer(mats, rng), cx - 0.3, cz, 0); collider(cx - 0.9, cz - 0.55, cx + 1.0, cz + 0.55); }
+        for (let i = 0; i < 6; i++) add(P.meatChunk(mats, rng), rx + 0.5 + rng() * (rw - 1), rz + 0.5 + rng() * (rh - 1), rng() * 6);
+        const cu = wallSpot(r); if (cu) onWall(P2.coolerUnit(mats, rng), cu, 0, 1, false);
+        for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (rng() < 0.45) out.bloodTiles[y * W + x] = 1;
+        return true;
+      }
+      case 'wash': {
+        for (let k = 0; k < 2; k++) { const sp = wallSpot(r, (x, y) => wallSides(x, y).length === 1); if (sp) onWall(P2.washStation(mats, rng), sp, 0.6, 1.8); }
+        for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (rng() < 0.3) out.bloodTiles[y * W + x] = 1;
+        return true;
+      }
       // ---- the deep freeze ----
       case 'racks': {
         // long rows of racking with a gap every few bays to cut through
@@ -926,7 +991,7 @@ export function buildLevel(L, mats) {
 
   // batteries and adrenaline
   const pickup = (type) => {
-    const t = out.takeTile();
+    const t = out.takeTile(([x, y]) => !crawl[y * W + x]); // out in the open, not down a crouchway
     if (!t) return;
     const g = new THREE.Group();
     if (type === 'battery') {
@@ -977,10 +1042,17 @@ export function buildLevel(L, mats) {
 
   // the Foreman starts in the room furthest from you
   const far = L.rooms.slice(1).filter((r) => !inWing(r.cx, r.cy)).sort((a, b) => L.dist[b.cy * W + b.cx] - L.dist[a.cy * W + a.cx]);
-  for (let i = 0; i < D.hunters; i++) {
-    const r = far[Math.min(i * 2, far.length - 1)];
-    out.hunterSpawns.push(new THREE.Vector3(tileCenter(r.cx), 0, tileCenter(r.cy)));
+  // the first in the room furthest from you; each one after it as far from the others as it can get, out of
+  // the furthest half of the floor
+  const spawnRooms = [far[0]];
+  const pool = far.slice(1, Math.max(2, Math.ceil(far.length / 2)));
+  while (spawnRooms.length < D.hunters && pool.length) {
+    let bi = 0, bd = -1;
+    pool.forEach((r, i) => { const d = Math.min(...spawnRooms.map((s) => Math.hypot(s.cx - r.cx, s.cy - r.cy))); if (d > bd) { bd = d; bi = i; } });
+    spawnRooms.push(pool.splice(bi, 1)[0]);
   }
+  while (spawnRooms.length < D.hunters) spawnRooms.push(far[Math.min(spawnRooms.length, far.length - 1)]);
+  for (const r of spawnRooms) out.hunterSpawns.push(new THREE.Vector3(tileCenter(r.cx), 0, tileCenter(r.cy)));
   return out;
 }
 

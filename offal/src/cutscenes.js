@@ -8,8 +8,10 @@
 // Each one builds its own little stage, runs off a timeline, and throws gore around with a small physics pass.
 import * as THREE from 'three';
 import { createForemanMesh, poseForeman } from './monster.js';
-import { makeBody, openChest, mesh, decal, severedArm, severedHead, meatChunk, makeLamp, stump, makeLift } from './props.js';
-import { canvas } from './textures.js';
+import { makeBody, openChest, mesh, decal, severedArm, severedHead, meatChunk, makeLamp, stump, makeLift, makeCarcass, bucket, butcherTable } from './props.js';
+import { pipeRun, conveyor, packTable, forklift, crateStack } from './props2.js';
+import { canvas, themeMaterials } from './textures.js';
+import { makeRng } from './rng.js';
 
 export const CUTSCENES = ['rope', 'exit', 'grinder', 'fan', 'eaten', 'rack'];
 
@@ -378,6 +380,223 @@ function signTex(text, color) {
   g.fillText(text, 128, 72);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// ---------- the way out, for the ending ----------
+// the dispatch bay: W wide, from the lift's wall at Z0 to the shutter's at Z1, H high; the door DW x DH
+const YARD = { W: 14, Z0: -1, Z1: -26, H: 5.5, DW: 5.2, DH: 4.2 };
+const HOLE = { x: 0.35, y: 1.3 }; // where the hook comes through
+const FOG_OUT = new THREE.Color(0xa89a8c); // the haze over the yard at dawn
+
+// a roller shutter that dents: a corrugated sheet whose ribs and dents are worked out from its flat rest shape.
+// It faces the yard (turned round), so x here is the world's x and the dents push out toward you.
+class Shutter {
+  constructor(mat, w, h) {
+    this.w = w;
+    this.h = h;
+    this.geo = new THREE.PlaneGeometry(w, h, 24, Math.round(h / 0.05));
+    this.rest = this.geo.attributes.position.array.slice();
+    this.mesh = new THREE.Mesh(this.geo, mat);
+    this.mesh.receiveShadow = true;
+    this.dents = []; // [local x, y up from the bottom edge, depth, radius]
+    this.kick = null; // the bulge of a blow, ringing out
+    this.dirty = true;
+  }
+  dent(x, y, depth, r, kick) { this.dents.push([-x, y, depth, r]); this.kick = { x: -x, y, amp: kick, t: 0 }; this.dirty = true; }
+  heightAt(x, y) { let z = 0; for (const [dx, dy, d, R] of this.dents) z += d * Math.exp(-((-x - dx) ** 2 + (y - dy) ** 2) / (R * R)); return z; }
+  update(dt) {
+    const k = this.kick;
+    if (k) { k.t += dt; if (k.t > 0.8) this.kick = null; this.dirty = true; }
+    if (!this.dirty) return;
+    this.dirty = false;
+    const p = this.geo.attributes.position.array, r = this.rest, h2 = this.h / 2;
+    const ka = k ? k.amp * Math.exp(-k.t * 6) * Math.cos(k.t * 34) : 0;
+    for (let i = 0; i < p.length; i += 3) {
+      const x = r[i], y = r[i + 1] + h2;
+      let z = (Math.abs(((y / 0.2) % 1) - 0.5) - 0.25) * 0.08; // the ribs
+      for (const [dx, dy, d, R] of this.dents) { const q = ((x - dx) ** 2 + (y - dy) ** 2) / (R * R); if (q < 5) z += d * Math.exp(-q); }
+      if (k) z += ka * Math.exp(-((x - k.x) ** 2 + (y - k.y) ** 2) / 1.4);
+      p[i + 2] = z;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.computeVertexNormals();
+  }
+}
+
+// a reefer trailer backed on to a dock: box, chassis, wheels at the dock end, legs at the front. zc: its middle
+function trailer(m, x, zc) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, zc);
+  const body = mesh(new THREE.BoxGeometry(2.55, 2.7, 11), new THREE.MeshLambertMaterial({ map: yardTex('trailer') }));
+  body.position.y = 2.65;
+  const chassis = mesh(new THREE.BoxGeometry(1.2, 0.3, 10.6), m.darkMetal);
+  chassis.position.y = 1.1;
+  const unit = mesh(new THREE.BoxGeometry(2.0, 1.6, 0.6), new THREE.MeshLambertMaterial({ color: 0x8a8a86 }));
+  unit.position.set(0, 3.0, -5.8);
+  g.add(body, chassis, unit);
+  const tyre = new THREE.MeshLambertMaterial({ color: 0x161616 });
+  for (const z of [3.4, 4.5]) for (const sx of [-1, 1]) { const w = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 14), tyre); w.rotation.z = Math.PI / 2; w.position.set(sx * 0.95, 0.5, z); g.add(w); }
+  for (const sx of [-1, 1]) { const leg = mesh(new THREE.BoxGeometry(0.12, 1.0, 0.12), m.darkMetal); leg.position.set(sx * 0.8, 0.5, -3.6); g.add(leg); }
+  return g;
+}
+
+// the yard's canvases. kind picks one; rx, ry: how many times it repeats
+function yardTex(kind, rx = 1, ry = 1) {
+  const rng = makeRng(kind.length * 977 + rx * 31);
+  const spots = (g, w, h, n, col, a, s0, s1) => { for (let i = 0; i < n; i++) { const s = s0 + rng() * (s1 - s0); g.fillStyle = `rgba(${col},${a * rng()})`; g.fillRect(rng() * w, rng() * h, s, s); } };
+  const blots = (g, w, h, n, col, a, r0, r1) => { for (let i = 0; i < n; i++) { const R = r0 + rng() * (r1 - r0), x = rng() * w, y = rng() * h, gr = g.createRadialGradient(x, y, 0, x, y, R); gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gr; g.fillRect(x - R, y - R, R * 2, R * 2); } };
+  const streaks = (g, w, y0, n, col, a, len) => { for (let i = 0; i < n; i++) { const x = rng() * w, l = len * (0.3 + rng()), gr = g.createLinearGradient(0, y0, 0, y0 + l); gr.addColorStop(0, `rgba(${col},${a * (0.4 + rng() * 0.6)})`); gr.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gr; g.fillRect(x, y0, 1 + rng() * 4, l); } };
+  let cv;
+  if (kind === 'sky') {
+    const { c, g } = canvas(1024, 512);
+    const gr = g.createLinearGradient(0, 0, 0, 512);
+    gr.addColorStop(0, '#1c2640'); gr.addColorStop(0.2, '#34406a'); gr.addColorStop(0.34, '#6a6a90'); gr.addColorStop(0.43, '#c08a88');
+    gr.addColorStop(0.48, '#f8b480'); gr.addColorStop(0.5, '#ffe0b0'); gr.addColorStop(0.52, '#c0a294'); gr.addColorStop(1, '#5a5450');
+    g.fillStyle = gr; g.fillRect(0, 0, 1024, 512);
+    // the sun's side of the sky warmer (u 0.8 is where it is: see sunDir)
+    const sx = 0.8 * 1024, glow = g.createRadialGradient(sx, 236, 0, sx, 236, 330);
+    glow.addColorStop(0, 'rgba(255,214,150,0.9)'); glow.addColorStop(0.3, 'rgba(250,160,100,0.35)'); glow.addColorStop(1, 'rgba(250,150,100,0)');
+    g.fillStyle = glow; g.fillRect(0, 0, 1024, 512);
+    // long low clouds, lit from underneath
+    g.filter = 'blur(5px)';
+    for (let i = 0; i < 26; i++) {
+      const y = 150 + rng() * 85, x = rng() * 1024, w = 40 + rng() * 140, hh = 2 + rng() * 5, near = Math.max(0, 1 - Math.abs(x - sx) / 420);
+      g.fillStyle = `rgba(${(80 + near * 150) | 0},${(66 + near * 90) | 0},${(86 + near * 40) | 0},${0.2 + rng() * 0.3})`;
+      g.beginPath(); g.ellipse(x, y, w, hh, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = `rgba(255,${(150 + near * 80) | 0},120,${0.1 + near * 0.3})`;
+      g.beginPath(); g.ellipse(x, y + hh * 0.6, w * 0.8, hh * 0.35, 0, 0, Math.PI * 2); g.fill();
+    }
+    g.filter = 'none';
+    for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,255,255,${rng() * 0.5})`; g.fillRect(rng() * 1024, rng() * 70, 1, 1); } // the last stars
+    cv = c;
+  } else if (kind === 'treeline') {
+    const { c, g } = canvas(2048, 192);
+    g.fillStyle = '#20242c';
+    g.beginPath(); g.moveTo(0, 192);
+    let y = 120;
+    for (let x = 0; x <= 2048; x += 4) { y = Math.max(70, Math.min(150, y + (rng() - 0.5) * 14)); g.lineTo(x, y - (rng() < 0.3 ? rng() * 14 : 0)); }
+    g.lineTo(2048, 192); g.fill();
+    // pylons striding off across the fields
+    g.strokeStyle = '#1a1d24'; g.lineWidth = 2;
+    for (const px of [380, 700, 1010]) {
+      g.beginPath(); g.moveTo(px - 16, 150); g.lineTo(px, 30); g.lineTo(px + 16, 150); g.moveTo(px - 26, 50); g.lineTo(px + 26, 50); g.moveTo(px - 20, 72); g.lineTo(px + 20, 72); g.stroke();
+    }
+    g.lineWidth = 1; g.beginPath(); g.moveTo(0, 60); g.quadraticCurveTo(220, 80, 380, 50); g.quadraticCurveTo(540, 74, 700, 50); g.quadraticCurveTo(860, 74, 1010, 50); g.quadraticCurveTo(1200, 80, 1400, 64); g.stroke();
+    cv = c;
+  } else if (kind === 'asphalt') {
+    const { c, g } = canvas(256, 256);
+    g.fillStyle = '#5e5c5a'; g.fillRect(0, 0, 256, 256);
+    spots(g, 256, 256, 2600, '20,20,20', 0.5, 1, 2); spots(g, 256, 256, 1600, '120,116,108', 0.35, 1, 2);
+    blots(g, 256, 256, 6, '12,12,14', 0.5, 10, 34); // oil
+    g.strokeStyle = 'rgba(14,14,14,0.7)'; g.lineWidth = 1;
+    for (let i = 0; i < 5; i++) { g.beginPath(); let x = rng() * 256, yy = rng() * 256; g.moveTo(x, yy); for (let k = 0; k < 9; k++) { x += (rng() - 0.5) * 30; yy += (rng() - 0.5) * 30; g.lineTo(x, yy); } g.stroke(); }
+    cv = c;
+  } else if (kind === 'slab') {
+    const { c, g } = canvas(256, 256);
+    g.fillStyle = '#76726a'; g.fillRect(0, 0, 256, 256);
+    spots(g, 256, 256, 2000, '40,38,34', 0.35, 1, 2); spots(g, 256, 256, 900, '160,154,144', 0.3, 1, 2);
+    blots(g, 256, 256, 5, '40,36,30', 0.35, 20, 60); blots(g, 256, 256, 2, '70,10,8', 0.35, 8, 20);
+    g.fillStyle = 'rgba(30,28,26,0.9)'; g.fillRect(0, 0, 256, 2); g.fillRect(0, 0, 2, 256);
+    cv = c;
+  } else if (kind === 'facade') {
+    // precast panels, 4 x 2 m, rain-streaked from every joint
+    const { c, g } = canvas(256, 256);
+    g.fillStyle = '#8c867c'; g.fillRect(0, 0, 256, 256);
+    spots(g, 256, 256, 2400, '50,48,44', 0.3, 1, 2); spots(g, 256, 256, 1200, '170,164,152', 0.25, 1, 2);
+    for (const y0 of [0, 128]) { streaks(g, 256, y0 + 3, 26, '40,38,34', 0.45, 90); streaks(g, 256, y0 + 3, 6, '90,50,30', 0.35, 60); }
+    blots(g, 256, 256, 4, '60,70,50', 0.25, 10, 30);
+    g.fillStyle = 'rgba(28,26,24,0.95)'; for (const y0 of [0, 128]) g.fillRect(0, y0, 256, 3); g.fillRect(0, 0, 3, 256);
+    g.fillStyle = 'rgba(200,196,186,0.4)'; for (const y0 of [3, 131]) g.fillRect(3, y0, 253, 1);
+    cv = c;
+  } else if (kind === 'shutter') {
+    // galvanised slats, scraped and rusted, the bottom one in hazard paint; KEEP CLEAR stencilled across
+    const { c, g } = canvas(256, 256);
+    const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#8e989e'); gr.addColorStop(1, '#6a706e');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    spots(g, 256, 256, 1800, '40,44,46', 0.3, 1, 2);
+    const slat = 256 / 21.5;
+    for (let y = 0; y < 256; y += slat) { g.fillStyle = 'rgba(20,22,24,0.55)'; g.fillRect(0, y, 256, 1.5); g.fillStyle = 'rgba(220,226,230,0.25)'; g.fillRect(0, y + 2, 256, 1); }
+    streaks(g, 256, 0, 30, '110,50,20', 0.5, 160); blots(g, 256, 256, 10, '100,46,20', 0.4, 4, 16);
+    const grime = g.createLinearGradient(0, 180, 0, 256); grime.addColorStop(0, 'rgba(40,30,24,0)'); grime.addColorStop(1, 'rgba(40,30,24,0.7)');
+    g.fillStyle = grime; g.fillRect(0, 180, 256, 76);
+    g.save(); g.beginPath(); g.rect(0, 256 - slat * 1.2, 256, slat * 1.2); g.clip(); g.fillStyle = '#c8a018'; g.fillRect(0, 0, 256, 256);
+    g.fillStyle = '#141210'; for (let x = -20; x < 280; x += 18) { g.beginPath(); g.moveTo(x, 256); g.lineTo(x + 9, 256); g.lineTo(x + 9 + 16, 256 - slat * 1.2); g.lineTo(x + 16, 256 - slat * 1.2); g.fill(); }
+    g.restore();
+    g.fillStyle = 'rgba(230,226,210,0.55)'; g.font = 'bold 22px "Courier New", monospace'; g.textAlign = 'center'; g.fillText('KEEP  CLEAR', 128, 196);
+    spots(g, 256, 256, 400, '150,150,150', 0.4, 1, 3); // the paint scraped off
+    cv = c;
+  } else if (kind === 'trailer') {
+    const { c, g } = canvas(256, 64);
+    g.fillStyle = '#d4d0c6'; g.fillRect(0, 0, 256, 64);
+    streaks(g, 256, 0, 40, '90,84,70', 0.35, 50); spots(g, 256, 64, 300, '60,56,50', 0.3, 1, 2);
+    g.fillStyle = '#8a1a14'; g.fillRect(0, 44, 256, 4);
+    cv = c;
+  } else if (kind === 'hazard') {
+    const { c, g } = canvas(64, 64);
+    g.fillStyle = '#c9a21c'; g.fillRect(0, 0, 64, 64);
+    g.fillStyle = '#121110';
+    for (let x = -64; x < 128; x += 32) { g.beginPath(); g.moveTo(x, 64); g.lineTo(x + 16, 64); g.lineTo(x + 80, 0); g.lineTo(x + 64, 0); g.fill(); }
+    spots(g, 64, 64, 160, '60,50,40', 0.5, 1, 3);
+    cv = c;
+  } else if (kind === 'number') {
+    const { c, g } = canvas(128, 128);
+    g.fillStyle = '#1a1a1a'; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#d8b020'; g.font = 'bold 104px Arial, sans-serif'; g.textAlign = 'center'; g.fillText(String(rx), 64, 104);
+    streaks(g, 128, 0, 10, '60,40,20', 0.5, 90);
+    cv = c; rx = 1;
+  } else if (kind === 'notice') {
+    const { c, g } = canvas(192, 128);
+    g.fillStyle = '#d8d2bc'; g.fillRect(0, 0, 192, 128);
+    g.fillStyle = '#8a1a14'; g.fillRect(0, 0, 192, 26);
+    g.fillStyle = '#f0e8d0'; g.font = 'bold 15px Arial, sans-serif'; g.textAlign = 'center'; g.fillText('NOTICE TO ALL STAFF', 96, 18);
+    g.fillStyle = '#2a2622'; g.font = '11px Arial, sans-serif';
+    ['Every worker MUST clock out', 'before leaving the building.', 'No card, no pay.', 'Nobody leaves', 'before the shift is over.'].forEach((l, i) => g.fillText(l, 96, 46 + i * 16));
+    blots(g, 192, 128, 3, '70,6,4', 0.6, 4, 12); streaks(g, 192, 0, 12, '90,70,40', 0.3, 80);
+    cv = c;
+  } else if (kind === 'clockface') {
+    const { c, g } = canvas(64, 64);
+    g.fillStyle = '#e8e0cc'; g.fillRect(0, 0, 64, 64);
+    g.strokeStyle = '#1a1a1a'; g.lineWidth = 2;
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; g.beginPath(); g.moveTo(32 + Math.sin(a) * 24, 32 - Math.cos(a) * 24); g.lineTo(32 + Math.sin(a) * 28, 32 - Math.cos(a) * 28); g.stroke(); }
+    g.beginPath(); g.moveTo(32, 32); g.lineTo(32 + 12, 32 + 7); g.moveTo(32, 32); g.lineTo(32 - 4, 32 - 22); g.stroke(); // ten to six
+    cv = c;
+  } else if (kind === 'cards') {
+    const { c, g } = canvas(96, 144);
+    g.fillStyle = '#3a3630'; g.fillRect(0, 0, 96, 144);
+    for (let r = 0; r < 6; r++) for (let k = 0; k < 4; k++) {
+      if (rng() < 0.12) continue; // somebody's never coming back for theirs
+      g.fillStyle = rng() < 0.15 ? '#c8b880' : '#e0d8c0'; g.fillRect(4 + k * 23, 4 + r * 23, 19, 21);
+      g.fillStyle = 'rgba(40,30,20,0.6)'; g.fillRect(6 + k * 23, 8 + r * 23, 12, 2);
+      if (rng() < 0.2) { g.fillStyle = 'rgba(100,8,6,0.7)'; g.fillRect(8 + k * 23, 12 + r * 23, 8, 6); }
+    }
+    cv = c;
+  } else if (kind === 'grate') {
+    const { c, g } = canvas(64, 64);
+    g.fillStyle = '#1a1816'; g.fillRect(0, 0, 64, 64);
+    g.fillStyle = '#4a4440'; for (let i = 2; i < 64; i += 8) g.fillRect(i, 2, 4, 60);
+    g.fillRect(0, 0, 64, 3); g.fillRect(0, 61, 64, 3);
+    blots(g, 64, 64, 2, '80,8,6', 0.7, 6, 16);
+    cv = c;
+  } else if (kind === 'chainlink') {
+    const { c, g } = canvas(32, 32);
+    g.strokeStyle = 'rgba(150,152,150,1)'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(0, 16); g.lineTo(16, 0); g.lineTo(32, 16); g.lineTo(16, 32); g.closePath(); g.stroke();
+    cv = c;
+  } else if (kind === 'hole') {
+    // punched through from inside: torn black, the metal curled out round it
+    const { c, g } = canvas(64, 64);
+    const ring = (R, j, col) => { g.fillStyle = col; g.beginPath(); for (let i = 0; i <= 18; i++) { const a = (i / 18) * Math.PI * 2, r = R * (1 - j + rng() * j * 2); g.lineTo(32 + Math.cos(a) * r * 1.2, 32 + Math.sin(a) * r); } g.fill(); };
+    ring(26, 0.35, 'rgba(170,176,180,0.95)');
+    ring(21, 0.4, 'rgba(90,60,40,0.9)');
+    ring(16, 0.45, '#050303');
+    cv = c;
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rx, ry);
+  t.anisotropy = 4;
   return t;
 }
 
@@ -863,154 +1082,510 @@ export class Cutscene {
   }
 
   // ---------- the ending: clocking out ----------
-  // The lift climbs the last floors; the gate goes up on dawn in the loading bay; you walk out; you stop and
-  // look back, and he's standing in the lift, in the dark, watching you go. He doesn't follow. You walk into the light.
+  // The lift brings you up into the dispatch bay. The shutter at the far end is jammed half up on the morning.
+  // Halfway across, the cage clanks behind you: he came up with you. You run. You get out under the shutter, its
+  // brake gives, and it comes down between you. He hits it from the inside until the hook comes through, and then
+  // he looks at you through the hole. You walk away into the yard.
   endingBuild() {
-    this.dur = 31;
-    const s = this.scene, m = this.mats;
-    s.background = new THREE.Color(0x1a1c20);
-    s.fog = new THREE.FogExp2(0x3a3e44, 0.03);
-    // the loading bay: concrete, a long way across, a roller door half up at the far end on to the morning
-    const conc = new THREE.MeshLambertMaterial({ color: 0x55534e });
-    const floor = mesh(new THREE.PlaneGeometry(16, 26), m.floors[0], false);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0, -11);
-    floor.receiveShadow = true;
-    s.add(floor);
-    const wallM = m.walls[1];
-    for (const [x, z, ry, w] of [[-8, -11, Math.PI / 2, 26], [8, -11, -Math.PI / 2, 26], [0, 2, Math.PI, 16]]) { const wl = mesh(new THREE.PlaneGeometry(w, 6), wallM, false); wl.position.set(x, 3, z); wl.rotation.y = ry; s.add(wl); }
-    const ceil = mesh(new THREE.PlaneGeometry(16, 26), conc, false);
-    ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(0, 6, -11);
-    s.add(ceil);
-    // the far wall, with the roller door in it
-    for (const [x, w] of [[-5.25, 5.5], [5.25, 5.5]]) { const wl = mesh(new THREE.PlaneGeometry(w, 6), wallM, false); wl.position.set(x, 3, -24); s.add(wl); }
-    const over = mesh(new THREE.PlaneGeometry(5, 1.6), wallM, false); over.position.set(0, 5.2, -24); s.add(over);
-    const door = mesh(new THREE.BoxGeometry(5, 0.7, 0.12), m.rust[1]); door.position.set(0, 4.05, -24); s.add(door); // rolled most of the way up
-    // outside: the morning, too bright to see into
-    this.sky = new THREE.MeshBasicMaterial({ color: 0xeef2f6, fog: false });
-    const sky = mesh(new THREE.PlaneGeometry(30, 14), this.sky, false); sky.position.set(0, 2, -30); s.add(sky);
-    const ground = mesh(new THREE.PlaneGeometry(30, 12), new THREE.MeshBasicMaterial({ color: 0xb8bcb4, fog: false }), false); ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0.01, -30); s.add(ground);
-    this.sun = new THREE.DirectionalLight(0xfff0dc, 0);
-    this.sun.position.set(2, 6, -34);
-    this.sun.target.position.set(0, 0, -6);
-    s.add(this.sun, this.sun.target);
-    this.dayFill = new THREE.HemisphereLight(0xb8c4d0, 0x302a24, 0);
-    s.add(this.dayFill);
-    // the morning coming in at the door, a long pale wash across the floor
-    this.doorLight = new THREE.PointLight(0xe8eef4, 0, 34, 1.1);
-    this.doorLight.position.set(0, 2.6, -22.5);
-    s.add(this.doorLight);
-    this.doorSpot = new THREE.SpotLight(0xfff4e4, 0, 40, 0.5, 0.6, 1);
-    this.doorSpot.position.set(0, 3, -26);
-    this.doorSpot.target.position.set(0, 0, -4);
-    s.add(this.doorSpot, this.doorSpot.target);
-    // stuff in the bay: pallets, a dead forklift's worth of crates, drag marks to the door
-    for (let i = 0; i < 6; i++) { const c = mesh(new THREE.BoxGeometry(1.2, 0.5 + Math.random() * 0.8, 1), new THREE.MeshLambertMaterial({ color: 0x6a5238 })); c.position.set((Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 3), 0.4, -6 - Math.random() * 14); s.add(c); }
-    s.add(decal(m.drag, 3, 0.4, -12, Math.PI / 2, 0.012));
-    s.add(decal(m.drag, 3, 0.4, -16, Math.PI / 2, 0.012));
-    // the lift: you start inside it, in the dark, at the back of the bay
+    this.dur = 36;
+    const s = this.scene, m = this.mats, P = themeMaterials(m, 'processing'), rng = makeRng(1998), T = YARD;
+    s.background = new THREE.Color(0x1a1612);
+    s.fog = new THREE.FogExp2(0x3a2e26, 0.026);
+    s.add(new THREE.AmbientLight(0x4a3c30, 0.9));
+    const { W, Z0, Z1, H, DW, DH } = T, zi = Z1 + 0.2, zo = Z1 - 0.2;
+    // a plane; walls tile their texture in world space (tw x th metres a repeat) so the pieces round a door line up
+    const plane = (w, h, mat, x, y, z, ry = 0, rx = 0) => { const p = mesh(new THREE.PlaneGeometry(w, h), mat, false); p.position.set(x, y, z); p.rotation.set(rx, ry, 0); p.receiveShadow = true; s.add(p); return p; };
+    const tiled = (mat, w, h, tw, th, x = 0, y = 0, flip = false) => {
+      const c = mat.clone();
+      if (mat.map) {
+        c.map = mat.map.clone();
+        c.map.repeat.set(w / tw, h / th);
+        c.map.offset.set((flip ? -(x + w / 2) : x - w / 2) / tw, (y - h / 2) / th);
+        c.map.needsUpdate = true;
+        if (mat.bumpMap === mat.map) c.bumpMap = c.map;
+      }
+      return c;
+    };
+    const wall = (mat, w, h, x, y, z, ry, tw = 2, th = 3) => plane(w, h, tiled(mat, w, h, tw, th, x, y, Math.abs(ry) > 3), x, y, z, ry);
+
+    // ---- the bay: the processing floor's tiles and walls, a long way across, low and dirty ----
+    const L = Z0 - Z1, zm = (Z0 + Z1) / 2;
+    plane(W, L, tiled(P.floors[1], W, L, 2, 2), 0, 0, zm, 0, -Math.PI / 2);
+    plane(W, L, tiled(P.ceil, W, L, 2, 2), 0, H, zm, 0, Math.PI / 2);
+    wall(P.walls[2], L, H, -W / 2, H / 2, zm, Math.PI / 2);
+    wall(P.walls[1], L, H, W / 2, H / 2, zm, -Math.PI / 2);
+    // the lift wall behind you, with the lift's mouth in it
+    for (const sx of [-1, 1]) wall(P.walls[0], W / 2 - 1.1, H, sx * (W / 4 + 0.55), H / 2, Z0, Math.PI);
+    wall(P.walls[0], 2.2, H - 3.2, 0, (H + 3.2) / 2, Z0, Math.PI);
+    // the shutter wall in front, inside face
+    for (const sx of [-1, 1]) wall(P.walls[3], W / 2 - DW / 2, H, sx * (W / 4 + DW / 4), H / 2, zi, 0);
+    wall(P.walls[3], DW, H - DH, 0, (H + DH) / 2, zi, 0);
+    // steel: the door's guides and lintel, the roller drum's housing, the hand chain
+    const steel = m.darkMetal;
+    for (const sx of [-1, 1]) { const gd = mesh(new THREE.BoxGeometry(0.18, DH, 0.5), steel); gd.position.set(sx * (DW / 2 - 0.05), DH / 2, Z1); s.add(gd); }
+    const lintel = mesh(new THREE.BoxGeometry(DW + 0.2, 0.14, 0.5), steel); lintel.position.set(0, DH + 0.07, Z1); s.add(lintel);
+    const drum = mesh(new THREE.BoxGeometry(DW + 0.6, 0.62, 0.62), m.rust[1]); drum.position.set(0, DH + 0.5, zi + 0.32); s.add(drum);
+    this.handChain = new THREE.Group();
+    this.handChain.position.set(DW / 2 + 0.25, DH + 0.3, zi + 0.12);
+    for (const dx of [0, 0.07]) { const c = mesh(new THREE.CylinderGeometry(0.012, 0.012, 3.2, 4), m.chain, false); c.position.set(dx, -1.6, 0); this.handChain.add(c); }
+    s.add(this.handChain);
+    // the floor at the door: yellow and black, a drain, the ruts the pallet trucks wore
+    const hz = new THREE.MeshLambertMaterial({ map: yardTex('hazard', DW * 2.5, 1) });
+    plane(DW, 0.45, hz, 0, 0.006, zi + 0.4, 0, -Math.PI / 2);
+    for (const sx of [-1, 1]) { const b = mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.1, 10), new THREE.MeshLambertMaterial({ map: yardTex('hazard', 1, 3) })); b.position.set(sx * (DW / 2 + 0.5), 0.55, zi + 0.45); s.add(b); }
+    // signs over the door: the way out, lit green; and the bay's number
+    plane(0.9, 0.34, new THREE.MeshBasicMaterial({ map: signTex('EXIT', '#40ff70') }), 0, DH + 1.0, zi + 0.66);
+    plane(1.6, 0.6, new THREE.MeshLambertMaterial({ map: signTex('BAY 3', '#ffb030') }), -DW / 2 - 1.4, 3.3, zi + 0.01);
+    plane(1.2, 0.8, new THREE.MeshLambertMaterial({ map: yardTex('notice') }), DW / 2 + 1.6, 1.7, zi + 0.01);
+    // the clock you punch out on, by the lift; the cards in their rack
+    const clock = mesh(new THREE.BoxGeometry(0.42, 0.55, 0.26), new THREE.MeshPhongMaterial({ color: 0x8a8068, shininess: 20 })); clock.position.set(-2.1, 1.45, Z0 - 0.13); s.add(clock);
+    const face = plane(0.26, 0.26, new THREE.MeshLambertMaterial({ map: yardTex('clockface') }), -2.1, 1.55, Z0 - 0.27, Math.PI);
+    void face;
+    plane(0.6, 0.9, new THREE.MeshLambertMaterial({ map: yardTex('cards') }), -2.85, 1.4, Z0 - 0.01, Math.PI);
+    // up top: steel beams across, pipes along both walls, lamps on chains
+    for (let z = Z0 - 2; z > Z1 + 1; z -= 4) { const b = mesh(new THREE.BoxGeometry(W, 0.35, 0.22), steel); b.position.set(0, H - 0.18, z); s.add(b); }
+    for (const [x, ry] of [[-W / 2, Math.PI / 2], [W / 2, -Math.PI / 2]]) { const p = pipeRun(m, L - 1, rng); p.position.set(x, 2.3, zm); p.rotation.y = ry; s.add(p); }
+    this.tubes = [];
+    for (const z of [-3.5, -9.5, -15.5, -21.5]) {
+      const lamp = makeLamp(m, 'tube');
+      lamp.position.set(0, H - 0.75, z);
+      lamp.rotation.y = Math.PI / 2;
+      for (const dx of [-0.5, 0.5]) { const c = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.72, 4), m.chain, false); c.position.set(dx, 0.38, 0); lamp.add(c); }
+      s.add(lamp);
+      const light = new THREE.PointLight(0xffcf90, 16, 15, 1.3);
+      light.position.set(0, H - 0.95, z);
+      s.add(light);
+      this.tubes.push({ lamp, light, base: 16 });
+    }
+    // the one by the middle is dying
+    const dying = this.tubes[1];
+    dying.lamp.userData.bulb.material = dying.lamp.userData.bulb.material.clone();
+    // the rail down the left, still carrying what was on it when the line stopped
+    const railX = -4.3, railH = 4.4;
+    const rail = mesh(new THREE.BoxGeometry(0.08, 0.1, L - 4), steel); rail.position.set(railX, railH, zm - 0.5); s.add(rail);
+    for (let z = Z0 - 2; z > Z1 + 3; z -= 2) { const h = mesh(new THREE.BoxGeometry(0.05, H - railH, 0.05), steel); h.position.set(railX, (H + railH) / 2, z); s.add(h); }
+    this.swing = [];
+    for (let z = Z0 - 3; z > Z1 + 4; z -= 1.55 + rng() * 0.5) {
+      const c = makeCarcass(m, rng, rng() < 0.18);
+      c.position.set(railX, railH - 0.05, z);
+      c.rotation.y = rng() * Math.PI;
+      s.add(c);
+      this.swing.push({ o: c, f: 0.6 + rng() * 0.5, p: rng() * 6, a: 0.02 + rng() * 0.03 });
+    }
+    // the right-hand wall: the end of the packing line, a table, crates waiting for a lorry that won't come
+    const belt = conveyor(m, rng, 9); belt.position.set(W / 2 - 1.1, 0, -9.5); belt.rotation.y = Math.PI / 2; s.add(belt);
+    const pt = packTable(m, rng); pt.position.set(W / 2 - 1.1, 0, -16.2); pt.rotation.y = Math.PI / 2; s.add(pt);
+    const bt = butcherTable(m, rng); bt.position.set(-2.4, 0, -12.5); bt.rotation.y = Math.PI / 2; s.add(bt);
+    for (const [x, z] of [[-2.0, -14.2], [2.2, -5.2], [-1.9, -20.8]]) { const bk = bucket(m); bk.position.set(x, 0, z); s.add(bk); }
+    const fl = forklift(m, rng); fl.position.set(-4.4, 0, -22.4); fl.rotation.y = 0.7; s.add(fl);
+    for (const [x, z, r] of [[4.6, -21.6, 0.1], [5.9, -21.9, -0.06], [5.4, -23.6, 0.2], [-5.6, -18.2, 0.05], [5.6, -3.2, 0.3]]) { const c = crateStack(m, rng); c.position.set(x, 0, z); c.rotation.y = r; s.add(c); }
+    // where things were dragged to the door, and what they left
+    for (let z = Z0 - 2.5; z > Z1 + 2; z -= 2.6) s.add(decal(m.drag, 2.8, 0.35 + Math.sin(z) * 0.3, z, Math.PI / 2 + Math.sin(z * 1.7) * 0.15, 0.012));
+    for (const [x, z, sz] of [[-3.6, -7.6, 1.8], [-4.6, -14.6, 2.2], [1.4, -18.5, 1.2], [4.2, -10.2, 1.4], [-0.8, -24.2, 1.0]]) s.add(decal(m.pool[(rng() * 3) | 0], sz, x, z, rng() * 6, 0.013));
+    for (let i = 0; i < 7; i++) s.add(decal(m.splat[(rng() * m.splat.length) | 0], 0.5 + rng() * 0.6, (rng() - 0.5) * 9, Z0 - 2 - rng() * 20, rng() * 6, 0.014));
+    const drain = plane(0.6, 0.6, new THREE.MeshLambertMaterial({ map: yardTex('grate') }), 1.6, 0.008, -13.6, 0, -Math.PI / 2);
+    void drain;
+
+    // ---- the lift and its shaft: you start in the cage, in the dark, coming up ----
     this.lift = makeLift(m, 0);
-    this.lift.position.set(0, 0, 0);
-    this.lift.rotation.y = Math.PI;
     s.add(this.lift);
     this.bars = this.lift.userData.bars;
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.2, 6, 2.4), new THREE.MeshBasicMaterial({ color: 0x020202, side: THREE.BackSide }));
-    shaft.position.set(0, 3, 0.3);
-    s.add(shaft);
-    const mouth = mesh(new THREE.PlaneGeometry(16, 6), m.walls[1], false); // the wall either side of the lift mouth
-    void mouth;
-    // light running past the gate as the floors go by
+    const shaftM = P.walls[0];
+    wall(shaftM, 2.2, 6, -1.05, 3, 0.05, Math.PI / 2);
+    wall(shaftM, 2.2, 6, 1.05, 3, 0.05, -Math.PI / 2);
+    wall(shaftM, 2.1, 6, 0, 3, 1.1, Math.PI);
+    // the shaft's front wall slides down past the gate on the way up, until the bay's floor comes level
+    this.shaftFront = plane(2.4, 20, tiled(shaftM, 2.4, 20, 2, 3), 0, 10, -1.06);
     this.pass = new THREE.PointLight(0xffc890, 0, 5, 1.5);
     s.add(this.pass);
     this.liftLamp = new THREE.PointLight(0xffd8b0, 2.5, 4, 1.5);
     this.liftLamp.position.set(0, 2.6, 0.3);
     s.add(this.liftLamp);
-    // him: in the lift behind you when you look back
+
+    // ---- the outside wall: precast panels, the dock doors, the canopy, the lamp over the door ----
+    const FW = 80, FH = 11, facade = new THREE.MeshLambertMaterial({ map: yardTex('facade') });
+    for (const sx of [-1, 1]) wall(facade, FW / 2 - DW / 2, FH, sx * (FW / 4 + DW / 4), FH / 2, zo, Math.PI, 4, 4);
+    wall(facade, DW, FH - DH, 0, (FH + DH) / 2, zo, Math.PI, 4, 4);
+    const plinth = new THREE.MeshLambertMaterial({ color: 0x4a4744 });
+    for (const sx of [-1, 1]) plane(FW / 2 - DW / 2 - 0.2, 0.7, plinth, sx * (FW / 4 + DW / 4 + 0.1), 0.35, zo - 0.01, Math.PI);
+    const canopy = mesh(new THREE.BoxGeometry(DW + 2.4, 0.16, 1.8), steel); canopy.position.set(0, DH + 0.9, zo - 0.9); s.add(canopy);
+    for (const sx of [-1, 1]) { const rod = mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.1, 4), steel, false); rod.position.set(sx * (DW / 2 + 0.8), DH + 1.65, zo - 0.9); rod.rotation.x = 0.95; s.add(rod); }
+    for (const sx of [-1, 1]) { const bump = mesh(new THREE.BoxGeometry(0.3, 0.55, 0.28), new THREE.MeshLambertMaterial({ color: 0x141414 })); bump.position.set(sx * (DW / 2 + 0.35), 0.75, zo - 0.14); s.add(bump); }
+    for (const sx of [-1, 1]) { const b = mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.15, 10), new THREE.MeshLambertMaterial({ map: yardTex('hazard', 1, 3) })); b.position.set(sx * (DW / 2 + 1.0), 0.57, zo - 1.0); s.add(b); }
+    plane(1.3, 1.3, new THREE.MeshLambertMaterial({ map: yardTex('number', 3) }), -DW / 2 - 1.5, 3.4, zo - 0.02, Math.PI);
+    const pack = mesh(new THREE.BoxGeometry(0.5, 0.3, 0.25), steel); pack.position.set(0, DH + 1.35, zo - 0.14); s.add(pack);
+    const packLens = plane(0.4, 0.18, new THREE.MeshBasicMaterial({ color: 0xffc070 }), 0, DH + 1.27, zo - 0.27, Math.PI, 0.5);
+    void packLens;
+    this.wallPack = new THREE.PointLight(0xffb060, 7, 12, 1.4);
+    this.wallPack.position.set(0, DH + 1.0, zo - 0.6);
+    s.add(this.wallPack);
+    // the next docks along, shut, one with a trailer still backed on to it
+    const shutM = new THREE.MeshPhongMaterial({ map: yardTex('shutter'), shininess: 30, specular: 0x333333, side: THREE.DoubleSide });
+    for (const [x, n] of [[-10, 2], [10, 4]]) {
+      plane(DW - 0.4, DH - 0.1, shutM, x, (DH - 0.1) / 2, zo - 0.02, Math.PI);
+      plane(1.1, 1.1, new THREE.MeshLambertMaterial({ map: yardTex('number', n) }), x - DW / 2 - 0.9, 3.4, zo - 0.02, Math.PI);
+      for (const sx of [-1, 1]) { const bump = mesh(new THREE.BoxGeometry(0.3, 0.55, 0.28), plinth); bump.position.set(x + sx * (DW / 2 + 0.1), 0.75, zo - 0.14); s.add(bump); }
+    }
+    s.add(trailer(m, 10, zo - 6.2));
+
+    // ---- the shutter: corrugated, on a roll. It dents. ----
+    this.shut = new Shutter(shutM, DW - 0.1, DH + 0.2);
+    this.shutBottom = 3.35;
+    this.shut.mesh.position.set(0, this.shutBottom + this.shut.h / 2, Z1);
+    this.shut.mesh.rotation.y = Math.PI; // its face to the yard
+    s.add(this.shut.mesh);
+    // what the hook does to it
+    this.hook = new THREE.Group();
+    const hookArc = mesh(new THREE.TorusGeometry(0.2, 0.032, 6, 14, Math.PI * 1.25), m.darkMetal, false);
+    hookArc.rotation.y = Math.PI / 2;
+    this.hook.add(hookArc);
+    const tip = mesh(new THREE.ConeGeometry(0.032, 0.13, 6), m.steel, false); tip.position.set(0, 0.04, -0.2); tip.rotation.x = -Math.PI / 2 - 0.5; this.hook.add(tip);
+    this.hook.visible = false;
+    s.add(this.hook);
+    this.hole = plane(0.5, 0.42, new THREE.MeshBasicMaterial({ map: yardTex('hole'), transparent: true, depthWrite: false, side: THREE.DoubleSide }), 0, 0, 0, Math.PI);
+    this.hole.visible = false;
+    this.eyes = new THREE.Group();
+    for (const dx of [-0.045, 0.045]) { const e = mesh(new THREE.SphereGeometry(0.014, 6, 4), new THREE.MeshBasicMaterial({ color: 0xff3010, fog: false }), false); e.position.x = dx; this.eyes.add(e); }
+    this.eyes.visible = false;
+    s.add(this.eyes);
+    this.eyeLight = new THREE.PointLight(0xff2a10, 0, 2.5, 2);
+    s.add(this.eyeLight);
+
+    // ---- the yard: asphalt, the dock lane, lamp posts still on, the fence, trees, the morning ----
+    const asphalt = new THREE.MeshLambertMaterial({ map: yardTex('asphalt') });
+    plane(160, 140, tiled(asphalt, 160, 140, 4, 4), 0, -0.004, zo - 70, 0, -Math.PI / 2);
+    const apron = new THREE.MeshLambertMaterial({ map: yardTex('slab') });
+    plane(FW, 7, tiled(apron, FW, 7, 4, 4), 0, -0.002, zo - 3.5, 0, -Math.PI / 2);
+    const paint = new THREE.MeshLambertMaterial({ color: 0xc8a020 });
+    for (const sx of [-1, 1]) plane(0.14, 22, paint, sx * 3.1, 0.004, zo - 7 - 11, 0, -Math.PI / 2);
+    for (let i = 0; i < 6; i++) plane(0.12, 5, new THREE.MeshLambertMaterial({ color: 0xb8b6ae }), -24 + i * 3, 0.004, zo - 22, 0, -Math.PI / 2);
+    // a skip, pallets, a car somebody never came back out for
+    const skip = mesh(new THREE.BoxGeometry(3.6, 1.5, 1.8), new THREE.MeshLambertMaterial({ color: 0x2e4a34 })); skip.position.set(-8, 0.75, -31.5); skip.rotation.y = 0.08; s.add(skip);
+    const lid = mesh(new THREE.BoxGeometry(3.7, 0.06, 1.0), new THREE.MeshLambertMaterial({ color: 0x24382a })); lid.position.set(-8, 1.75, -31.1); lid.rotation.x = -0.9; s.add(lid);
+    for (const [x, z, r] of [[7.2, -32.5, 0.2], [8.6, -33.6, -0.3]]) { const c = crateStack(m, rng); c.position.set(x, 0, z); c.rotation.y = r; s.add(c); }
+    const car = new THREE.Group(), paintC = new THREE.MeshLambertMaterial({ color: 0x5a2420 }), glass = new THREE.MeshPhongMaterial({ color: 0x1a2028, shininess: 90, specular: 0x8899aa });
+    const cb = mesh(new THREE.BoxGeometry(1.75, 0.7, 4.2), paintC); cb.position.y = 0.65; const cab = mesh(new THREE.BoxGeometry(1.6, 0.55, 2.1), glass); cab.position.set(0, 1.27, -0.2); car.add(cb, cab);
+    for (const [x, z] of [[-0.8, 1.3], [0.8, 1.3], [-0.8, -1.3], [0.8, -1.3]]) { const w = mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.22, 12), new THREE.MeshLambertMaterial({ color: 0x141414 })); w.rotation.z = Math.PI / 2; w.position.set(x, 0.32, z); car.add(w); }
+    car.position.set(-12.5, 0, -44); car.rotation.y = 0.35; s.add(car);
+    const sodium = new THREE.MeshBasicMaterial({ color: 0xffb060 });
+    this.posts = [];
+    for (const [x, z] of [[-8, -38], [8.5, -49], [-8, -62]]) {
+      const pole = mesh(new THREE.CylinderGeometry(0.08, 0.12, 8, 8), steel); pole.position.set(x, 4, z); s.add(pole);
+      const arm = mesh(new THREE.BoxGeometry(1.4, 0.08, 0.1), steel); arm.position.set(x - Math.sign(x) * 0.65, 7.95, z); s.add(arm);
+      const head = mesh(new THREE.BoxGeometry(0.6, 0.14, 0.3), steel); head.position.set(x - Math.sign(x) * 1.3, 7.9, z); s.add(head);
+      const lens = mesh(new THREE.BoxGeometry(0.5, 0.02, 0.22), sodium, false); lens.position.set(x - Math.sign(x) * 1.3, 7.82, z); s.add(lens);
+      this.posts.push(lens);
+    }
+    const fenceZ = -74, chain = new THREE.MeshLambertMaterial({ map: yardTex('chainlink', 1, 1), transparent: true, alphaTest: 0.2, side: THREE.DoubleSide, depthWrite: false });
+    for (const [x0, x1] of [[-60, -5], [5, 60]]) {
+      const w = x1 - x0, f = plane(w, 2.6, chain, (x0 + x1) / 2, 1.3, fenceZ);
+      f.material = chain.clone(); f.material.map = chain.map.clone(); f.material.map.repeat.set(w / 0.6, 2.6 / 0.6); f.material.map.needsUpdate = true;
+      for (let x = x0; x <= x1; x += 3) { const p = mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.9, 5), steel, false); p.position.set(x, 1.45, fenceZ); s.add(p); }
+      for (const y of [2.75, 2.88]) { const wire = mesh(new THREE.BoxGeometry(w, 0.015, 0.015), steel, false); wire.position.set((x0 + x1) / 2, y, fenceZ); s.add(wire); }
+    }
+    const leaf = plane(5, 2.6, chain, -5 - 0.6, 1.3, fenceZ - 2.4, 1.35); // the gate, left open
+    void leaf;
+    const trees = new THREE.MeshBasicMaterial({ map: yardTex('treeline'), transparent: true, alphaTest: 0.1 });
+    plane(520, 46, trees, 0, 12, -170);
+    for (const [x, z, w, h] of [[-46, -120, 14, 9], [-34, -128, 8, 16], [38, -116, 20, 7], [55, -130, 9, 12]]) { const b = mesh(new THREE.BoxGeometry(w, h, 8), new THREE.MeshLambertMaterial({ color: 0x3a3c44 })); b.position.set(x, h / 2, z); s.add(b); }
+    const chimney = mesh(new THREE.CylinderGeometry(0.8, 1.1, 30, 10), new THREE.MeshLambertMaterial({ color: 0x40383a })); chimney.position.set(-30, 15, -150); s.add(chimney);
+    // the sky: night going out of it at the top, the sun just over the trees
+    const sky = mesh(new THREE.SphereGeometry(240, 32, 16), new THREE.MeshBasicMaterial({ map: yardTex('sky'), side: THREE.BackSide, fog: false, depthWrite: false }), false);
+    sky.position.set(0, 0, Z1);
+    sky.renderOrder = -1;
+    s.add(sky);
+    const sunDir = V(-0.32, 0.12, -1).normalize();
+    this.sunDisc = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: 0xffe0b0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this.sunDisc.position.copy(sunDir).multiplyScalar(220).add(V(0, 0, Z1));
+    this.sunDisc.scale.setScalar(70);
+    s.add(this.sunDisc);
+    const disc = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTex(), color: 0xfff4dc, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }));
+    disc.position.copy(this.sunDisc.position);
+    disc.scale.setScalar(13);
+    s.add(disc);
+    this.sun = new THREE.DirectionalLight(0xffc89a, 0);
+    this.sun.position.copy(sunDir).multiplyScalar(60).add(V(0, 0, Z1));
+    this.sun.target.position.set(0, 0, Z1);
+    s.add(this.sun, this.sun.target);
+    this.dayFill = new THREE.HemisphereLight(0xa8b8d8, 0x3a3228, 0);
+    s.add(this.dayFill);
+    // the morning coming in under the shutter: a spot across the floor, a shaft of it in the dust
+    this.doorSpot = new THREE.SpotLight(0xffe0bc, 0, 30, 0.75, 0.7, 1);
+    this.doorSpot.position.set(0, 2.2, Z1 - 3);
+    this.doorSpot.target.position.set(0, 0, Z1 + 10);
+    s.add(this.doorSpot, this.doorSpot.target);
+    const shaftGeo = new THREE.BoxGeometry(1, 1, 1);
+    const sp = shaftGeo.attributes.position, cols = [];
+    for (let i = 0; i < sp.count; i++) {
+      const k = sp.getZ(i) + 0.5, v = sp.getY(i) + 0.5; // k: 0 at the door, 1 deep in the bay
+      sp.setXYZ(i, sp.getX(i) * lerp(DW - 0.3, DW + 1.6, k), lerp(lerp(0.05, this.shutBottom - 0.1, v), lerp(0, 0.5, v), k), Z1 + 0.25 + k * 11);
+      cols.push(1 - k, 1 - k, 1 - k);
+    }
+    shaftGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    this.beam = new THREE.Mesh(shaftGeo, new THREE.MeshBasicMaterial({ color: 0xffe2c0, vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+    s.add(this.beam);
+    // looking out from the dark, the doorway burns
+    this.glare = plane(DW - 0.2, 3.4, new THREE.MeshBasicMaterial({ color: 0xffd8b0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), 0, 1.7, Z1 - 0.35);
+    const N = 260, dp = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { dp[i * 3] = (rng() - 0.5) * DW; dp[i * 3 + 1] = rng() * 3.2; dp[i * 3 + 2] = Z1 + 0.4 + rng() * 10; }
+    const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3));
+    this.motes = new THREE.Points(dg, new THREE.PointsMaterial({ color: 0xffe8c8, size: 0.035, map: softTex(), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    s.add(this.motes);
+    // dust and rust knocked off the shutter
+    const puffTex = softTex();
+    this.puffs = [];
+    for (let i = 0; i < 46; i++) {
+      const p = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color: 0x9a9088, transparent: true, opacity: 0, depthWrite: false }));
+      p.visible = false;
+      s.add(p);
+      this.puffs.push({ s: p, v: V(0, 0, 0), life: 1 });
+    }
+
+    // him: in the lift behind you, when you look back
     this.him.root.position.set(0, 0, 0.35);
     this.him.root.rotation.y = Math.PI;
     this.him.root.visible = false;
-    this.eyeLight = new THREE.PointLight(0xff2a10, 0, 1.2, 2);
-    s.add(this.eyeLight);
     this.audio.liftMotor(true);
   }
+  // kick dust off the shutter: n puffs from a line across it at height y
+  puff(n, y, out = 1, spread = YARD.DW) {
+    for (let i = 0; i < n; i++) {
+      const p = this.puffs.find((q) => q.life >= 1);
+      if (!p) return;
+      p.life = 0;
+      p.s.visible = true;
+      p.s.position.set((Math.random() - 0.5) * spread, y, YARD.Z1 - 0.15 * out);
+      p.v.set((Math.random() - 0.5) * 0.8, (Math.random() - 0.2) * 0.6, -(0.4 + Math.random() * 1.4) * out);
+      p.size = 0.3 + Math.random() * 0.5;
+      p.rate = 0.4 + Math.random() * 0.4;
+    }
+  }
+  // he hits the shutter from inside: it bulges out at (x, y), keeps some of the dent, and everything rattles
+  bang(x, y, depth, loud = 1) {
+    this.shut.dent(x, y, depth, 0.22 + depth, 0.2 * loud);
+    this.audio.thud(V(x, y, YARD.Z1), 1.2 * loud);
+    this.audio.clank(V(x, y, YARD.Z1), 0.9 * loud);
+    setTimeout(() => this.audio.clank(V(x, 3, YARD.Z1), 0.3), 120); // the rest of it rattling in its guides
+    this.shake = Math.max(this.shake, 0.7 * loud);
+    this.puff(10, this.shut.mesh.position.y + this.shut.h / 2 - 0.1, 1);
+    this.puff(4, 0.05, 1);
+    for (const sw of this.swing) sw.a += 0.01 * loud;
+  }
   endingUpdate(dt) {
-    const t = this.t, cam = this.cam;
-    const walk = (z0, z1, k) => { const z = lerp(z0, z1, k); cam.position.set(Math.sin(t * 4.4) * 0.03, 1.62 + Math.abs(Math.sin(t * 4.4)) * 0.035, z); };
+    const t = this.t, cam = this.cam, Z1 = YARD.Z1, ZOUT = -27; // ZOUT: where the run has you at 21.1, just out
+    // the camera: where you are, and a yaw/pitch to look along (yaw 0 is out toward the door, PI back at the lift)
+    const look = (yaw, pitch = 0) => cam.lookAt(cam.position.x - Math.sin(yaw) * 10, cam.position.y + pitch * 10, cam.position.z - Math.cos(yaw) * 10);
+    const stride = (z, amp, rate, sway = 1) => cam.position.set(Math.sin(t * rate) * amp * sway, 1.62 + Math.abs(Math.sin(t * rate)) * amp * 1.3, z);
+    const lookAt = (p, k = 1, yaw = 0) => { // blend from a yaw toward looking at p
+      const dx = p.x - cam.position.x, dz = p.z - cam.position.z, py = Math.atan2(-dx, -dz), pp = Math.atan2(p.y - cam.position.y, Math.hypot(dx, dz));
+      let dy = py - yaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      look(yaw + dy * k, Math.tan(pp * k));
+    };
+
+    // the bay's own life: carcasses turning on the rail, the dying tube, dust in the light
+    for (const sw of this.swing) { sw.o.rotation.z = Math.sin(t * sw.f + sw.p) * sw.a; sw.o.rotation.x = Math.cos(t * sw.f * 0.7 + sw.p) * sw.a * 0.6; sw.a = Math.max(0.02, sw.a - dt * 0.004); }
+    const d = this.tubes[1], on = Math.sin(t * 13) + Math.sin(t * 4.1 + 1) + Math.sin(t * 29) > -0.4;
+    d.light.intensity = on ? d.base : 0.3;
+    d.lamp.userData.bulb.material.color.setHex(on ? 0xffffff : 0x333333);
+    const mp = this.motes.geometry.attributes.position;
+    for (let i = 0; i < mp.count; i++) { mp.setY(i, (mp.getY(i) + dt * (0.03 + 0.02 * Math.sin(i))) % 3.2); mp.setX(i, mp.getX(i) + Math.sin(t * 0.6 + i) * dt * 0.05); }
+    mp.needsUpdate = true;
+    for (const p of this.puffs) {
+      if (p.life >= 1) continue;
+      p.life = Math.min(1, p.life + dt * p.rate);
+      p.v.multiplyScalar(1 - dt * 1.6);
+      p.v.y -= dt * 0.05;
+      p.s.position.addScaledVector(p.v, dt);
+      p.s.scale.setScalar(p.size * (1 + p.life * 2.5));
+      p.s.material.opacity = Math.sin(p.life * Math.PI) * 0.5;
+      if (p.life >= 1) p.s.visible = false;
+    }
+    this.shut.update(dt);
+    this.handChain.rotation.x = Math.sin(t * 1.3) * 0.02 + (this.chainKick || 0) * Math.sin(t * 9);
+    this.chainKick = Math.max(0, (this.chainKick || 0) - dt * 0.25);
+
+    // the morning: brighter as you get to it, and you get out into it
+    const outside = clamp01((-cam.position.z + Z1 - 0.2) / 1.5);
+    const dawn = clamp01((t - 6.6) / 2.5);
+    this.sun.intensity = dawn * (1.2 + outside * 1.6);
+    this.dayFill.intensity = dawn * (0.5 + outside * 3.2);
+    this.doorSpot.intensity = dawn * 60 * (this.shutBottom / 3.35);
+    this.beam.material.opacity = dawn * 0.075 * (this.shutBottom / 3.35) * (1 - outside);
+    this.motes.material.opacity = dawn * 0.8 * (this.shutBottom / 3.35);
+    this.scene.fog.color.setHex(0x3a2e26).lerp(FOG_OUT, outside);
+    this.scene.fog.density = lerp(0.026, 0.0075, outside);
+    this.glare.material.opacity = dawn * 0.32 * (this.shutBottom / 3.35) * clamp01((cam.position.z - Z1 - 2) / 6);
+    this.scene.background.copy(this.scene.fog.color);
+    this.wallPack.intensity = 7 * (1 - clamp01((t - 31) / 0.1) * 0.9);
+    if (t > 31) for (const l of this.posts) l.material.color.setHex(0x553a20); // the timer: the yard lights go off on the morning
+
+    // ---- him ----
+    const him = this.him.root, H0 = 0.35, RUN0 = 17.4, SPEED = 5.7, STOP = Z1 + 1.3; // STOP: his reach is the shutter's
+    if (t >= 14) {
+      him.visible = true;
+      let z = H0, mode = 'walk', speed = 0, jaw = 0.12, tw = { x: 0, y: 0, z: 0, r: 0 };
+      if (t < 16.4) { tw = { x: -0.25, y: 0, z: 0.25, r: 0.1 }; } // in the cage, head on one side, looking at your back
+      else if (t < RUN0) { const k = (t - 16.4) / (RUN0 - 16.4); z = H0 - k * 1.2; speed = 1.4; jaw = 0.2 + ease((t - 16.6) / 0.4) * 0.8; tw = { x: -0.3, y: 0, z: 0.25 * (1 - k), r: 0 }; } // out of it, and the roar
+      else { const tt = t - RUN0; z = H0 - 1.2 - (tt < 0.7 ? tt * tt * SPEED / 1.4 : SPEED * 0.35 + (tt - 0.7) * SPEED); mode = 'chase'; speed = 5.5; jaw = 0.8; }
+      if (z <= STOP) { z = STOP; this.hitDoor ??= t; }
+      if (this.hitDoor !== undefined) { mode = 'attack'; speed = 0; jaw = 1; }
+      this.gait = (this.gait || 0) + (him.position.z - z) * 2.6; // the stride follows the ground covered
+      him.position.z = z;
+      if (this.slammed || this.shutBottom < 0.7) him.visible = false; // behind the shutter now
+      const sw = this.hitDoor !== undefined ? clamp01(Math.sin((t - this.hitDoor) * 3.2) * 1.2) : 0;
+      poseForeman(this.him, { gait: this.gait, speed, mode, t, swing: sw, jawOpen: jaw, twitch: tw });
+      if (t > 16.4 && t < 22) for (let i = 0; i < 12; i++) this.at(RUN0 + 0.08 + i * 0.37, 'hs' + i, () => this.audio.thud(this.headPos(), 0.5)); // his feet on the concrete
+    } else this.pose({ mode: 'walk' });
+
+    // ---- you ----
     if (t < 6) {
-      // the ride up: the cage shaking, light sliding past the gate, a floor at a time
-      this.pose({ mode: 'walk' });
-      cam.position.set(Math.sin(t * 31) * 0.01, 1.62 + Math.sin(t * 23) * 0.012, 0.6);
-      cam.lookAt(0, 1.5, -3);
+      // the ride up: the cage shaking, the shaft wall sliding down past the gate, a floor's light at a time
+      stride(0.45, 0, 0);
+      cam.position.x += Math.sin(t * 31) * 0.01; cam.position.y += Math.sin(t * 23) * 0.012;
+      look(0, -0.03);
+      const k = clamp01(t / 6);
+      this.shaftFront.position.y = 2.6 * Math.pow(1 - k, 1.6) * 7 - 10; // its top edge: the bay's floor, coming level
       const floorK = (t * 1.6) % 1;
-      this.pass.position.set(0, 4 - floorK * 6, -1.1);
-      this.pass.intensity = 6 * Math.sin(floorK * Math.PI);
+      this.pass.position.set(0, 4 - floorK * 6, -1.25);
+      this.pass.intensity = t < 5 ? 6 * Math.sin(floorK * Math.PI) : 0;
       this.at(0.2, 'motor', () => this.audio.liftMotor(true));
       for (let i = 0; i < 9; i++) this.at(i * 0.62, 'f' + i, () => this.audio.click({ x: 0, y: 2, z: 0 }));
-      this.sun.intensity = 0;
       this.fear = 0.25;
     } else if (t < 9.5) {
-      // it stops; the gate goes up on grey light
+      // it stops; the gate goes up on the bay, and the morning at the far end of it
+      this.shaftFront.position.y = -10;
       this.at(6, 'stop', () => { this.audio.liftMotor(false); this.audio.clank({ x: 0, y: 1, z: -1 }, 1); this.shake = 0.6; });
       this.at(6.6, 'gate', () => this.audio.gateSlide({ x: 0, y: 1, z: -1 }));
       const k = ease((t - 6.6) / 2.2);
-      this.bars.position.y = k * 2.6;
+      this.bars.position.y = k * 2.7;
       this.pass.intensity = 0;
-      this.sun.intensity = k * 2.2;
-      this.dayFill.intensity = k * 1.2;
-      this.doorLight.intensity = k * 60;
-      this.doorSpot.intensity = k * 120;
-      cam.position.set(0, 1.62, 0.6);
-      cam.lookAt(0, 1.5 + k * 0.1, -6);
+      stride(0.45, 0, 0);
+      look(0, -0.02 + k * 0.02);
       this.fear = 0.15;
-      this.at(8.6, 'dawn', () => this.audio.dawn());
-    } else if (t < 17.5) {
-      // out across the bay toward the light
-      const k = (t - 9.5) / 8;
-      walk(-0.2, -12, ease(k));
-      cam.lookAt(Math.sin(t * 0.7) * 0.4, 1.5, -30);
-      this.sun.intensity = 2.2 + k * 0.6;
-      this.dayFill.intensity = 1.2 + k * 0.3;
-      this.doorLight.intensity = 60 + k * 30;
-      this.doorSpot.intensity = 120 + k * 60;
-      this.fear = 0;
-      this.him.root.visible = true; // he's there now, behind you; you haven't looked
-      this.pose({ mode: 'walk', jaw: 0.05 });
-    } else if (t < 19.5) {
+    } else if (t < 15) {
+      // out across the bay toward it. Halfway, the shutter slips a little on its chain.
+      const k = (t - 9.5) / 5.5;
+      stride(lerp(0.2, -10.5, k), 0.03, 4.4);
+      look(Math.sin(t * 0.6) * 0.12, -0.01 + (t > 12.4 && t < 13.8 ? Math.sin((t - 12.4) / 1.4 * Math.PI) * 0.08 : 0)); // eyes up to the shutter when it slips
+      this.at(12.4, 'slip', () => { this.audio.chainRattle({ x: 2.9, y: 4, z: Z1 }); this.audio.clank({ x: 0, y: 4, z: Z1 }, 0.8); this.chainKick = 0.15; this.puff(6, 4.1, -0.6); });
+      if (t > 12.4) this.shutBottom = lerp(3.35, 2.95, ease((t - 12.4) / 0.25)); // it drops a hand's width and catches
+      this.shut.mesh.position.y = this.shutBottom + this.shut.h / 2;
+      this.at(14.1, 'cage', () => { this.audio.gateRattle({ x: 0, y: 1.5, z: 0 }); });
+      this.liftLamp.intensity = t > 14.1 ? 2.5 * (Math.sin(t * 23) > 0 ? 1 : 0.1) : 2.5;
+      this.fear = t > 14.1 ? 0.3 : 0;
+    } else if (t < 16.2) {
       // you stop. You turn round.
-      const k = ease((t - 17.5) / 1.8);
-      cam.position.set(0, 1.62, -12);
-      const yaw = lerp(0, Math.PI, k);
-      cam.lookAt(Math.sin(yaw) * 10, 1.5, -12 - Math.cos(yaw) * 10);
-      this.at(18.4, 'turn', () => this.audio.creak({ x: 0, y: 1, z: 0 }));
-      this.pose({ mode: 'walk', jaw: 0.05 });
-    } else if (t < 27) {
-      // he's standing in the lift. In the dark. He doesn't come out. He just watches you.
-      const k = (t - 19.5) / 7.5;
-      cam.position.set(0, 1.62, -12 + k * 1.2);
+      const k = ease((t - 15) / 1.1);
+      stride(-10.5, 0, 0);
       const hp = this.headPos();
-      cam.lookAt(hp.x, hp.y - 0.15 + (1 - k) * 0.1, hp.z);
-      cam.fov = lerp(70, 30, ease(k)); // the slow push in on his face
+      lookAt(hp, k * 0.85, k * Math.PI);
+      this.at(15.6, 'click', () => this.audio.click(this.headPos()));
+      this.fear = 0.45;
+      this.liftLamp.intensity = 1.6;
+    } else if (t < 17.9) {
+      // he comes out of the cage at you
+      stride(-10.5, 0, 0);
+      const k = ease((t - 16.2) / 1.2);
+      lookAt(this.headPos(), 0.9 + k * 0.1, Math.PI);
+      cam.fov = lerp(70, 30, k);
       cam.updateProjectionMatrix();
-      this.pose({ mode: 'walk', jaw: 0.1 + k * 0.15, twitch: { x: 0, y: 0, z: k * 0.35, r: Math.sin(t * 0.8) * 0.15 } });
-      this.him.neck.rotation.x = -0.2;
-      this.eyeLight.position.copy(hp).add(V(0, 0, -0.3));
-      this.eyeLight.intensity = 0.6;
-      this.liftLamp.intensity = 0.6 * (Math.sin(t * 17) + Math.sin(t * 5.3) > -1.3 ? 1 : 0.05); // the cage light failing; he stands in the dark
-      this.at(21, 'breath', () => this.audio.growl(this.headPos(), 0.4));
-      this.at(25.5, 'click', () => this.audio.click(this.headPos()));
-      this.fear = 0.35 + k * 0.3;
+      this.at(16.6, 'roar', () => { this.audio.roar(this.headPos()); this.shake = 0.4; });
+      this.fear = 0.6 + k * 0.2;
+    } else if (t < 21.1) {
+      // run. Look back once.
+      const tt = t - 17.9, z = -10.5 - (tt < 0.5 ? tt * tt * 5.5 : 1.375 + (tt - 0.5) * 5.6);
+      stride(z, 0.07, 9.5, 1.4);
+      const turn = ease(tt / 0.45), back = t > 19.5 && t < 20.4 ? Math.sin((t - 19.5) / 0.9 * Math.PI) : 0;
+      cam.fov = lerp(30, 74, turn) - back * 26; // and the look back narrows on him
+      cam.updateProjectionMatrix();
+      lookAt(this.headPos(), back * 0.95, lerp(Math.PI, 0, turn));
+      for (let i = 0; i < 9; i++) this.at(18.2 + i * 0.33, 'st' + i, () => this.audio.step('run'));
+      for (let i = 0; i < 8; i++) this.at(18.0 + i * 0.4, 'hb' + i, () => this.audio.heartbeat(1, true));
+      this.at(18.6, 'gasp', () => this.audio.gasp());
+      this.at(20.3, 'gasp2', () => this.audio.gasp());
+      this.at(19.7, 'roar2', () => this.audio.roar(this.headPos()));
+      this.fear = 0.85;
+    } else if (t < 22.6) {
+      // out under it, into the cold. Turn round, backing off, and it comes down.
+      const tt = t - 21.1, z = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-tt * 1.6));
+      stride(z, 0.05 * (1 - clamp01(tt)), 9.5);
+      const k = ease(tt / 0.5);
+      look(k * Math.PI, -0.03 + k * 0.03);
+      cam.fov = lerp(74, 70, k);
+      cam.updateProjectionMatrix();
+      this.at(21.38, 'snap', () => { this.audio.ropeSnap(); this.audio.chainRattle({ x: 2.9, y: 4, z: Z1 }); this.chainKick = 0.5; });
+      if (t > 21.38 && !this.slammed) {
+        const ft = t - 21.38;
+        this.shutBottom = Math.max(0, 2.95 - 14 * ft * ft); // the brake gone: it drops
+        this.shut.mesh.position.y = this.shutBottom + this.shut.h / 2;
+        if (this.shutBottom === 0) {
+          this.slammed = true;
+          this.audio.thud({ x: 0, y: 0.2, z: Z1 }, 1.4);
+          this.audio.clank({ x: 0, y: 0.3, z: Z1 }, 1.2);
+          this.audio.shutter({ x: 0, y: 2, z: Z1 });
+          this.shake = 1.2;
+          this.puff(18, 0.08, 1);
+          this.puff(10, this.shut.h - 0.1, 1);
+        }
+      }
+      if (this.hitDoor !== undefined) this.at(this.hitDoor + 0.02, 'bang1', () => this.bang(0.15, 1.6, 0.2, 1.3));
+      this.fear = lerp(0.85, 0.55, k);
+    } else if (t < 29.2) {
+      // he hits it. Again. The hook comes through. Then nothing, and his eyes in the hole.
+      const k = (t - 22.6) / 6.6;
+      const tt = t - 21.1, z = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-tt * 1.6)) - k * 0.6;
+      cam.position.set(Math.sin(t * 0.9) * 0.02, 1.62 + Math.sin(t * 1.3) * 0.01, z);
+      this.at(22.62, 'bang1b', () => { if (!this.fired.has('bang1')) this.bang(0.15, 1.6, 0.2, 1.3); });
+      this.at(23.5, 'bang2', () => { this.bang(-0.7, 2.1, 0.16); this.audio.roar({ x: 0, y: 2, z: Z1 + 0.6 }); });
+      this.at(24.2, 'bang3', () => this.bang(0.6, 1.1, 0.13));
+      this.at(24.9, 'bang4', () => {
+        this.bang(HOLE.x, HOLE.y, 0.22, 1.4);
+        this.hook.visible = true;
+        this.hole.visible = true;
+        this.audio.boltHit({ x: HOLE.x, y: HOLE.y, z: Z1 });
+      });
+      // the hole is where the dent peaked; the hook works in it, then pulls back through with a scream of metal
+      const hz = Z1 - this.shut.heightAt(HOLE.x, HOLE.y);
+      this.hole.position.set(HOLE.x, HOLE.y, hz - 0.012);
+      let push = 0;
+      if (t > 24.9) push = t < 26.4 ? 0.2 + Math.sin((t - 24.9) * 9) * 0.03 * (t < 26 ? 1 : 0) : Math.max(-0.3, 0.2 - (t - 26.4) * 1.2);
+      this.hook.position.set(HOLE.x + 0.02, HOLE.y + (t > 26 ? -(t - 26) * 0.12 : 0), hz - push + 0.12);
+      this.hook.rotation.x = Math.sin(t * 5) * 0.1;
+      this.at(26.0, 'scrape', () => { this.audio.creak({ x: HOLE.x, y: HOLE.y, z: Z1 }); this.audio.burst(this.audio.sfx, { type: 'bandpass', f: 2400, q: 6, dur: 0.9, vol: 0.25, sweep: [2800, 1700] }); });
+      if (push < -0.25) this.hook.visible = false;
+      // and then he looks
+      const eyesOn = t > 27.1 && t < 29.0;
+      this.eyes.visible = eyesOn && Math.sin(t * 2.2) > -0.97; // a blink
+      this.eyes.position.set(HOLE.x, HOLE.y + 0.01, hz - 0.016);
+      this.eyeLight.position.set(HOLE.x, HOLE.y, hz - 0.25);
+      this.eyeLight.intensity = eyesOn ? 1.4 : 0;
+      this.at(27.3, 'growl', () => this.audio.growl({ x: HOLE.x, y: HOLE.y, z: Z1 + 0.3 }, 0.8));
+      this.at(28.3, 'eclick', () => this.audio.click({ x: HOLE.x, y: HOLE.y, z: Z1 + 0.3 }));
+      // where you look: the whole door, then into the hole
+      const hk = ease((t - 24.9) / 1.5), ek = ease((t - 27.1) / 1.6);
+      const aim = V(lerp(0, HOLE.x, hk), lerp(1.7, HOLE.y, hk), Z1);
+      lookAt(aim, 1, Math.PI);
+      cam.fov = lerp(70, lerp(58, 30, ek), hk);
+      cam.updateProjectionMatrix();
+      this.fear = t > 27.1 ? 0.5 + ek * 0.25 : 0.55 - k * 0.2;
     } else {
-      // and you turn your back on him and walk out into it
-      const k = ease((t - 27) / 1.2);
-      cam.fov = lerp(30, 70, k);
+      // you turn your back on him and walk away into the yard
+      const k = ease((t - 29.2) / 1.4);
+      const z0 = ZOUT - (5.6 / 1.6) * (1 - Math.exp(-(29.2 - 21.1) * 1.6)) - 0.6;
+      cam.fov = lerp(30, 70, ease((t - 29.2) / 0.9));
       cam.updateProjectionMatrix();
-      const yaw = lerp(Math.PI, Math.PI * 2, k);
-      cam.position.set(0, 1.62, -10.8 - Math.max(0, t - 28) * 1.3);
-      cam.lookAt(Math.sin(yaw) * 10, 1.5, cam.position.z - Math.cos(yaw) * 10);
-      this.flash = Math.max(this.flash, clamp01((t - 28.6) / 2.2)); // into the white
-      this.fear = 0;
+      stride(z0 - Math.max(0, t - 29.9) * 1.25 * Math.min(1, (t - 29.9) * 1.5 + 0.2), 0.025 * clamp01(t - 29.9), 4.4);
+      look(lerp(Math.PI, Math.PI * 2 + 0.25, k), lerp(0, 0.04, k));
+      this.eyes.visible = false;
+      this.eyeLight.intensity = 0;
+      this.at(29.6, 'dawn', () => this.audio.dawn());
+      this.at(31.6, 'last', () => this.bang(-0.3, 1.4, 0.05, 0.6)); // one more, behind you. You don't look.
+      this.flash = Math.max(this.flash, clamp01((t - 32.6) / 3.2)); // into the white
+      this.fear = Math.max(0, 0.35 - (t - 29.2) * 0.15);
     }
+    if (t >= 6 && t < 9.5) this.shaftFront.position.y = -10;
+    const fwd = V(0, 0, -1).applyQuaternion(cam.quaternion);
+    this.audio.listen(cam.position, fwd);
   }
 
   // ---------- 6: the rack (third person) ----------

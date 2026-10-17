@@ -60,6 +60,7 @@ export class Hunter {
     this.body = createForemanMesh(mats);
     this.obj = this.body.root;
     this.pos = pos.clone();
+    this.spawn = pos.clone();
     this.obj.position.copy(this.pos);
     this.yaw = Math.random() * 6;
     this.state = 'patrol';
@@ -156,18 +157,43 @@ export class Hunter {
     while (p && p.length > 1 && (this.pos.distanceTo(p[0]) < 0.7 || (p[1].x - p[0].x) * (p[0].x - this.pos.x) + (p[1].z - p[0].z) * (p[0].z - this.pos.z) < 0)) p.shift();
   }
 
+  // rooms nearer this one's start than any other's: with two of them on a floor, each keeps to its own half
+  home() {
+    const L = this.w.L, hs = this.w.hunters;
+    if (this._home && this._homeN === hs.length) return this._home;
+    const mine = (r) => { const p = [(r.cx + 0.5) * 2, (r.cy + 0.5) * 2], d = (h) => Math.hypot(h.spawn.x - p[0], h.spawn.z - p[1]); return hs.every((h) => h === this || d(this) <= d(h)); };
+    this._homeN = hs.length;
+    this._home = L.rooms.slice(1).filter(mine);
+    if (!this._home.length) this._home = L.rooms.slice(1);
+    return this._home;
+  }
   pickPatrol() {
-    const L = this.w.L, pl = this.w.player;
+    const L = this.w.L, pl = this.w.player, others = this.w.hunters.filter((h) => h !== this);
     let t = null;
-    // it always drifts back toward you eventually
-    if (!this.avoidT && (this.sinceContact > 35 || Math.random() < 0.3)) t = randomFloorNear(L, pl.pos.x, pl.pos.z, 5);
+    // the other one is chasing you: this one comes round the far side of you to cut you off
+    const chaser = others.find((h) => h.state === 'chase');
+    if (!this.avoidT && chaser && Math.random() < 0.6) {
+      const ax = pl.pos.x - chaser.pos.x, az = pl.pos.z - chaser.pos.z, d = Math.hypot(ax, az) || 1;
+      t = randomFloorNear(L, pl.pos.x + (ax / d) * 8, pl.pos.z + (az / d) * 8, 4);
+    }
+    // it drifts back toward you eventually, but only one of them at a time: the one nearer you
+    const nearest = others.every((h) => h.pos.distanceTo(pl.pos) >= this.pos.distanceTo(pl.pos));
+    if (!t && !this.avoidT && nearest && (this.sinceContact > 35 || Math.random() < 0.3)) t = randomFloorNear(L, pl.pos.x, pl.pos.z, 5);
     if (!t && this.avoidT) {
       // just lost you down a crouchway: somewhere well away from it
       const far = L.rooms.slice(1).map((r) => [Math.hypot(r.cx * 2 + 1 - pl.pos.x, r.cy * 2 + 1 - pl.pos.z), r]).sort((a, b) => b[0] - a[0]);
       const r = far[Math.floor(Math.random() * Math.min(3, far.length))][1];
       t = randomFloorNear(L, (r.cx + 0.5) * 2, (r.cy + 0.5) * 2, 1);
     }
-    if (!t) { const r = L.rooms[1 + ((Math.random() * (L.rooms.length - 1)) | 0)]; t = randomFloorNear(L, (r.cx + 0.5) * 2, (r.cy + 0.5) * 2, 1); }
+    if (!t) {
+      // somewhere in its own half (now and then anywhere), and never right on top of the other one
+      const rooms = others.length && Math.random() < 0.8 ? this.home() : L.rooms.slice(1);
+      for (let k = 0; k < 6 && !t; k++) {
+        const r = rooms[(Math.random() * rooms.length) | 0], c = { x: (r.cx + 0.5) * 2, z: (r.cy + 0.5) * 2 };
+        if (k < 5 && others.some((h) => Math.hypot(h.pos.x - c.x, h.pos.z - c.z) < 9 || (h.target && Math.hypot(h.target.x - c.x, h.target.z - c.z) < 9))) continue;
+        t = randomFloorNear(L, c.x, c.z, 1);
+      }
+    }
     this.target = t;
     if (t) this.pathTo(t);
   }

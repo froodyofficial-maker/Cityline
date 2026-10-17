@@ -71,7 +71,10 @@ const G = {
   noise(pos, radius, loud, kind = 'other') {
     const n = (DIFFS[G.diff] || DIFFS.normal).noise, m = n[kind] ?? n.other ?? 1;
     if (m <= 0) return;
-    for (const h of G.hunters) h.hear({ pos: pos.clone ? pos.clone() : new THREE.Vector3(pos.x, 0, pos.z), radius: radius * m, loud });
+    // with two of them, only the nearer one comes to look (unless it was loud): they don't move as a pair
+    const at = pos.clone ? pos.clone() : new THREE.Vector3(pos.x, 0, pos.z);
+    const order = G.hunters.slice().sort((a, b) => a.pos.distanceTo(at) - b.pos.distanceTo(at));
+    order.forEach((h, i) => { if (i === 0 || loud || h.state === 'chase') h.hear({ pos: at.clone(), radius: radius * m, loud }); });
   },
   say(text, secs) { UI.message(text, secs); },
   gasp() {
@@ -960,7 +963,9 @@ function harvest(c) {
       audio.chime();
       const line = (G.mode === 'story' && BEATS[G.depth - 1] && BEATS[G.depth - 1].last) || 'THE LINE IS SHORT ONE WORKER. FOREMAN TO THE FLOOR.';
       setTimeout(() => G.state === 'play' && UI.pa(line), 1300);
-      for (const h of G.hunters) if (h.state !== 'chase') h.hear({ pos: player.pos.clone(), radius: 999, loud: false });
+      // the nearer one comes for you; any other goes to stand between you and the lift
+      const order = G.hunters.slice().sort((a, b) => a.pos.distanceTo(player.pos) - b.pos.distanceTo(player.pos));
+      order.forEach((h, i) => { if (h.state !== 'chase') h.hear({ pos: i === 0 ? player.pos.clone() : G.B.lift.pos.clone().setY(0).add(new THREE.Vector3(0, 0, -2.5)), radius: 999, loud: false }); });
     }, 2500);
   } else UI.message(CUT_LINES[(Math.random() * CUT_LINES.length) | 0], 3.5);
 }
