@@ -3,21 +3,21 @@
 // - no graphics flags: Chromium decides what the GPU and its driver can safely do
 // - its compiled-shader caches are thrown away on every start (a crash mid-write leaves them corrupt, and then
 //   every launch crashes)
-// - safe graphics (drawn on the processor, the graphics driver never touched) when started with --safe, when the
-//   last session ended without the window closing (the PC went down), or when the GPU process keeps dying;
-//   --gpu turns it back off
+// - always on the graphics card; safe graphics (drawn on the processor, the driver never touched) only when you
+//   start it with --safe on purpose
+// - one copy at a time: starting it again brings the open window to the front
 // - if the page itself crashes it's reloaded, and the game puts you back exactly where you were
 const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const ud = app.getPath('userData');
-const running = path.join(ud, 'running'), safeFile = path.join(ud, 'safe-graphics');
 const has = (a) => process.argv.some((x) => x.toLowerCase() === a);
+if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 try { fs.mkdirSync(ud, { recursive: true }); } catch {}
-if (has('--gpu')) { try { fs.rmSync(safeFile, { force: true }); } catch {} }
-else if (fs.existsSync(running)) { try { fs.writeFileSync(safeFile, 'The last session ended without the window closing.\nStart OFFAL with --gpu to use the graphics card again.\n'); } catch {} }
-const safe = has('--safe') || fs.existsSync(safeFile);
+// earlier builds switched to safe graphics on their own and remembered it: forget that
+for (const f of ['running', 'safe-graphics']) { try { fs.rmSync(path.join(ud, f), { force: true }); } catch {} }
+const safe = has('--safe');
 if (safe) { app.disableHardwareAcceleration(); app.commandLine.appendSwitch('enable-unsafe-swiftshader'); } // 3D drawn on the processor (SwiftShader)
 for (const c of ['GPUCache', 'ShaderCache', 'GrShaderCache', 'GraphiteDawnCache', 'DawnGraphiteCache', 'DawnWebGPUCache', 'Code Cache']) {
   try { fs.rmSync(path.join(ud, c), { recursive: true, force: true }); } catch {}
@@ -31,7 +31,7 @@ try {
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 
-let win = null, gpuDeaths = 0;
+let win = null;
 function createWindow() {
   win = new BrowserWindow({
     width: 1600, height: 900, minWidth: 960, minHeight: 540,
@@ -55,15 +55,7 @@ function createWindow() {
   load();
 }
 function load() { win.loadFile(path.join(__dirname, 'game', 'offal.html'), safe ? { query: { safe: '1' } } : {}); }
-// the graphics process keeps dying: from now on, safe graphics, and start again in it
-app.on('child-process-gone', (e, d) => {
-  if (d.type !== 'GPU' || safe || d.reason === 'clean-exit') return;
-  if (++gpuDeaths >= 2) {
-    try { fs.writeFileSync(safeFile, 'The graphics process kept crashing.\nStart OFFAL with --gpu to use the graphics card again.\n'); fs.rmSync(running, { force: true }); } catch {}
-    app.relaunch({ args: process.argv.slice(1).filter((a) => a !== '--gpu') });
-    app.exit(0);
-  }
-});
+app.on('second-instance', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.focus(); } });
 
-app.whenReady().then(() => { try { fs.writeFileSync(running, '1'); } catch {} createWindow(); });
-app.on('window-all-closed', () => { try { fs.rmSync(running, { force: true }); } catch {} app.quit(); });
+app.whenReady().then(createWindow);
+app.on('window-all-closed', () => app.quit());
