@@ -12,7 +12,7 @@
     "dist:win": "node copy-game.cjs && electron-builder --win portable zip --x64",
     "dist:linux": "node copy-game.cjs && electron-builder --linux AppImage --x64",
     "dist:cinema": "node copy-game.cjs --cinema && electron-builder --win portable --x64 -c.productName=\"OFFAL Cinema\" -c.appId=games.offal.cinema -c.directories.output=release-cinema -c.portable.artifactName=OFFAL-Cinema-${version}-portable.exe",
-    "dist:mac": "node copy-game.cjs && electron-builder --mac zip --x64 --arm64 -c.mac.identity=null"
+    "dist:mac": "node copy-game.cjs && electron-builder --mac zip --arm64 -c.mac.identity=null"
   },
   "devDependencies": {
     "electron": "38.8.6",
