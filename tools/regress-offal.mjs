@@ -19,9 +19,9 @@ for (let f = 0; f <= 10; f++) {
   await check(`story floor ${f}`, new Function('f', `const enter = ${enter}; const st = enter('story', f); const o = window.__offal; if (st !== 'play' && st !== 'letter') return { ok: false, why: 'state ' + st };
     if (o.G.state === 'letter') o.G.state = 'play';
     const s2 = o.step(1 / 30, 150); o.findInteract && o.findInteract();
-    return { ok: o.G.depth === f && ['play', 'letter'].includes(s2), info: o.G.info.name + ' tags ' + o.G.D.tags + ' lockers ' + o.G.B.lockers.length + ' filled ' + o.G.B.lockers.filter((l) => l.filled).length }; }`), f);
+    return { ok: o.G.depth === f && ['play', 'letter'].includes(s2), info: o.G.info.name + ' tags ' + o.G.D.tags + ' lockers ' + o.G.B.lockers.length + ' filled ' + o.G.B.lockers.filter((l) => l.filled).length };`), f);
 }
-await check('next floor via the lift', new Function(`const enter = ${enter}; enter('story', 2); const o = window.__offal; o.nextFloor(); let k = 0; while (o.G.state === 'transition' && k++ < 900) o.updateTransition(0.05); return { ok: o.G.depth === 3 && o.G.state === 'play' }; }`.replace(/^/, '() => {')));
+await check('next floor via the lift', new Function(`const enter = ${enter}; enter('story', 2); const o = window.__offal; o.nextFloor(); let k = 0; while (o.G.state === 'transition' && k++ < 900) o.updateTransition(0.05); return { ok: o.G.depth === 3 && o.G.state === 'play' };`));
 await check('overtime, hard', new Function(`return (${enter})('overtime', 3, 'hard') === 'play' && window.__offal.step(1 / 30, 200) === 'play' ? { ok: true } : { ok: false };`));
 await check('save + resume mid-floor', new Function(`const enter = ${enter}; enter('story', 4); const o = window.__offal; o.step(1 / 30, 60); o.player.pos.x += 1.5; const x = o.player.pos.x;
   o.G.saveT = -1; o.step(1 / 30, 2); const snap = o.save.snap; if (!snap) return { ok: false, why: 'no snapshot' };
@@ -37,15 +37,16 @@ await check('scale: over the target opens it', new Function(`const enter = ${ent
   return { ok: all.done && all.total >= all.target, info: all.total + '/' + all.target };`));
 for (const id of ['rope', 'exit', 'grinder', 'fan', 'eaten', 'rack', 'process']) {
   await check(`cutscene ${id}`, new Function('id', `const o = window.__offal; if (o.G.replay) { o.G.replay.dispose(); o.G.replay = null; } o.G.state = 'menu'; o.startReplay(id); const cs = o.G.replay; let k = 0, done = false;
-    while (!done && k++ < 1200) done = cs.update(1 / 30); const t = cs.t; cs.dispose(); o.G.replay = null; o.G.state = 'menu'; return { ok: done, info: t.toFixed(1) + 's' }; }`), id);
+    while (!done && k++ < 1200) done = cs.update(1 / 30); const t = cs.t; cs.dispose(); o.G.replay = null; o.G.state = 'menu'; return { ok: done, info: t.toFixed(1) + 's' };`), id);
 }
 await check('Foreman mode: hunt, catch, cutscene, back to menu', new Function(`const enter = ${enter}; const o = window.__offal; o.save.story.done = 1; enter('hunt', 4); o.G.dev = null;
-  o.step(1 / 30, 200); const bot = o.G.bot, pl = o.player; const moved = bot.pos.distanceTo(o.G.B.spawn) > 0.5 || bot.tags > 0;
+  o.step(1 / 30, 200); const bot = o.G.bot, pl = o.player; const moved = Math.hypot(bot.pos.x - o.G.B.spawn.x, bot.pos.z - o.G.B.spawn.z) > 0.5 || bot.tags > 0; // spawn is {x, z}, no y
   const fx = -Math.sin(pl.yaw), fz = -Math.cos(pl.yaw); bot.pos.set(pl.pos.x + fx * 1.5, 0, pl.pos.z + fz * 1.5); bot.safe = false; o.G.swingT = 0; o.huntSwing();
   if (o.G.state !== 'huntcine') return { ok: false, why: 'no catch, state ' + o.G.state };
-  let k = 0, cs = o.G.cutscene; while (cs && !cs.update(1 / 30) && k++ < 600); return { ok: moved, info: 'bot moved ' + moved }; }`));
-await check('story ending plays through', new Function(`const enter = ${enter}; enter('story', 10); const o = window.__offal; o.G.dev = null; o.startEnding(); let k = 0; while (o.G.state === 'endcine' && k++ < 3000) o.updateEndCine(1 / 30);
-  return { ok: o.G.state === 'ending' && o.save.story.done >= 1, info: 'state ' + o.G.state }; }`.replace(/^/, '() => {')));
+  let k = 0, cs = o.G.cutscene; while (cs && !cs.update(1 / 30) && k++ < 600); return { ok: moved, info: 'bot moved ' + moved };`));
+await check('story ending plays through', new Function(`const enter = ${enter}; enter('story', 10); const o = window.__offal; o.G.dev = null; o.startEnding();
+  return new Promise((r) => setTimeout(r, 1700)).then(() => { if (!o.G.cutscene) return { ok: false, why: 'no ending film' }; let k = 0; while (o.G.state === 'endcine' && k++ < 3000) o.updateEndCine(1 / 30);
+  return { ok: o.G.state === 'ending' && o.save.story.done >= 1, info: 'state ' + o.G.state }; });`));
 await p.waitForTimeout(500);
 console.log(res.join('\n'));
 console.log(errs.length ? 'ERRORS:\n' + [...new Set(errs)].slice(0, 8).join('\n') : 'no page errors');

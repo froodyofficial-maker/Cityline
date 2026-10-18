@@ -226,7 +226,22 @@ function updateMenu(dt) {
 function disposeLevel() {
   if (!G.B) return;
   scene.remove(G.B.group);
-  G.B.group.traverse((o) => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); });
+  // materials and textures made for this floor alone (blood smears, puzzle faces) go too; the shared library in mats stays
+  const keep = new Set(), keepTex = new Set();
+  const walk = (v, d) => {
+    if (!v || typeof v !== 'object' || d > 3 || v.isTexture || v.isObject3D) return;
+    if (v.isMaterial) { keep.add(v); for (const k in v) if (v[k] && v[k].isTexture) keepTex.add(v[k]); return; }
+    for (const x of Object.values(v)) walk(x, d + 1);
+  };
+  walk(mats, 0);
+  G.B.group.traverse((o) => {
+    if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+    for (const m of [].concat(o.material || [])) {
+      if (keep.has(m)) continue;
+      for (const k in m) if (m[k] && m[k].isTexture && !keepTex.has(m[k])) m[k].dispose();
+      m.dispose();
+    }
+  });
   for (const h of G.hunters) { scene.remove(h.obj); h.dispose(); }
   for (const f of G.flies) f && f.stop();
   if (G.puzzles) G.puzzles.dispose();
