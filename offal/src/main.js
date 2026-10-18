@@ -33,7 +33,7 @@ import { BEATS, ENDING } from './story.js';
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, ui: 0, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, uiMenu: 100, uiGame: 100, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
@@ -114,7 +114,7 @@ function applySettings() {
   G.hints = s.hints;
   resize();
   scaleUI();
-  const show = { sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%' };
+  const show = { sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%', uiMenu: (s.uiMenu ?? 100) + '%', uiGame: (s.uiGame ?? 100) + '%' };
   for (const k in show) UI.$(k + 'V').textContent = show[k];
 }
 function resize() {
@@ -130,10 +130,14 @@ addEventListener('resize', () => { resize(); scaleUI(); });
 // the interface size: everything on the screens (menus, panels, the HUD) scales together. Auto fits it to the
 // screen it's on: full size on a monitor, smaller on a phone held sideways.
 function scaleUI() {
-  const want = +save.settings.ui || 0;
-  const z = want || Math.max(0.45, Math.min(1, innerHeight / 760, innerWidth / 1280));
-  for (const el of document.querySelectorAll('.screen > *')) el.style.zoom = z;
+  const s = save.settings, menu = (s.uiMenu ?? 100) / 100, game = (s.uiGame ?? 100) / 100;
+  for (const el of document.querySelectorAll('.screen > *')) el.style.zoom = el.parentElement.id === 'hud' ? game : menu;
+  // the touch buttons are sized for a phone already; the HUD setting scales them relative to where it started
+  const t = document.getElementById('touch');
+  if (t) for (const el of t.children) el.style.zoom = game / ((s.touchBase || 100) / 100);
 }
+// how big the interface starts on a screen this size: full on a monitor, smaller on a phone held sideways
+const fitUI = () => Math.max(1, Math.min(100, Math.round(100 * Math.min(1, innerHeight / 760, innerWidth / 1280))));
 
 // ---------- menu backdrop: a swinging lamp, meat on hooks, and sometimes him ----------
 const menu = (() => {
@@ -1011,7 +1015,7 @@ function updateHunt(dt) {
     comp.classList.add('on');
   } else comp.classList.remove('on');
   const obj = `FIND HIM. PROCESS HIM.  <b>HIS TAGS ${bot.tags + bot.fed}/${G.D.tags}</b>`;
-  if (G.huntObj !== obj) { G.huntObj = obj; UI.$('objective').innerHTML = obj + '<small>CLICK TO SWING THE HOOK \u00B7 SHIFT TO CHASE</small>'; }
+  if (G.huntObj !== obj) { G.huntObj = obj; UI.$('objective').innerHTML = obj + (TOUCH ? '<small>FIRE TO SWING THE HOOK \u00B7 PUSH THE STICK ALL THE WAY TO CHASE</small>' : '<small>CLICK TO SWING THE HOOK \u00B7 SHIFT TO CHASE</small>'); }
   UI.hud({ floor: `${G.info.label} \u00B7 ${G.info.name}`, battery: 100, breath: 100, hidden: false, items: [] });
   audio.listen(camera.position, player.forward(_fwd));
 }
@@ -1435,7 +1439,8 @@ function fillSettings() {
   UI.$('gamma').value = s.gamma;
   UI.$('pix').value = String(s.pix);
   UI.$('draw').value = String(s.draw ?? 1);
-  UI.$('ui').value = String(s.ui ?? 0);
+  UI.$('uiMenu').value = String(s.uiMenu ?? 100);
+  UI.$('uiGame').value = String(s.uiGame ?? 100);
   UI.$('fps').value = String(s.fps ?? 0);
   UI.$('shake').checked = s.shake;
   for (const id of ['fov', 'beam', 'power']) UI.$(id).value = s[id];
@@ -1448,7 +1453,7 @@ UI.$('fullscreen').addEventListener('input', () => {
   setFullscreen(save.settings.fullscreen);
 });
 const CHECKS = ['shake', 'invert', 'bob', 'hints'];
-for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'ui', 'fov', 'beam', 'power', ...CHECKS]) {
+for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'uiMenu', 'uiGame', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
     const s = save.settings, el = UI.$(id);
     s[id] = CHECKS.includes(id) ? el.checked : +el.value;
@@ -1632,6 +1637,9 @@ function closeLetter() {
 }
 addEventListener('keydown', (e) => { if (G.state === 'letter' && !e.repeat && (e.code === 'KeyE' || e.code === 'Escape' || e.code === 'Space')) closeLetter(); });
 addEventListener('mousedown', () => { if (G.state === 'letter') closeLetter(); });
+addEventListener('touchend', () => { if (G.state === 'letter') closeLetter(); else if (G.state === 'inspect' && inspectFrom === 'play' && G.inspT > 0.4) closeInspect(); }); // a tap puts it away
+// the shutter keypad's own buttons, for a phone
+for (const b of document.querySelectorAll('[data-kp]')) b.addEventListener('click', () => UI.keypad.key({ code: b.dataset.kp }));
 
 function inspectKeepsake(id, from) {
   const k = KEEPSAKES.find((x) => x.id === id);
@@ -1639,7 +1647,7 @@ function inspectKeepsake(id, from) {
   UI.$('inspName').textContent = k.name.toUpperCase();
   UI.$('inspText').textContent = k.text;
   UI.$('inspCount').textContent = `KEEPSAKE ${save.collection.keep.length} OF ${KEEPSAKES.length}${from === 'play' ? ' · IT WON’T HELP YOU. IT WAS JUST THEIRS.' : ''}`;
-  UI.$('inspClose').textContent = from === 'menu' ? 'ESC OR CLICK OUTSIDE TO PUT IT BACK' : 'E OR ESC TO POCKET IT';
+  UI.$('inspClose').textContent = TOUCH ? (from === 'menu' ? 'TAP OUTSIDE TO PUT IT BACK' : 'TAP TO POCKET IT') : from === 'menu' ? 'ESC OR CLICK OUTSIDE TO PUT IT BACK' : 'E OR ESC TO POCKET IT';
   if (from === 'play') {
     G.state = 'inspect';
     G.inspT = 0;
@@ -1705,6 +1713,8 @@ refreshMenu();
 // phones and tablets: touch controls, and lighter graphics the first time
 if (TOUCH) {
   document.body.classList.add('touch');
+  audio.lite = true;
+  UI.setTouch(true);
   initTouch({
     look: (dx, dy) => player.look(dx, dy), active: () => G.state === 'play',
     show: () => ({ fire: G.mode === 'hunt' || G.inv.built, breath: !!player.hidden }),
@@ -1713,7 +1723,8 @@ if (TOUCH) {
     if (G.mode === 'hunt') { huntSwing(); return; }
     if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
   } });
-  if (!save.settings.touchDefaults) { Object.assign(save.settings, { pix: 200, draw: 0.6, fps: 30, touchDefaults: true }); writeSave(); applySettings(); }
+  if (!save.settings.touchDefaults) { const f = fitUI(); Object.assign(save.settings, { pix: 200, draw: 0.6, fps: 30, uiMenu: f, uiGame: f, touchBase: f, touchDefaults: true }); writeSave(); applySettings(); }
+  scaleUI();
 }
 UI.typewrite(UI.$('warnText'), 'This game contains graphic gore, mutilated bodies, sudden loud noises and flashing images.\n\nPlay it in the dark. Wear headphones.\n\nIf you need to stop, press ESC. The plant will wait for you.', 45);
 UI.$('warn').addEventListener('click', () => {

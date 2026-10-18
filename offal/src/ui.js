@@ -34,7 +34,20 @@ export function only(...ids) {
 }
 
 const typing = new WeakMap();
+// on a phone the prompts name the buttons on screen, not keyboard keys
+let touchMode = false;
+export function setTouch(on) { touchMode = on; }
+const TOUCH_KEYS = { E: 'USE', Q: 'LISTEN', C: 'CROUCH', F: 'TORCH', R: 'SYRINGE', SPACE: 'BREATH', TAB: 'TASKS', ESC: 'PAUSE', P: 'PAUSE', CLICK: 'FIRE', LMB: 'FIRE' };
+export function keys(text) {
+  if (!touchMode || !text) return text;
+  return text
+    .replace(/<kbd>([A-Z~]+)<\/kbd>/g, (m, k) => `<kbd>${TOUCH_KEYS[k] || k}</kbd>`)
+    .replace(/\b([Hh]old|[Pp]ress|[Tt]ap|[Uu]se)\s+(E|Q|C|F|R|SPACE|TAB)\b/g, (m, v, k) => `${v} ${TOUCH_KEYS[k]}`)
+    .replace(/\((E|Q|C|F|R)\)/g, (m, k) => `(${TOUCH_KEYS[k]})`)
+    .replace(/\b[Cc]lick to fire\b/g, 'Tap FIRE').replace(/\bCLICK\b/g, 'FIRE');
+}
 export function typewrite(el, text, cps = 38, onTick) {
+  text = keys(text);
   clearInterval(typing.get(el));
   el.textContent = '';
   let i = 0;
@@ -49,64 +62,13 @@ export function typewrite(el, text, cps = 38, onTick) {
 // Blood running off the bottom of the title. The letters are measured (drawn to a canvas in the same font)
 // so every drip starts at the underside of a stroke that rests on the baseline: the feet of the F, the A
 // and the L, the bottom of the O. The menu must be on screen to measure, so it waits until it is.
-let dripTimer = 0;
-export function buildDrips() {
-  clearTimeout(dripTimer);
-  const host = $('drips'), title = document.querySelector('.title'), wrap = title.parentElement;
-  if (!title.offsetWidth) { dripTimer = setTimeout(buildDrips, 250); return; }
-  host.innerHTML = '';
-  const cs = window.getComputedStyle(title), text = title.firstChild.textContent;
-  const fs = parseFloat(cs.fontSize);
-  // where the baseline sits in the page: a zero-size inline block sits right on it
-  let mark = title.querySelector('.bl');
-  if (!mark) { mark = document.createElement('span'); mark.className = 'bl'; title.appendChild(mark); }
-  const wr = wrap.getBoundingClientRect(), baseY = mark.getBoundingClientRect().top - wr.top;
-  const left = title.getBoundingClientRect().left - wr.left + parseFloat(cs.paddingLeft);
-  const W = Math.ceil(title.scrollWidth + fs), H = Math.ceil(fs * 1.6), base = Math.round(fs * 1.1);
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const g = c.getContext('2d', { willReadFrequently: true });
-  g.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-  if ('letterSpacing' in g) g.letterSpacing = cs.letterSpacing;
-  g.textBaseline = 'alphabetic';
-  g.fillText(text, 0, base);
-  const px = g.getImageData(0, 0, W, H).data;
-  // the lowest inked pixel in every column, kept only where a stroke comes down to the baseline
-  const runs = [];
-  let run = null;
-  for (let x = 0; x < W; x++) {
-    let bottom = -1;
-    for (let y = H - 1; y >= 0; y--) if (px[(y * W + x) * 4 + 3] > 128) { bottom = y; break; }
-    const onBase = bottom >= base - fs * 0.06;
-    if (onBase) { if (!run) runs.push((run = { x0: x, x1: x, y: bottom })); run.x1 = x; run.y = Math.max(run.y, bottom); } else run = null;
-  }
-  for (const r of runs) {
-    const w = r.x1 - r.x0;
-    if (w < 4) continue;
-    // a wide foot can carry two; a narrow one only sometimes carries one
-    const n = w > fs * 0.35 ? 2 : Math.random() < 0.85 ? 1 : 0;
-    for (let k = 0; k < n; k++) {
-      const x = r.x0 + w * (n === 1 ? 0.3 + Math.random() * 0.4 : k ? 0.65 + Math.random() * 0.2 : 0.15 + Math.random() * 0.2);
-      const d = document.createElement('span');
-      const dw = 3 + Math.random() * 5;
-      d.className = 'drip';
-      d.style.left = left + x - dw / 2 + 'px';
-      d.style.top = baseY + (r.y - base) - 3 + 'px'; // tucked just inside the bottom edge of the stroke
-      d.style.width = dw + 'px';
-      d.style.setProperty('--h', 20 + Math.random() * 110 + 'px');
-      d.style.setProperty('--d', 4 + Math.random() * 7 + 's');
-      d.style.setProperty('--delay', -Math.random() * 8 + 's');
-      host.appendChild(d);
-    }
-  }
-}
-addEventListener('resize', () => { clearTimeout(dripTimer); dripTimer = setTimeout(buildDrips, 200); });
+export function buildDrips() { $('drips').innerHTML = ''; } // the title used to drip; it doesn't any more
 if (document.fonts) document.fonts.ready.then(() => buildDrips());
 
 let msgTimer = 0;
 export function message(text, secs = 3.5) {
   const m = $('msg');
-  m.textContent = text;
+  m.textContent = keys(text);
   m.classList.add('on');
   clearTimeout(msgTimer);
   msgTimer = setTimeout(() => m.classList.remove('on'), secs * 1000);
@@ -124,7 +86,7 @@ let lastPrompt = null;
 export function prompt(text, progress = 0) {
   const p = $('prompt');
   if (!text) { if (lastPrompt !== null) { p.classList.remove('on'); lastPrompt = null; } return; }
-  if (text !== lastPrompt) { $('promptText').innerHTML = text; p.classList.add('on'); lastPrompt = text; }
+  if (text !== lastPrompt) { $('promptText').innerHTML = keys(text); p.classList.add('on'); lastPrompt = text; }
   $('ring').style.strokeDashoffset = String(100.5 * (1 - progress));
   p.querySelector('svg').style.display = progress > 0 ? '' : 'none';
 }
@@ -190,8 +152,8 @@ function hotbar(items) {
 
 // the task sheet (TAB): rows of { text, count, done, now, sub }, then the extras underneath
 export function tasks(title, rows, extra) {
-  $('tasksBody').innerHTML = `<h3>${title}</h3><ol>${rows.map((r) => `<li class="${r.done ? 'done' : ''}${r.now ? ' now' : ''}"><span>${r.text}${r.sub ? `<small>${r.sub}</small>` : ''}</span>${r.count ? `<b>${r.count}</b>` : ''}</li>`).join('')}</ol>`
-    + (extra.length ? `<ul>${extra.map((e) => `<li>${e}</li>`).join('')}</ul>` : '');
+  $('tasksBody').innerHTML = keys(`<h3>${title}</h3><ol>${rows.map((r) => `<li class="${r.done ? 'done' : ''}${r.now ? ' now' : ''}"><span>${r.text}${r.sub ? `<small>${r.sub}</small>` : ''}</span>${r.count ? `<b>${r.count}</b>` : ''}</li>`).join('')}</ol>`
+    + (extra.length ? `<ul>${extra.map((e) => `<li>${e}</li>`).join('')}</ul>` : ''));
 }
 
 // ---------- the shift log ----------
@@ -291,8 +253,6 @@ export class ScreenBlood {
       }
       const s = (edgesOnly ? 6 + Math.random() * 14 : 20 + Math.random() * 60) * (0.5 + amount) * (W / 900);
       lensSplat(g, x, y, s);
-      const k = Math.random() * 3 * amount;
-      for (let j = 0; j < k; j++) this.drips.push({ x: x + (Math.random() - 0.5) * s, y: y + s * 0.2, w: 1.5 + Math.random() * 3, v: 20 + Math.random() * 50, life: 1 + Math.random() * 3 });
     }
   }
   // everything goes red
@@ -304,7 +264,6 @@ export class ScreenBlood {
     g.fillStyle = film;
     g.fillRect(0, 0, W, H);
     for (let i = 0; i < 30; i++) lensSplat(g, Math.random() * W, Math.random() * H, (50 + Math.random() * 110) * (W / 900), i % 2 === 0);
-    for (let i = 0; i < 40; i++) this.drips.push({ x: Math.random() * W, y: Math.random() * H * 0.6, w: 2 + Math.random() * 6, v: 30 + Math.random() * 60, life: 2 + Math.random() * 4 });
   }
   clear() { this.g.clearRect(0, 0, this.c.width, this.c.height); this.drips.length = 0; }
   update(dt) {

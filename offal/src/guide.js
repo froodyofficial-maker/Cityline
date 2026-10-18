@@ -149,7 +149,7 @@ export class Guide {
     else obj = short(blocker.title());
     const hint = phase === 'open' && G.floorTime < 20 ? '<small><kbd>TAB</kbd> TASKS</small>' : ''; // the first moments of a floor only
     const key = obj + hint;
-    if (key !== this.objKey) { this.objKey = key; UI.$('objective').innerHTML = key; }
+    if (key !== this.objKey) { this.objKey = key; UI.$('objective').innerHTML = UI.keys(key); }
     if (G.tasksOpen) this.taskSheet(obj);
 
     // the briefing

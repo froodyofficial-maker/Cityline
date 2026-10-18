@@ -397,3 +397,9 @@ body.touch .tasks { top: 22vmin; }
 body.touch #hotbar kbd { display: none; } /* no keys on a phone */
 /* long panels scroll on short screens, so nothing ends up out of reach */
 .panel-screen.on, #menu.on { overflow-y: auto; align-items: safe center; }
+/* the shutter keypad's buttons: only on a touch screen */
+.kp-pad { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px auto 4px; max-width: 260px; }
+body.touch .kp-pad { display: grid; }
+body.touch .kp-help { display: none; }
+.kp-pad button { padding: 12px 0; font-size: 20px; border: 1px solid rgba(216,205,184,.35); background: rgba(10,4,4,.7); color: var(--bone); }
+.kp-pad .kp-close { grid-column: 1 / -1; font-size: 13px; letter-spacing: .2em; }

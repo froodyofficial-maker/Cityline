@@ -8,7 +8,7 @@ export class AudioEngine {
 
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
-    const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)());
+    const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)(this.lite ? { latencyHint: 'playback' } : undefined)); // phones: bigger buffers, no underruns
     this.out = ctx.createGain();
     this.out.gain.value = this.volume;
     const comp = ctx.createDynamicsCompressor();
@@ -92,7 +92,7 @@ export class AudioEngine {
   }
   pan(pos, ref = 1.5, roll = 1.1, to = this.sfx) {
     const p = this.ctx.createPanner();
-    p.panningModel = 'HRTF';
+    p.panningModel = this.lite ? 'equalpower' : 'HRTF'; // HRTF is too heavy for phones: it crackles
     p.distanceModel = 'inverse';
     p.refDistance = ref;
     p.rolloffFactor = roll;

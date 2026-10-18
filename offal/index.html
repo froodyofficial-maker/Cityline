@@ -109,15 +109,8 @@
     <h3 class="set-h">PICTURE &amp; SOUND</h3>
     <label>Brightness <span class="val" id="gammaV"></span><input type="range" id="gamma" min="0.6" max="1.8" step="0.02"></label>
     <h3 class="set-h">INTERFACE</h3>
-    <label>Interface size
-      <select id="ui">
-        <option value="0">Auto (fits the screen)</option>
-        <option value="0.6">Small</option>
-        <option value="0.8">Medium</option>
-        <option value="1">Large</option>
-        <option value="1.2">Extra large</option>
-      </select>
-    </label>
+    <label>Menu size <span class="val" id="uiMenuV"></span><input type="range" id="uiMenu" min="1" max="100" step="1"></label>
+    <label>In-game HUD size <span class="val" id="uiGameV"></span><input type="range" id="uiGame" min="1" max="100" step="1"></label>
     <h3 class="set-h">GRAPHICS</h3>
     <label>Resolution
       <select id="pix">
@@ -168,6 +161,7 @@
   <div id="keypad" class="keypad">
     <div class="kp-head">SHUTTER CONTROL</div>
     <div id="kpSlots" class="kp-slots"></div>
+    <div class="kp-pad"><button data-kp="Digit1">1</button><button data-kp="Digit2">2</button><button data-kp="Digit3">3</button><button data-kp="Digit4">4</button><button data-kp="Digit5">5</button><button data-kp="Digit6">6</button><button data-kp="Digit7">7</button><button data-kp="Digit8">8</button><button data-kp="Digit9">9</button><button data-kp="Backspace">&#9003;</button><button data-kp="Digit0">0</button><button data-kp="Enter">OK</button><button data-kp="KeyE" class="kp-close">STEP AWAY</button></div>
     <div class="kp-help">TYPE THE CODE <kbd>0</kbd>&ndash;<kbd>9</kbd> &middot; <kbd>ENTER</kbd> TO TRY IT &middot; <kbd>E</kbd> TO STEP AWAY<br>A WRONG CODE SOUNDS THE ALARM</div>
   </div>
   <div id="pa"></div>
