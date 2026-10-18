@@ -1,4 +1,4 @@
-/* Loadout: scores every product against the user's games, body, setup and budget,
+/* GearGuide: scores every product against the user's games, body, setup and budget,
    then explains the score. Popularity (`pop`) is display-only. */
 (() => {
   const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED } = window.LOADOUT;
@@ -6,18 +6,31 @@
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
   const GAME = Object.fromEntries(GAMES.map(g => [g.id, g]));
   const PROD = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
-  const STORE = 'loadout-prefs-v1';
+  const STORE = 'gearguide-prefs-v1';
 
   const OPTIONS = {
-    hand: [['S', 'Small'], ['M', 'Medium'], ['L', 'Large']],
+    hand: [['S', 'Small (under 17 cm)'], ['M', 'Medium (17–19 cm)'], ['L', 'Large (over 19 cm)']],
+    handed: [['right', 'Right'], ['left', 'Left'], ['both', 'Both']],
+    weight: [['light', 'Lightweight (40–60 g)'], ['balanced', 'Balanced (60–90 g)'], ['heavy', 'Heavier (90 g+)'], ['any', 'No preference']],
     grip: [['palm', 'Palm'], ['claw', 'Claw'], ['fingertip', 'Fingertip'], ['unsure', 'Not sure']],
-    handed: [['right', 'Right'], ['left', 'Left']],
-    weight: [['light', 'Ultralight'], ['balanced', 'Balanced'], ['heavy', 'Heavier'], ['any', 'Any']],
     desk: [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']],
-    conn: [['any', 'Either'], ['wireless', 'Wireless'], ['wired', 'Wired']],
+    conn: [['any', 'Wired or wireless'], ['wireless', 'Wireless only'], ['wired', 'Prefer wired']],
   };
   const HAND_WORD = { S: 'small', M: 'medium', L: 'large' };
   const LAYOUT_WORD = { full: 'full-size', tkl: 'tenkeyless', 75: '75%', 65: '65%', 60: '60%' };
+  const handFromCm = cm => cm < 17 ? 'S' : cm <= 19 ? 'M' : 'L';
+
+  // Budget brackets per category in USD; [low, high], with null meaning no upper limit.
+  const BUDGETS = {
+    mouse: [[0, 40], [40, 80], [80, 120], [120, 180], [180, null]],
+    keyboard: [[0, 60], [60, 120], [120, 180], [180, 260], [260, null]],
+    headset: [[0, 60], [60, 120], [120, 200], [200, 300], [300, null]],
+    monitor: [[0, 200], [200, 350], [350, 700], [700, 1200], [1200, null]],
+    controller: [[0, 60], [60, 120], [120, 220], [220, null]],
+  };
+  const DEFAULT_BUDGET = { mouse: 2, keyboard: 2, headset: 2, monitor: 2, controller: 1 };
+  const budgetCap = cat => BUDGETS[cat][state.budget[cat]][1] ?? Infinity;
+  const budgetLow = cat => BUDGETS[cat][state.budget[cat]][0];
 
   // Exchange rates per 1 USD. The fallback is the ECB fixing of 15 Oct 2026 (via Banque de France);
   // live rates from the ECB (via Frankfurter) replace it when the browser can reach them.
@@ -38,11 +51,13 @@
   }
 
   const DEFAULTS = {
-    games: ['valorant', 'eldenring'],
-    cats: CATEGORIES.map(c => c.id),
-    budget: Object.fromEntries(CATEGORIES.map(c => [c.id, c.def])),
+    onboarded: false,
+    games: [],
+    cats: ['mouse', 'keyboard', 'monitor'],
+    view: 'mouse',
+    budget: { ...DEFAULT_BUDGET },
     platforms: ['pc'],
-    hand: 'M', grip: 'claw', handed: 'right', weight: 'any',
+    hand: 'M', grip: 'unsure', handed: 'right', weight: 'any',
     desk: 'medium', conn: 'any',
     glasses: false, long: false, quiet: false,
     sort: 'match',
@@ -60,6 +75,9 @@
         base.games = (base.games || []).filter(id => GAME[id]);
         base.cats = (base.cats || []).filter(id => CAT[id]);
         base.platforms = (base.platforms || []).filter(id => PLATFORMS[id]);
+        for (const c in BUDGETS) if (!BUDGETS[c][base.budget[c]]) base.budget[c] = DEFAULT_BUDGET[c];
+        if (!base.cats.length) base.cats = [...DEFAULTS.cats];
+        if (!base.cats.includes(base.view)) base.view = base.cats[0];
       }
     } catch { /* storage unavailable: use defaults */ }
     return base;
@@ -74,6 +92,19 @@
   const money = n => fmt(n, false);
   const moneyExact = n => fmt(n, state.currency === 'USD');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  // Round a USD amount, after conversion, to two significant figures for bracket labels.
+  function roundMoney(usd) {
+    const v = usd * rate();
+    if (v < 10) return fmt(usd, false);
+    const step = 10 ** (Math.floor(Math.log10(v)) - 1);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: fx.rates[state.currency] ? state.currency : 'USD', maximumFractionDigits: 0 }).format(Math.round(v / step) * step);
+  }
+  function bracketLabel(cat, i) {
+    const [lo, hi] = BUDGETS[cat][i];
+    if (!lo) return `Under ${roundMoney(hi)}`;
+    if (hi == null) return `${roundMoney(lo)} and up`;
+    return `${roundMoney(lo)} – ${roundMoney(hi)}`;
+  }
   function list(items, max = 2) {
     if (items.length <= 1) return items.join('');
     if (items.length <= max) return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
@@ -110,7 +141,7 @@
       if (relevant && !p.platforms.some(x => state.platforms.includes(x)))
         return `doesn't support ${list(state.platforms.map(x => PLATFORMS[x]), 3)}`;
     }
-    if (p.cat === 'mouse' && state.handed === 'left' && p.handed === 'right') return 'right-hand-only shape';
+    if (p.cat === 'mouse' && state.handed !== 'right' && p.handed === 'right') return 'right-hand-only shape';
     return null;
   }
 
@@ -157,9 +188,13 @@
         if (p.handed === 'ambi') add(1, 'Ambidextrous, with side buttons on both sides');
         else add(.7, null, "Symmetric shape, but the side buttons sit under your pinky when you use it left-handed");
       }
+      if (s.handed === 'both') {
+        if (p.handed === 'ambi') add(1, 'Ambidextrous, so it works in either hand with side buttons on both sides');
+        else add(.75, null, 'Symmetric shape works in either hand, but the side buttons are on the left only');
+      }
       const w = p.weight;
-      if (s.weight === 'light') w <= 65 ? add(1, `${w} g, in your ultralight range`) : add(w <= 85 ? .65 : .3, null, `${w} g is heavy for your ultralight preference`);
-      if (s.weight === 'balanced') w >= 60 && w <= 95 ? add(1, `${w} g, a balanced weight`) : add(.7, null, `${w} g is ${w < 60 ? 'lighter' : 'heavier'} than the balanced feel you want`);
+      if (s.weight === 'light') w <= 62 ? add(1, `${w} g, in your 40–60 g range`) : add(w <= 80 ? .65 : .3, null, `${w} g is heavier than your 40–60 g preference`);
+      if (s.weight === 'balanced') w >= 58 && w <= 92 ? add(1, `${w} g, in your 60–90 g range`) : add(.7, null, `${w} g is ${w < 60 ? 'lighter' : 'heavier'} than the 60–90 g you want`);
       if (s.weight === 'heavy') w >= 90 ? add(1, `${w} g, the planted feel you like`) : add(w >= 70 ? .75 : .5, null, `${w} g may feel floaty if you like some heft`);
       if (s.long && p.handed === 'right' && (s.grip === 'palm' || s.grip === 'unsure') && s.handed === 'right') add(1, 'Ergonomic hump supports long palm-grip sessions');
     }
@@ -223,7 +258,7 @@
   }
 
   function evaluate(p, needs) {
-    const budget = state.budget[p.cat];
+    const budget = budgetCap(p.cat), low = budgetLow(p.cat);
     const within = p.price <= budget;
     const g = gameFit(p, needs);
     const c = comfort(p);
@@ -249,8 +284,10 @@
       }
     }
     why.push(...c.pros.slice(0, 2));
-    if (within) why.push(p.price <= budget * .6 ? `${money(p.price)}, well under your ${money(budget)} budget, which leaves money for the rest of your setup.` : `${money(p.price)} fits your ${money(budget)} ${CAT[p.cat].one} budget.`);
-    else warn.push(`${money(p.price - budget)} over your ${money(budget)} budget.`);
+    const range = bracketLabel(p.cat, state.budget[p.cat]);
+    if (!within) warn.push(`${money(p.price - budget)} over your ${range} budget.`);
+    else if (p.price < low) why.push(`${money(p.price)}, below your ${range} range, which leaves money for the rest of your setup.`);
+    else why.push(`${money(p.price)} fits your ${range} budget.`);
     warn.push(...c.cons);
 
     return { p, match, within, parts: { game: g, comfort: c.score, budget: b }, why, warn };
@@ -300,7 +337,7 @@
     const alts = alternatives(r, pool);
     const label = !sortedByMatch ? (r.within ? 'Within budget' : 'Over budget') : i === 0 ? 'Closest fit for you' : 'Also a strong fit';
     const badges = [
-      r.within ? '<span class="badge ok">Within budget</span>' : '<span class="badge over">Over budget</span>',
+      !r.within ? '<span class="badge over">Over budget</span>' : p.price < budgetLow(p.cat) ? '<span class="badge ok">Under your range</span>' : '<span class="badge ok">In your budget</span>',
       p.pop <= 2 ? '<span class="badge gem" title="Ranked on fit alone. Popularity is never part of the score.">Lesser-known pick</span>' : '',
       `<span class="badge" title="Shown for context only. It does not affect the match.">Popularity ${'●'.repeat(p.pop)}${'○'.repeat(5 - p.pop)}</span>`,
     ].join('');
@@ -310,7 +347,7 @@
 
     const listTag = p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s title="Manufacturer list price">List ${moneyExact(p.msrp)}</s>` : '';
     const shop = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(p.brand + ' ' + p.name)}`;
-    return `<article class="card cat-${p.cat}${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
+    return `<article class="card glass cat-${p.cat}${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
       <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
         <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
         <div class="rank">${label}</div>
@@ -349,85 +386,65 @@
       return `Your games play best on a controller, so a ${cat.one} matters less here.`;
     if (cat.id === 'controller' && needs.racing >= .6) {
       const wheel = PRODUCTS.find(p => p.wheel);
-      return wheel.price > state.budget.controller
-        ? `You play racing games. A wheel like the ${wheel.brand} ${wheel.name} (${money(wheel.price)}) transforms them, but it's above your ${money(state.budget.controller)} budget. Raise the budget to see it ranked.`
+      return wheel.price > budgetCap('controller')
+        ? `You play racing games. A wheel like the ${wheel.brand} ${wheel.name} (${money(wheel.price)}) transforms them, but it's above your budget. Raise the budget to see it ranked.`
         : 'You play racing games, so a wheel is ranked alongside regular controllers.';
     }
     return rel < .3 ? `Your selected games don't lean heavily on a ${cat.one}, so comfort and value carry more weight.` : '';
   }
 
+  /* ---------------- results ---------------- */
   function renderResults() {
     const needs = computeNeeds();
     const out = $('#out');
-    const cats = CATEGORIES.filter(c => state.cats.includes(c.id));
-
+    const cat = CAT[state.view];
     const g = state.games.map(id => GAME[id].name);
-    $('#summary').textContent = (g.length ? `For ${list(g, 3)}` : 'No games picked yet, so these are general matches')
-      + ` · ${state.platforms.length ? list(state.platforms.map(x => PLATFORMS[x]), 4) : 'any platform'}`
-      + ` · ${HAND_WORD[state.hand]} hands, ${state.desk} desk`;
+    $('#title').textContent = `${cat.name}${g.length ? ` for ${list(g, 2)}` : ' for you'}`;
+    $('#summary').textContent = (g.length ? '' : 'Add your games for sharper matches · ')
+      + `${bracketLabel(cat.id, state.budget[cat.id])} · ${state.platforms.length ? list(state.platforms.map(x => PLATFORMS[x]), 4) : 'any platform'}`
+      + (cat.id === 'mouse' || cat.id === 'controller' ? ` · ${HAND_WORD[state.hand]} hands` : '');
 
-    if (!cats.length) {
-      out.innerHTML = '<div class="empty-state">Pick at least one hardware category to see matches.</div>';
-      return;
+    const { pool, hidden } = rankCategory(cat, needs);
+    const within = pool.filter(r => r.within);
+    const sortedByMatch = state.sort === 'match';
+    const ordered = sortedByMatch ? within : [...within].sort((a, b) => state.sort === 'low' ? a.p.price - b.p.price : b.p.price - a.p.price);
+    let top = ordered.slice(0, 3);
+    let emptyMsg = '';
+    if (!top.length) {
+      // Nothing fits the budget: show the closest stretch options instead of an empty shelf.
+      top = [...pool].sort((a, b) => a.p.price - b.p.price).slice(0, 2);
+      emptyMsg = `<div class="catnote">Nothing in our catalog fits a ${bracketLabel(cat.id, state.budget[cat.id])} ${cat.one} budget. Here are the closest options above it.</div>`;
     }
+    const shown = new Set(top.map(r => r.p.id));
+    const rest = pool.filter(r => !shown.has(r.p.id));
+    const note = categoryNote(cat, needs);
+    const limit = budgetCap(cat.id);
 
-    out.innerHTML = cats.map(cat => {
-      const { pool, hidden } = rankCategory(cat, needs);
-      const within = pool.filter(r => r.within);
-      const ordered = state.sort === 'match' ? within : [...within].sort((a, b) => state.sort === 'low' ? a.p.price - b.p.price : b.p.price - a.p.price);
-      const sortedByMatch = state.sort === 'match';
-      let top = ordered.slice(0, 3);
-      let emptyMsg = '';
-      if (!top.length) {
-        // Nothing fits the budget: show the closest stretch options instead of an empty shelf.
-        top = [...pool].sort((a, b) => a.p.price - b.p.price).slice(0, 2);
-        emptyMsg = `<div class="catnote">Nothing in our catalog fits a ${money(state.budget[cat.id])} ${cat.one} budget. Here are the closest options above it.</div>`;
-      }
-      const shown = new Set(top.map(r => r.p.id));
-      const rest = pool.filter(r => !shown.has(r.p.id));
-      const gems = top.filter(r => r.p.pop <= 2).length;
-      const note = categoryNote(cat, needs);
-
-      return `<section class="cat" id="cat-${cat.id}">
-        <div class="cathead">
-          <h3 class="cat-${cat.id}">${icon(cat.id)}${cat.name}</h3>
-          <span class="catmeta">${within.length} of ${pool.length} within ${money(state.budget[cat.id])}${gems ? ` · ${gems} lesser-known pick${gems > 1 ? 's' : ''} in your top results` : ''}</span>
-        </div>
-        ${note ? `<div class="catnote">${esc(note)}</div>` : ''}
-        ${hidden.length ? `<div class="hidden-note">Hidden ${hidden.length}: ${hidden.map(h => `${esc(h.p.brand)} ${esc(h.p.name)} (${esc(h.reason)})`).join(', ')}.</div>` : ''}
-        ${emptyMsg}
-        <div class="cards">${top.map((r, i) => card(r, i, pool, sortedByMatch && !emptyMsg)).join('')}</div>
-        ${rest.length ? `<details class="more"><summary>See all ${pool.length} ranked ${cat.name.toLowerCase()}, including over-budget options</summary>
-          <div class="rows">${rest.map(r => `<div class="row${r.within ? '' : ' over'}" data-id="${r.p.id}">
-            <span class="pill ${tone(r.match)}">${r.match}%</span>
-            <span class="rn"><span class="thumb cat-${r.p.cat}">${art(r.p)}</span><span>${esc(r.p.brand)} ${esc(r.p.name)}<small>${esc(r.why[0] || r.p.pros[0])}</small></span></span>
-            <span class="rtag">${r.within ? (r.p.pop <= 2 ? '<span class="badge gem">Lesser-known</span>' : '') : `<span class="tag">+${money(r.p.price - state.budget[cat.id])} over</span>`}</span>
-            <span class="rp">${money(r.p.price)}</span>
-          </div>`).join('')}</div></details>` : ''}
-      </section>`;
-    }).join('');
-
-    const u = $('#updated');
-    u.classList.add('on');
-    requestAnimationFrame(() => requestAnimationFrame(() => u.classList.remove('on')));
+    out.innerHTML = `
+      ${note ? `<div class="catnote">${esc(note)}</div>` : ''}
+      ${hidden.length ? `<div class="hidden-note">Hidden ${hidden.length}: ${hidden.map(h => `${esc(h.p.brand)} ${esc(h.p.name)} (${esc(h.reason)})`).join(', ')}.</div>` : ''}
+      ${emptyMsg}
+      <div class="cards">${top.map((r, i) => card(r, i, pool, sortedByMatch && !emptyMsg)).join('')}</div>
+      ${rest.length ? `<details class="allrank glass"><summary>See all ${pool.length} ranked ${cat.name.toLowerCase()}</summary>
+        <div class="rows">${rest.map(r => `<div class="row${r.within ? '' : ' over'}" data-id="${r.p.id}">
+          <span class="pill ${tone(r.match)}">${r.match}%</span>
+          <span class="rn"><span class="thumb cat-${r.p.cat}">${art(r.p)}</span><span>${esc(r.p.brand)} ${esc(r.p.name)}<small>${esc(r.why[0] || r.p.pros[0])}</small></span></span>
+          <span class="rtag">${r.within ? (r.p.pop <= 2 ? '<span class="badge gem">Lesser-known</span>' : '') : `<span class="tag">+${money(r.p.price - limit)} over</span>`}</span>
+          <span class="rp">${money(r.p.price)}</span>
+        </div>`).join('')}</div></details>` : ''}`;
   }
 
-  /* ---------------- preference controls ---------------- */
-  function chip(kind, id, label, sub, on, cls = '') {
-    return `<button type="button" class="chip ${cls}" data-multi="${kind}" data-val="${id}" aria-pressed="${on}">${esc(label)}${sub ? ` <small>${esc(sub)}</small>` : ''}</button>`;
-  }
-
+  /* ---------------- currency ---------------- */
   function renderCurrency() {
     const sel = $('#currency');
     if (!fx.rates[state.currency]) state.currency = 'USD';
     sel.innerHTML = Object.keys(CURRENCY_NAMES).filter(c => fx.rates[c])
       .map(c => `<option value="${c}">${c} · ${CURRENCY_NAMES[c]}</option>`).join('');
     sel.value = state.currency;
-    $('#curCount').textContent = sel.options.length;
     const d = new Date(fx.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     $('#fxnote').textContent = state.currency === 'USD'
-      ? `Prices checked ${PRICES_CHECKED} at US retailers`
-      : `Converted from US prices at ECB rates of ${d}${fx.live ? '' : ' (saved)'}. Local shop prices often differ because of taxes and regional pricing.`;
+      ? `Prices are typical US prices checked ${PRICES_CHECKED}.`
+      : `Prices are converted from US prices (checked ${PRICES_CHECKED}) at ECB rates of ${d}; local shops often differ because of taxes.`;
   }
 
   async function loadRates() {
@@ -439,105 +456,170 @@
         if (!data.rates || !data.rates.EUR) continue;
         fx = { live: true, date: data.date, rates: { ...data.rates, USD: 1 } };
         renderCurrency();
-        refreshMoney();
+        if (!$('#dashboard').hidden) { renderBudget(); renderResults(); }
         return;
       } catch { /* offline or blocked: keep saved rates */ }
     }
   }
 
-  // Re-render everything that shows a price.
-  function refreshMoney() {
-    CATEGORIES.forEach(c => { const o = $('#o-' + c.id); if (o) o.textContent = 'up to ' + money(state.budget[c.id]); });
+  /* ---------------- screens ---------------- */
+  const SCREENS = ['welcome', 'prepare', 'loading', 'dashboard'];
+  function show(id) {
+    SCREENS.forEach(s => { $('#' + s).hidden = s !== id; });
+    window.scrollTo(0, 0);
+  }
+
+  function renderPrepare() {
+    $('#gameList').innerHTML = GAMES.map(g => `<option value="${esc(g.name)}">`).join('');
+    const names = state.games.map(id => GAME[id].name);
+    $('#prepGames').innerHTML = [0, 1, 2, 3].map(i => `<input class="line" list="gameList" aria-label="Game ${i + 1}" placeholder="${i ? '' : 'e.g. Minecraft'}" value="${esc(names[i] || '')}">`).join('');
+    $('#prepHand').value = state.handCm || '';
+    $('#prepProducts').innerHTML = CATEGORIES.map(c => `<label class="check"><input type="checkbox" value="${c.id}" ${state.cats.includes(c.id) ? 'checked' : ''}><i></i>${cap(c.one)}</label>`).join('');
+    $('#prepError').textContent = '';
+  }
+
+  // Match typed game names to the catalog, forgiving case and partial names ("cs2", "gta").
+  const ALIASES = {
+    'gta vi': 'gta6', 'gta 6': 'gta6', 'gta': 'gta6', 'gta v': 'gta5', 'gta 5': 'gta5', 'cs': 'cs2', 'csgo': 'cs2', 'cs go': 'cs2', 'counter strike': 'cs2',
+    'cod': 'warzone', 'call of duty': 'warzone', 'lol': 'lol', 'league': 'lol', 'wow': 'wow', 'ff14': 'ffxiv', 'ffxiv': 'ffxiv', 'fifa': 'fc', 'fc 25': 'fc', 'fc 26': 'fc',
+    'flight sim': 'msfs', 'flight simulator': 'msfs', 'ow': 'overwatch', 'ow2': 'overwatch', 'acc': 'acc', 'bg3': 'bg3', 'rl': 'rocketleague', 'aoe': 'aoe4', 'aoe4': 'aoe4', 'osu': 'osu',
+  };
+  function findGame(text) {
+    const q = text.trim().toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!q) return null;
+    if (ALIASES[q]) return GAME[ALIASES[q]];
+    return GAMES.find(g => g.name.toLowerCase() === text.trim().toLowerCase() || g.id === q)
+      || GAMES.find(g => g.name.toLowerCase().startsWith(q))
+      || GAMES.find(g => g.name.toLowerCase().includes(q)) || null;
+  }
+
+  function buildDashboard() {
+    const typed = [...document.querySelectorAll('#prepGames input')].map(i => i.value).filter(v => v.trim());
+    const found = typed.map(findGame);
+    const unknown = typed.filter((t, i) => !found[i]);
+    const cats = [...document.querySelectorAll('#prepProducts input:checked')].map(i => i.value);
+    const cm = parseFloat($('#prepHand').value);
+    const err = [];
+    if (unknown.length) err.push(`We don't know ${list(unknown.map(u => `"${u}"`), 3)} yet. Pick from the suggestions.`);
+    if (!cats.length) err.push('Choose at least one product.');
+    if ($('#prepHand').value && !(cm >= 12 && cm <= 25)) err.push('Hand length should be between 12 and 25 cm.');
+    if (err.length) { $('#prepError').textContent = err.join(' '); return; }
+
+    state.games = [...new Set(found.map(g => g.id))];
+    state.cats = cats;
+    state.view = cats[0];
+    if (cm) { state.handCm = cm; state.hand = handFromCm(cm); }
+    state.onboarded = true;
+    save();
+    show('loading');
+    const wait = matchMedia('(prefers-reduced-motion: reduce)').matches ? 300 : 1300;
+    setTimeout(openDashboard, wait);
+  }
+
+  function openDashboard() {
+    renderSide();
+    renderCurrency();
     renderResults();
+    show('dashboard');
   }
 
-  function renderHero() {
-    const show = ['viperv3', 'w60he', 'novapro', 'aw2725df', 'edge'].map(id => PROD[id]).filter(Boolean);
-    $('#heroArt').innerHTML = show.map((p, i) => `<div class="float f${i} cat-${p.cat}">${art(p)}</div>`).join('');
-    $('#heroStats').innerHTML = `<span><b>${PRODUCTS.length}</b> products</span><span><b>${GAMES.length}</b> games</span><span><b>${CATEGORIES.length}</b> categories</span><span><b id="curCount"></b> currencies</span>`;
-  }
+  /* ---------------- sidebar ---------------- */
+  const opts = (key, value) => OPTIONS[key].map(([v, l]) => `<option value="${v}" ${v === value ? 'selected' : ''}>${l}</option>`).join('');
 
-  function renderControls() {
-    $('#games').innerHTML = GAMES.map(g => chip('games', g.id, g.name, g.genre, state.games.includes(g.id))).join('');
-    $('#cats').innerHTML = CATEGORIES.map(c => chip('cats', c.id, c.name, '', state.cats.includes(c.id), 'cat-' + c.id)).join('');
-    $('#platforms').innerHTML = Object.entries(PLATFORMS).map(([id, n]) => chip('platforms', id, n, '', state.platforms.includes(id))).join('');
-    document.querySelectorAll('.seg').forEach(seg => {
-      const key = seg.dataset.key;
-      seg.setAttribute('role', 'radiogroup');
-      seg.innerHTML = OPTIONS[key].map(([v, l]) => `<button type="button" role="radio" data-key="${key}" data-val="${v}" aria-checked="${state[key] === v}">${l}</button>`).join('');
-    });
+  function renderGames() {
+    $('#gameChips').innerHTML = state.games.map(id => `<button type="button" class="chip game" data-remove="${id}" title="Remove ${esc(GAME[id].name)}">${esc(GAME[id].name)} <span class="x" aria-hidden="true">×</span></button>`).join('')
+      + `<button type="button" class="chip add" id="addGame" aria-label="Add a game" aria-expanded="${!$('#gamePicker').hidden}">+</button>`;
+    renderGameOptions();
+  }
+  function renderGameOptions() {
+    const q = $('#gameSearch').value.trim().toLowerCase();
+    const left = GAMES.filter(g => !state.games.includes(g.id) && (!q || g.name.toLowerCase().includes(q) || g.genre.toLowerCase().includes(q)));
+    $('#gameOptions').innerHTML = left.length ? left.map(g => `<button type="button" data-addgame="${g.id}">${esc(g.name)}<small>${esc(g.genre)}</small></button>`).join('') : '<small class="hint">No more matches</small>';
+  }
+  function renderBudget() {
+    $('#budget').innerHTML = BUDGETS[state.view].map((_, i) => `<option value="${i}" ${i === state.budget[state.view] ? 'selected' : ''}>${bracketLabel(state.view, i)}</option>`).join('');
+  }
+  function renderTypes() {
+    $('#types').innerHTML = state.cats.map(id => `<button type="button" class="chip" data-view="${id}" aria-pressed="${id === state.view}">${cap(CAT[id].one)}</button>`).join('');
+    $('#cats').innerHTML = CATEGORIES.map(c => `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="${state.cats.includes(c.id)}">${cap(c.one)}</button>`).join('');
+    document.querySelectorAll('[data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(state.view); });
+  }
+  function renderSide() {
+    renderGames();
+    renderBudget();
+    renderTypes();
+    $('#handed').innerHTML = OPTIONS.handed.map(([v, l]) => `<label class="radio"><input type="radio" name="handed" value="${v}" ${state.handed === v ? 'checked' : ''}><i></i>${l}</label>`).join('');
+    for (const k of ['weight', 'hand', 'grip', 'desk', 'conn']) $('#' + k).innerHTML = opts(k, state[k]);
+    $('#platforms').innerHTML = Object.entries(PLATFORMS).map(([id, n]) => `<button type="button" class="chip" data-platform="${id}" aria-pressed="${state.platforms.includes(id)}">${n}</button>`).join('');
     document.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => { cb.checked = !!state[cb.dataset.key]; });
     $('#sort').value = state.sort;
-    renderBudgets();
-    syncCounts();
-    filterGames();
-  }
-
-  function renderBudgets() {
-    const cats = CATEGORIES.filter(c => state.cats.includes(c.id));
-    $('#budgets').innerHTML = cats.length ? cats.map(c => `<div class="budget cat-${c.id}">
-      <label for="b-${c.id}">${c.name} <output id="o-${c.id}">up to ${money(state.budget[c.id])}</output></label>
-      <input id="b-${c.id}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${state.budget[c.id]}" data-budget="${c.id}">
-    </div>`).join('') : '<p class="empty">Select a category to set its budget.</p>';
-  }
-
-  function syncCounts() {
-    $('#gameCount').textContent = state.games.length ? `${state.games.length} selected` : 'none selected';
-  }
-
-  function filterGames() {
-    const q = $('#gameSearch').value.trim().toLowerCase();
-    document.querySelectorAll('#games .chip').forEach(el => {
-      const g = GAME[el.dataset.val];
-      el.hidden = !!q && !(g.name.toLowerCase().includes(q) || g.genre.toLowerCase().includes(q));
-    });
   }
 
   let timer = 0;
   function changed() {
     save();
     clearTimeout(timer);
-    timer = setTimeout(renderResults, 90);
+    timer = setTimeout(renderResults, 60);
   }
+  const toggleIn = (arr, v) => { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); };
 
-  $('#prefs').addEventListener('click', e => {
-    const m = e.target.closest('[data-multi]');
-    if (m) {
-      const arr = state[m.dataset.multi], v = m.dataset.val, i = arr.indexOf(v);
-      i >= 0 ? arr.splice(i, 1) : arr.push(v);
-      m.setAttribute('aria-pressed', i < 0);
-      if (m.dataset.multi === 'cats') renderBudgets();
-      syncCounts();
-      return changed();
-    }
-    const s = e.target.closest('.seg [data-key]');
-    if (s) {
-      state[s.dataset.key] = s.dataset.val;
-      s.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b === s));
+  $('#side').addEventListener('click', e => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.id === 'addGame') {
+      const p = $('#gamePicker');
+      p.hidden = !p.hidden;
+      t.setAttribute('aria-expanded', !p.hidden);
+      if (!p.hidden) { $('#gameSearch').value = ''; renderGameOptions(); $('#gameSearch').focus(); }
+    } else if (t.dataset.addgame) {
+      state.games.push(t.dataset.addgame);
+      $('#gamePicker').hidden = true;
+      renderGames(); changed();
+    } else if (t.dataset.remove) {
+      toggleIn(state.games, t.dataset.remove);
+      renderGames(); changed();
+    } else if (t.dataset.view) {
+      state.view = t.dataset.view;
+      renderTypes(); renderBudget(); changed();
+    } else if (t.dataset.cat) {
+      if (state.cats.length === 1 && state.cats[0] === t.dataset.cat) return; // keep at least one
+      toggleIn(state.cats, t.dataset.cat);
+      state.cats.sort((a, b) => CATEGORIES.findIndex(c => c.id === a) - CATEGORIES.findIndex(c => c.id === b));
+      if (!state.cats.includes(state.view)) state.view = state.cats[0];
+      renderTypes(); renderBudget(); changed();
+    } else if (t.dataset.platform) {
+      toggleIn(state.platforms, t.dataset.platform);
+      t.setAttribute('aria-pressed', state.platforms.includes(t.dataset.platform));
       changed();
+    } else if (t.id === 'restart') {
+      state.onboarded = false; save();
+      renderPrepare(); show('prepare');
     }
   });
-  $('#prefs').addEventListener('input', e => {
+  $('#side').addEventListener('change', e => {
     const t = e.target;
-    if (t.dataset.budget) {
-      state.budget[t.dataset.budget] = +t.value;
-      $('#o-' + t.dataset.budget).textContent = 'up to ' + money(+t.value);
-      changed();
-    } else if (t.type === 'checkbox' && t.dataset.key) {
-      state[t.dataset.key] = t.checked;
-      changed();
-    } else if (t.id === 'gameSearch') filterGames();
+    if (t.id === 'budget') state.budget[state.view] = +t.value;
+    else if (t.name === 'handed') state.handed = t.value;
+    else if (OPTIONS[t.id]) state[t.id] = t.value;
+    else if (t.dataset.key) state[t.dataset.key] = t.checked;
+    else return;
+    changed();
   });
+  $('#gameSearch').addEventListener('input', renderGameOptions);
+  $('#gameSearch').addEventListener('keydown', e => {
+    if (e.key === 'Escape') { $('#gamePicker').hidden = true; $('#addGame').focus(); }
+    if (e.key === 'Enter') { const first = $('#gameOptions button'); if (first) first.click(); }
+  });
+  document.addEventListener('click', e => {
+    if (!$('#gamePicker').hidden && !e.target.closest('#gamePicker') && e.target.id !== 'addGame') $('#gamePicker').hidden = true;
+  });
+
   $('#sort').addEventListener('change', e => { state.sort = e.target.value; changed(); });
-  $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); refreshMoney(); });
-  $('#reset').addEventListener('click', () => {
-    state = structuredClone(DEFAULTS);
-    $('#gameSearch').value = '';
-    renderControls();
-    renderCurrency();
-    refreshMoney();
-    save();
-  });
+  $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); renderBudget(); renderResults(); });
+
+  $('#start').addEventListener('click', () => { renderPrepare(); show('prepare'); });
+  $('#build').addEventListener('click', buildDashboard);
+  $('#prepForm').addEventListener('keydown', e => { if (e.key === 'Enter') buildDashboard(); });
 
   // Clicking an alternative jumps to its card, or opens the full ranking where it's listed.
   $('#out').addEventListener('click', e => {
@@ -546,12 +628,8 @@
     const id = a.dataset.goto;
     let el = document.getElementById('card-' + id);
     if (!el) {
-      const sec = document.getElementById('cat-' + PROD[id].cat);
-      const det = sec && sec.querySelector('details.more');
-      if (det) {
-        det.open = true;
-        el = det.querySelector(`.row[data-id="${id}"]`);
-      }
+      const det = $('#out details.allrank');
+      if (det) { det.open = true; el = det.querySelector(`.row[data-id="${id}"]`); }
     }
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -559,9 +637,7 @@
     }
   });
 
-  renderHero();
-  renderControls();
-  renderCurrency();
-  renderResults();
+  // Returning visitors go straight to their dashboard.
+  if (state.onboarded) openDashboard(); else show('welcome');
   loadRates();
 })();

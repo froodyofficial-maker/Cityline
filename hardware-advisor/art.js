@@ -1,4 +1,4 @@
-/* Loadout product art: SVG illustrations drawn from each product's real form factor
+/* GearGuide product art: SVG illustrations drawn from each product's real form factor
    (shape, layout, size, open/closed back, stick layout) in its brand colors.
    A product with a photo (an `img` field, or an entry in images.js) shows the photo instead,
    falling back to the art if it fails to load. */

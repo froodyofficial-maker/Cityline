@@ -1,4 +1,4 @@
-/* Loadout catalog: games, categories and products.
+/* GearGuide catalog: games, categories and products.
    `price` is a typical recent US street price and `msrp` the manufacturer list price (USD),
    both checked against retailer listings in October 2026. Prices change often.
    `pop` (1-5) is shown for context only. It is never used in match scores. */
@@ -48,6 +48,8 @@ window.LOADOUT = (() => {
     { id: 'fc', name: 'EA Sports FC', genre: 'Sports', needs: { pad: 1, speed: .4, comms: .3 } },
     { id: 'hades2', name: 'Hades II', genre: 'Action roguelike', needs: { pad: .8, speed: .6, visuals: .3 } },
     { id: 'osu', name: 'osu!', genre: 'Rhythm', needs: { speed: 1, aim: 1 } },
+    { id: 'gta6', name: 'Grand Theft Auto VI', genre: 'Open world (consoles, Nov 2026)', needs: { pad: .8, visuals: .9, immersion: .9, aim: .5, speed: .4, comms: .3 } },
+    { id: 'gta5', name: 'Grand Theft Auto V', genre: 'Open world', needs: { pad: .6, visuals: .7, immersion: .7, aim: .6, speed: .5, comms: .4 } },
     { id: 'minecraft', name: 'Minecraft', genre: 'Sandbox', needs: { immersion: .3, visuals: .3, binds: .2, comms: .3 } },
   ];
 

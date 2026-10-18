@@ -20,9 +20,9 @@ npm start            # serves the project at http://localhost:8080
 
 `npm start` needs only Node 18 or newer. It has no dependencies. Any static file server works too, so the repo can be hosted on GitHub Pages as is. Opening `index.html` from disk won't work, because browsers block ES modules on `file://`. Use the dist file for that.
 
-## Loadout (hardware advisor)
+## GearGuide (hardware advisor)
 
-`hardware-advisor/` is a separate static website that recommends gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels) from your games, budget, body and setup. Each pick comes with a match percentage, the reasons it fits, strengths and weaknesses, and cheaper or pricier alternatives. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`.
+`hardware-advisor/` is GearGuide, a separate static website that recommends gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels) from your games, budget, hands and setup. A short setup (welcome, then games, hand length and product types) builds a dashboard where every preference can be changed live. Each pick comes with a match percentage, the reasons it fits, strengths and weaknesses, and cheaper or pricier alternatives. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`.
 
 - **Catalog:** `hardware-advisor/data.js`. Each product has a typical US street price and the manufacturer list price, both checked in October 2026.
 - **Currencies:** prices convert with live European Central Bank rates (via the free Frankfurter API) and fall back to built-in rates from 15 Oct 2026 when offline.

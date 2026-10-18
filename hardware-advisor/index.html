@@ -3,121 +3,127 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Loadout: Gear Matcher</title>
-<meta name="description" content="Gaming hardware recommendations matched to your games, budget and comfort, with the reasons why.">
+<title>GearGuide</title>
+<meta name="description" content="Gaming hardware recommendations matched to your games, budget and hands, with the reasons why.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <span class="logo" aria-hidden="true"></span>
-    <div>
-      <h1>Loadout</h1>
-      <p>Gaming gear matched to how <em>you</em> play, with the reasons why.</p>
-    </div>
-  </div>
-  <div class="topright">
-    <label class="cur">Currency
-      <select id="currency" aria-describedby="fxnote"></select>
-    </label>
-    <small id="fxnote" class="fxnote"></small>
-  </div>
-</header>
 
-<section class="hero">
-  <div class="hero-copy">
-    <span class="kicker">Gear matcher · v2</span>
-    <h2>Find gear that fits <span class="grad">how you play</span>.</h2>
-    <p>Pick your games, set a budget and tell us about your hands and desk. Every match comes with a score and the reasons behind it.</p>
-    <ul class="promises">
-      <li>Scores ignore popularity</li>
-      <li>No sponsored rankings</li>
-      <li>Results update live</li>
-    </ul>
-    <div id="heroStats" class="hero-stats"></div>
-  </div>
-  <div id="heroArt" class="hero-art" aria-hidden="true"></div>
+<!-- 1. Welcome -->
+<section id="welcome" class="screen center">
+  <h1>Welcome to GearGuide</h1>
+  <p class="lead">Get recommended products that you'll like</p>
+  <button type="button" class="pillbtn" id="start">Get Started <span aria-hidden="true">→</span></button>
 </section>
 
-<main class="layout">
-  <form id="prefs" class="prefs" autocomplete="off" onsubmit="return false">
-    <section class="block">
-      <div class="bh"><h2><span class="n">1</span>Games you play</h2><span id="gameCount" class="count"></span></div>
-      <input id="gameSearch" class="search" type="search" placeholder="Search games or genres…" aria-label="Search games">
-      <div id="games" class="chips games"></div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2><span class="n">2</span>Hardware categories</h2></div>
-      <div id="cats" class="chips"></div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2><span class="n">3</span>Budget per item</h2></div>
-      <div id="budgets" class="budgets"></div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2><span class="n">4</span>Platforms</h2></div>
-      <div id="platforms" class="chips"></div>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2><span class="n">5</span>Body and comfort</h2></div>
-      <div class="field"><label>Hand size <small>wrist to middle fingertip</small></label><div class="seg" data-key="hand"></div></div>
-      <div class="field"><label>Mouse grip</label><div class="seg" data-key="grip"></div></div>
-      <div class="field"><label>Dominant hand</label><div class="seg" data-key="handed"></div></div>
-      <div class="field"><label>Mouse weight feel</label><div class="seg" data-key="weight"></div></div>
-      <label class="toggle"><input type="checkbox" data-key="glasses"><span></span>I wear glasses while gaming</label>
-      <label class="toggle"><input type="checkbox" data-key="long"><span></span>I often play 3+ hours at a time</label>
-    </section>
-
-    <section class="block">
-      <div class="bh"><h2><span class="n">6</span>Your setup</h2></div>
-      <div class="field"><label>Desk space</label><div class="seg" data-key="desk"></div></div>
-      <div class="field"><label>Connection</label><div class="seg" data-key="conn"></div></div>
-      <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around other people (keep it quiet)</label>
-    </section>
-
-    <div class="formfoot">
-      <button type="button" id="reset" class="ghost">Reset preferences</button>
-      <a href="#results" class="jump">See results ↓</a>
+<!-- 2. Prepare -->
+<section id="prepare" class="screen center" hidden>
+  <h1>Prepare your dashboard</h1>
+  <p class="lead small">Add your preferences to customize your recommendations.<br>Extra customization can be done at the prepared dashboard.</p>
+  <form id="prepForm" class="prep" autocomplete="off" onsubmit="return false">
+    <div class="glass prepcard">
+      <h2>Games played</h2>
+      <div class="lines" id="prepGames"></div>
+    </div>
+    <div class="glass prepcard">
+      <h2><label for="prepHand">Hand length (in cm)</label></h2>
+      <input id="prepHand" class="line" type="number" min="12" max="25" step="0.5" placeholder="e.g. 18" inputmode="decimal">
+      <small class="hint">Wrist crease to the tip of your middle finger</small>
+    </div>
+    <div class="glass prepcard">
+      <h2>Product</h2>
+      <div id="prepProducts" class="checks"></div>
     </div>
   </form>
+  <p class="prep-error" id="prepError" role="alert"></p>
+  <button type="button" class="pillbtn" id="build">Build my dashboard <span aria-hidden="true">→</span></button>
+  <datalist id="gameList"></datalist>
+</section>
 
-  <section id="results" class="results" aria-live="polite">
-    <div class="rhead">
+<!-- 3. Loading -->
+<section id="loading" class="screen center" hidden>
+  <h1>Loading dashboard</h1>
+  <div class="spinner" role="progressbar" aria-label="Loading"></div>
+</section>
+
+<!-- 4. Dashboard -->
+<div id="dashboard" class="dash" hidden>
+  <aside class="side" id="side">
+    <h1>Dashboard</h1>
+
+    <div class="sgroup">
+      <h3>Games</h3>
+      <div id="gameChips" class="chips"></div>
+      <div id="gamePicker" class="picker glass" hidden>
+        <input id="gameSearch" type="search" placeholder="Search games…" aria-label="Search games">
+        <div id="gameOptions" class="options"></div>
+      </div>
+    </div>
+
+    <div class="sgroup">
+      <h3><label for="budget">Budget</label></h3>
+      <select id="budget" class="sel"></select>
+    </div>
+
+    <div class="sgroup">
+      <h3>Product type</h3>
+      <div id="types" class="chips"></div>
+    </div>
+
+    <div class="sgroup" data-for="mouse">
+      <h3>Hand preferences</h3>
+      <div id="handed" class="radios" role="radiogroup" aria-label="Hand preference"></div>
+    </div>
+
+    <div class="sgroup" data-for="mouse">
+      <h3><label for="weight">Weight preference</label></h3>
+      <select id="weight" class="sel"></select>
+    </div>
+
+    <div class="sgroup" data-for="mouse controller">
+      <h3><label for="hand">Hand length</label></h3>
+      <select id="hand" class="sel"></select>
+    </div>
+
+    <details class="sgroup more" id="morePrefs">
+      <summary>More preferences</summary>
+      <div class="mgroup"><h4>Platforms</h4><div id="platforms" class="chips"></div></div>
+      <div class="mgroup"><h4>Show product types</h4><div id="cats" class="chips"></div></div>
+      <div class="mgroup"><h4><label for="grip">Mouse grip</label></h4><select id="grip" class="sel"></select></div>
+      <div class="mgroup"><h4><label for="desk">Desk space</label></h4><select id="desk" class="sel"></select></div>
+      <div class="mgroup"><h4><label for="conn">Connection</label></h4><select id="conn" class="sel"></select></div>
+      <label class="toggle"><input type="checkbox" data-key="glasses"><span></span>I wear glasses</label>
+      <label class="toggle"><input type="checkbox" data-key="long"><span></span>I play 3+ hours at a time</label>
+      <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around others</label>
+    </details>
+
+    <button type="button" class="linkbtn" id="restart">Restart setup</button>
+  </aside>
+
+  <main class="main" id="results" aria-live="polite">
+    <header class="mhead">
       <div>
-        <h2>Your matches</h2>
+        <h2 id="title"></h2>
         <p id="summary" class="summary"></p>
       </div>
-      <div class="rtools">
-        <span id="updated" class="updated">Updated</span>
-        <label class="sort">Sort
-          <select id="sort">
-            <option value="match">Best match for you</option>
+      <div class="tools">
+        <label class="tool">Sort
+          <select id="sort" class="sel">
+            <option value="match">Best match</option>
             <option value="low">Price: low to high</option>
             <option value="high">Price: high to low</option>
           </select>
         </label>
+        <label class="tool">Currency <select id="currency" class="sel" aria-describedby="fxnote"></select></label>
       </div>
-    </div>
-    <div class="note">
-      <strong>No product is best for everyone.</strong>
-      Each match percentage reflects only the games, budget and comfort details you entered. A lower-ranked product can still be the right call for you.
-      Prices are typical US street prices checked in October 2026, next to the official list price. Use “Check live prices” before you buy.
-    </div>
+    </header>
+    <p class="note">No product is best for everyone. Matches reflect only what you told us, and popularity never affects a score. <span id="fxnote"></span></p>
     <div id="out"></div>
-  </section>
-</main>
-
-<footer class="foot">
-  Loadout scores products on game fit (what your games demand), comfort (your body and setup) and budget.
-  Popularity is shown for context but never affects a score.
-</footer>
+  </main>
+</div>
 
 <script src="data.js"></script>
 <script src="images.js"></script>
