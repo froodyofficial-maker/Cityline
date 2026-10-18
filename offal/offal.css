@@ -375,3 +375,14 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .cine-list button { text-align: left; padding: 10px 14px; border: 1px solid #3a0a06; color: var(--bone); background: rgba(10,4,4,.6); letter-spacing: .15em; }
 .cine-list button small { display: block; margin-top: 3px; font-size: 11px; letter-spacing: .05em; color: rgba(216,205,184,.5); }
 .cine-list button:hover { border-color: var(--fresh); }
+
+/* touch controls: the stick bottom left, the buttons bottom right, only while playing */
+#touch { position: fixed; inset: 0; pointer-events: none; z-index: 30; display: none; }
+#touch.on { display: block; }
+#touch .t-stick { position: absolute; left: 4vmin; bottom: 6vmin; width: 30vmin; height: 30vmin; border-radius: 50%; border: 2px solid rgba(216,205,184,.25); background: rgba(10,4,4,.25); pointer-events: auto; touch-action: none; }
+#touch .t-stick i { position: absolute; left: 50%; top: 50%; width: 12vmin; height: 12vmin; margin: -6vmin 0 0 -6vmin; border-radius: 50%; background: rgba(216,205,184,.3); }
+#touch .t-pad { position: absolute; right: 3vmin; bottom: 4vmin; display: grid; grid-template-columns: repeat(4, 13vmin); gap: 1.6vmin; pointer-events: auto; }
+#touch .t-pad button, #touch .t-pause { height: 11vmin; border-radius: 2vmin; border: 1px solid rgba(216,205,184,.3); background: rgba(10,4,4,.45); color: rgba(216,205,184,.85); font-size: 2.2vmin; letter-spacing: .1em; touch-action: none; }
+#touch .t-pad button.on { background: rgba(160,10,0,.5); border-color: var(--fresh); }
+#touch .t-pause { position: absolute; right: 3vmin; top: 3vmin; width: 11vmin; pointer-events: auto; }
+body.touch .hud-br { top: 16vmin; bottom: auto; } /* the torch meter, out from under the buttons */

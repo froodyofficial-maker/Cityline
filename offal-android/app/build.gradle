@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'games.offal.nightshift'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'games.offal.nightshift'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.debug } // sideloadable; a Play Store build needs your own key
+    }
+}
+
+// the game itself: the single-file build, copied in fresh each time
+tasks.register('copyGame', Copy) {
+    from "$rootDir/../dist/offal.html"
+    into "$projectDir/src/main/assets"
+}
+preBuild.dependsOn copyGame

@@ -10,6 +10,8 @@ import { Survivor } from './survivor.js';
 import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
 import { applyCrew } from './net.js';
 import { Cinema, SHOTS } from './cinema.js';
+import { initTouch } from './touch.js';
+const TOUCH = !!window.OFFAL_ANDROID || /[?&]android=1/.test(location.search) || matchMedia('(pointer: coarse)').matches; // the Android app, or any touch screen
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
@@ -31,7 +33,7 @@ import { BEATS, ENDING } from './story.js';
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
@@ -269,7 +271,7 @@ function loadFloor(depth, seed) {
   audio.setDepth(depth);
   // weld everything that never moves into a few big meshes (see bake.js), and stop drawing past the fog
   if (!window.__noBake) G.bake = bakeStatic(B.group, [B, G.puzzles, G.hunters, director], B.swingers);
-  camera.far = Math.min(60, 2.4 / scene.fog.density);
+  camera.far = Math.min(60, 2.4 / scene.fog.density) * (save.settings.draw || 1); // the draw distance setting
   camera.updateProjectionMatrix();
 }
 
@@ -1424,6 +1426,8 @@ function fillSettings() {
   UI.$('vol').value = s.vol;
   UI.$('gamma').value = s.gamma;
   UI.$('pix').value = String(s.pix);
+  UI.$('draw').value = String(s.draw ?? 1);
+  UI.$('fps').value = String(s.fps ?? 0);
   UI.$('shake').checked = s.shake;
   for (const id of ['fov', 'beam', 'power']) UI.$(id).value = s[id];
   for (const id of ['invert', 'bob', 'hints']) UI.$(id).checked = s[id];
@@ -1435,7 +1439,7 @@ UI.$('fullscreen').addEventListener('input', () => {
   setFullscreen(save.settings.fullscreen);
 });
 const CHECKS = ['shake', 'invert', 'bob', 'hints'];
-for (const id of ['sens', 'vol', 'gamma', 'pix', 'fov', 'beam', 'power', ...CHECKS]) {
+for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
     const s = save.settings, el = UI.$(id);
     s[id] = CHECKS.includes(id) ? el.checked : +el.value;
@@ -1689,7 +1693,15 @@ function updateReplay(dt) {
 // ---------- boot ----------
 UI.buildDrips();
 refreshMenu();
-if (matchMedia('(pointer: coarse)').matches) UI.$('mobileNote').textContent = '· keyboard and mouse required';
+// phones and tablets: touch controls, and lighter graphics the first time
+if (TOUCH) {
+  document.body.classList.add('touch');
+  initTouch({ look: (dx, dy) => player.look(dx, dy), active: () => G.state === 'play', fire: () => {
+    if (G.mode === 'hunt') { huntSwing(); return; }
+    if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
+  } });
+  if (!save.settings.touchDefaults) { Object.assign(save.settings, { pix: 200, draw: 0.6, fps: 30, touchDefaults: true }); writeSave(); applySettings(); }
+}
 UI.typewrite(UI.$('warnText'), 'This game contains graphic gore, mutilated bodies, sudden loud noises and flashing images.\n\nPlay it in the dark. Wear headphones.\n\nIf you need to stop, press ESC. The plant will wait for you.', 45);
 UI.$('warn').addEventListener('click', () => {
   if (save.settings.fullscreen) setFullscreen(true);
@@ -1703,7 +1715,7 @@ UI.$('warn').addEventListener('click', () => {
 });
 applySettings();
 
-let last = performance.now(), T = 0;
+let last = performance.now(), T = 0, lastDraw = 0;
 // F3: frames per second, and draw calls, top right
 const fps = { on: false, n: 0, t: 0, el: null };
 addEventListener('keydown', (e) => {
@@ -1725,6 +1737,9 @@ function countFrame(now) {
 
 function frame(now) {
   requestAnimationFrame(frame);
+  const cap = save.settings.fps; // the frame rate setting: skip frames that come too soon
+  if (cap && now - lastDraw < 1000 / cap - 2) return;
+  lastDraw = now;
   countFrame(now);
   renderer.info.reset();
   const dt = Math.min(0.05, (now - last) / 1000);
