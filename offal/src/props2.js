@@ -142,7 +142,7 @@ export function curtain(mats, rng, len = 1.9) {
   g.add(at(cu, 0, WALL_H - 0.6 - 1.05, 0));
   if (rng() < 0.6) { // a hand dragged down it
     const { c, g: cg } = canvas(64, 128); cg.fillStyle = `rgba(${BLOOD.dark},.8)`; for (let k = 0; k < 4; k++) cg.fillRect(20 + k * 7, 10, 4, 100 + Math.random() * 18);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.userData.floorOnly = true;
     const smear = mesh(new THREE.PlaneGeometry(0.3, 0.9), new THREE.MeshPhongMaterial({ map: t, transparent: true, depthWrite: false, side: THREE.DoubleSide }), false);
     g.add(at(smear, (rng() - 0.5) * len * 0.6, 1.3, 0.07));
   }

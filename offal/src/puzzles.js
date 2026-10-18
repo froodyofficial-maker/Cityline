@@ -31,6 +31,7 @@ function texOf(c) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.magFilter = THREE.NearestFilter;
+  t.userData.floorOnly = true; // made for one floor's puzzle: freed with the floor (main.js disposeLevel)
   return t;
 }
 function drawSymbol(g, kind, x, y, r, fill) {

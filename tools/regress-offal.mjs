@@ -21,6 +21,15 @@ for (let f = 0; f <= 10; f++) {
     const s2 = o.step(1 / 30, 150); o.findInteract && o.findInteract();
     return { ok: o.G.depth === f && ['play', 'letter'].includes(s2), info: o.G.info.name + ' tags ' + o.G.D.tags + ' lockers ' + o.G.B.lockers.length + ' filled ' + o.G.B.lockers.filter((l) => l.filled).length };`), f);
 }
+// a floor's teardown must only free what was painted for it: a shared texture freed and then drawn again re-uploads
+// from its canvas, and on real GPUs that canvas may be gone (blank walls)
+await check('floor teardown keeps shared textures', new Function(`const enter = ${enter}; const o = window.__offal; let T = null;
+  o.scene.traverse((x) => { if (!T && x.material && x.material.map) T = x.material.map; }); if (!T) enter('story', 1), o.scene.traverse((x) => { if (!T && x.material && x.material.map) T = x.material.map; });
+  let P = Object.getPrototypeOf(T); while (P && !Object.prototype.hasOwnProperty.call(P, 'dispose')) P = Object.getPrototypeOf(P);
+  const gone = new WeakSet(), orig = P.dispose; P.dispose = function () { gone.add(this); return orig.call(this); };
+  let bad = 0;
+  try { for (const f of [3, 3, 4, 6, 8, 3, 7, 1]) { enter('story', f); o.scene.traverse((x) => { for (const m of [].concat(x.material || [])) for (const k in m) if (m[k] && m[k].isTexture && gone.has(m[k])) bad++; }); } } finally { P.dispose = orig; }
+  return { ok: bad === 0, info: bad + ' freed textures back in use' };`));
 await check('next floor via the lift', new Function(`const enter = ${enter}; enter('story', 2); const o = window.__offal; o.nextFloor(); let k = 0; while (o.G.state === 'transition' && k++ < 900) o.updateTransition(0.05); return { ok: o.G.depth === 3 && o.G.state === 'play' };`));
 await check('overtime, hard', new Function(`return (${enter})('overtime', 3, 'hard') === 'play' && window.__offal.step(1 / 30, 200) === 'play' ? { ok: true } : { ok: false };`));
 await check('save + resume mid-floor', new Function(`const enter = ${enter}; enter('story', 4); const o = window.__offal; o.step(1 / 30, 60); o.player.pos.x += 1.5; const x = o.player.pos.x;
