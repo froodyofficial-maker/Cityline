@@ -8,7 +8,8 @@ export class AudioEngine {
 
   init() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
-    const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)(this.lite ? { latencyHint: 'playback' } : undefined)); // phones: bigger buffers, no underruns
+    // phones: half the sample rate (half the work for every sound) and bigger buffers, so it never runs dry and crackles
+    const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)(this.lite ? { latencyHint: 'playback', sampleRate: 22050 } : undefined));
     this.out = ctx.createGain();
     this.out.gain.value = this.volume;
     const comp = ctx.createDynamicsCompressor();
@@ -26,12 +27,12 @@ export class AudioEngine {
     this.mus = this.gain(0.75, this.muffle);
     // a long concrete reverb that everything bleeds into
     this.verb = ctx.createConvolver();
-    this.verb.buffer = this.impulse(3.2, 2.2);
+    this.verb.buffer = this.lite ? this.impulse(1.1, 2.6) : this.impulse(3.2, 2.2); // a long reverb is the heaviest thing here; phones get a short one
     this.verb.connect(this.muffle);
     const send = this.gain(0.45, this.verb);
     this.sfx.connect(send);
     this.mus.connect(this.gain(0.25, this.verb));
-    const len = ctx.sampleRate * 3;
+    const len = ctx.sampleRate * (this.lite ? 1.5 : 3);
     this.white = ctx.createBuffer(1, len, ctx.sampleRate);
     this.brown = ctx.createBuffer(1, len, ctx.sampleRate);
     const w = this.white.getChannelData(0), b = this.brown.getChannelData(0);
@@ -834,6 +835,11 @@ export class AudioEngine {
     };
   }
   flies(pos) {
+    if (this.lite) { // phones: one voice per body, not four
+      const p = this.pan({ ...pos, y: 0.5 }, 1.2, 1.1, this.fliesBus), g = this.gain(0.04, p), bp = this.filter('bandpass', 420, 1.4, g), a = this.osc('sawtooth', 195, bp);
+      a.start();
+      return { stop: () => { a.stop(); p.disconnect(); } };
+    }
     const p = this.pan({ ...pos, y: 0.5 }, 1.2, 1.1, this.fliesBus), g = this.gain(0.05, p), bp = this.filter('bandpass', 420, 1.4, g);
     const a = this.osc('sawtooth', 188, bp), b = this.osc('sawtooth', 203, bp);
     const lfo = this.osc('sine', 9 + Math.random() * 4), lg = this.gain(30);
