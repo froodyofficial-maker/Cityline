@@ -1,7 +1,7 @@
 // The puzzles that stand between you and the lift, on top of the tags:
 //   fuses    - no power: search body bags for fuses, slot them into the fuse box
 //   keypad   - a shutter seals off a wing (with some of the dead in it); the code is scrawled on the walls
-//   scale    - the counterweight is jammed: hang exactly the right weight of meat on the freight scale
+//   scale    - the counterweight is jammed: load enough meat on the freight scale
 //   valves   - steam has locked the brake: find the release order, turn the hissing valves in it
 //   breakers - the finale: pull three kill switches to stop the line, then run for the lift
 //   sluices  - the drains: the lift sump is flooded; open three sluice gates to drain it (and the floor)
@@ -340,7 +340,7 @@ class Scale {
     g.add(this.pile);
     add(g, this.pos.x, this.pos.z, 0);
     B.colliders.push({ x0: this.pos.x - 0.45, z0: this.pos.z - 0.45, x1: this.pos.x + 0.45, z1: this.pos.z + 0.45, hunters: false });
-    // weights: a hidden answer of three or four cuts, and some that are close but wrong
+    // weights: three or four cuts that make the target, and some spares; anything at or over it will do
     const k = G.depth >= 6 ? 4 : 3;
     const pool = [];
     for (let w = 4; w <= 31; w++) pool.push(w);
@@ -363,6 +363,7 @@ class Scale {
       label.position.set(0, cut.position.y + 0.32, 0.05);
       hook.add(cut, label);
       add(hook);
+      hook.userData.swing.still = true; // hangs dead still, so the cut is where you reach for it
       ctx.B.swingers.push(hook);
       this.cuts.push({ w, obj: hook, cut, pos: new THREE.Vector3(x, 1.5, z), where: 'hook' });
     }
@@ -379,10 +380,10 @@ class Scale {
     g.fillRect(0, 0, 256, 128);
     g.font = 'bold 48px "Courier New", monospace';
     g.textAlign = 'center';
-    g.fillStyle = t === this.target ? '#40ff60' : t > this.target ? '#ff2a10' : '#ffb040';
+    g.fillStyle = t >= this.target ? '#40ff60' : '#ffb040';
     g.fillText(`${t}/${this.target}`, 128, 66);
     g.font = '20px "Courier New", monospace';
-    g.fillText(t > this.target ? 'TOO HEAVY' : t === this.target ? 'BALANCED' : 'KG', 128, 104);
+    g.fillText(t >= this.target ? 'ENOUGH' : 'KG', 128, 104);
     this.dial.tex.needsUpdate = true;
   }
   restack() {
@@ -405,7 +406,7 @@ class Scale {
     }
     const t = this.total;
     if (this.carry.length) out.push({ pos: this.pos, range: 1.7, minFacing: 0.2, tap: true, label: `PUT ${this.carry.map((c) => c.w).join(' + ')} KG ON THE SCALE`, use: () => this.put() });
-    else if (this.on.length && t !== this.target) out.push({ pos: this.pos, range: 1.7, minFacing: 0.2, hold: 0.6, label: `HOLD — TAKE THE ${this.on[this.on.length - 1].w} KG CUT BACK OFF`, use: () => {
+    else if (this.on.length && t < this.target) out.push({ pos: this.pos, range: 1.7, minFacing: 0.2, hold: 0.6, label: `HOLD — TAKE THE ${this.on[this.on.length - 1].w} KG CUT BACK OFF`, use: () => {
       const c = this.on.pop();
       c.where = 'hand';
       this.carry.push(c);
@@ -425,12 +426,12 @@ class Scale {
     G.audio.squelch(0.8);
     G.audio.clank(this.pos, 0.5);
     const t = this.total;
-    if (t === this.target) {
+    if (t >= this.target) {
       this.done = true;
       G.audio.powerOn(this.pos);
       G.noise(this.pos, 22, true);
       UI.message('The needle settles. Somewhere below, the counterweight drops free with a bang.', 4);
-    } else UI.message(t > this.target ? `Too heavy: ${t} kg. Take something back off.` : `${t} kg. It needs ${this.target}.`, 3);
+    } else UI.message(`${t} kg. It needs at least ${this.target}.`, 3);
   }
   goals() {
     if (this.done) return [];
@@ -443,8 +444,8 @@ class Scale {
     const hands = this.carry.length ? ` · CARRYING ${this.carry.map((c) => c.w).join('+')} KG` : '';
     return `SCALE ${this.total}/${this.target} KG${hands}`;
   }
-  title() { return `BALANCE THE SCALE — EXACTLY <b>${this.target} KG</b>`; }
-  liftMsg() { return `THE COUNTERWEIGHT IS JAMMED — THE SCALE MUST READ ${this.target} KG`; }
+  title() { return `LOAD THE SCALE — AT LEAST <b>${this.target} KG</b>`; }
+  liftMsg() { return `THE COUNTERWEIGHT IS JAMMED — THE SCALE NEEDS ${this.target} KG`; }
   solve() { this.load({ on: [], carry: [], done: true }); }
   save() { return { on: this.on.map((c) => this.cuts.indexOf(c)), carry: this.carry.map((c) => this.cuts.indexOf(c)), done: this.done }; }
   load(s) {

@@ -15,7 +15,7 @@ const BRIEF = {
   lever: 'Pull the lever and the gate comes down. It takes three seconds, and everything on this floor hears it.\n\nIf he gets in before it closes, he’s in the lift with you.',
   fuses: 'This floor has no power, and the lift won’t run without it.\n\nThe fuses were hidden in the body bags. Search the bags (hold E), then slot the fuses into the fuse box. Q shows the way.',
   keypad: 'A steel shutter seals off part of this floor, and some of the dead are behind it.\n\nThe workers scrawled the code on the walls before he got them. Find all four numbers, then type them into the keypad by the shutter. A wrong code sets off an alarm.',
-  scale: 'The lift’s counterweight is jammed. The freight scale beside the lift has to read an exact weight.\n\nCuts of meat hang around the floor, each tagged in kilograms. You can carry two at a time. Work out which ones add up exactly.',
+  scale: 'The lift’s counterweight is jammed. The freight scale beside the lift needs enough weight on it.\n\nCuts of meat hang around the floor, each tagged in kilograms. You can carry two at a time. Load the scale until it reads the target or more.',
   valves: 'Steam pressure has locked the lift’s brake. Somewhere on this floor is a note with the release order.\n\nFind it, then turn the hissing valves in exactly that order. The wrong valve vents everything, very loudly.',
   drawers: 'This is the morgue. Some of the missing workers were filed away in the freezer banks.\n\nFind the intake log, then pull out the drawers it lists (look straight at the drawer and hold E). Leave every other drawer shut. Not everything in them is finished.',
   sluices: 'The drains. The lift sits in a flooded sump, and it will not move until it is drained.\n\nFind the three sluice gates and wrench them open (hold E). Wading is loud: every step in the water splashes. It gets quieter as the water goes down.',
@@ -24,7 +24,7 @@ const BRIEF = {
   breakers: 'This is the bottom. The line is still running.\n\nPull the three kill switches to stop it. The first one sets off the alarm. When the line stops, both of them will come for you. Get back to the lift and go UP.',
 };
 
-// a puzzle's title cut down to its first clause and its count: 'BALANCE THE SCALE — EXACTLY <b>32 KG</b>' -> 'BALANCE THE SCALE <b>32 KG</b>'
+// a puzzle's title cut down to its first clause and its count: 'LOAD THE SCALE — AT LEAST <b>32 KG</b>' -> 'LOAD THE SCALE <b>32 KG</b>'
 function short(t) {
   const [head, tail = ''] = t.split(' \u2014 ');
   const b = tail.match(/<b>.*?<\/b>/);

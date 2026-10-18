@@ -14,17 +14,33 @@ export function poseForeman(f, s) {
   const stride = Math.min(1, speed / 2.2);
   const run = mode === 'chase';
   const sinP = Math.sin(gait);
-  f.hips.position.y = 1.18 + Math.abs(Math.cos(gait)) * 0.05 * stride - (run ? 0.08 : 0);
+  f.hips.position.y = 1.18 + Math.abs(Math.cos(gait)) * 0.05 * stride;
   f.hips.rotation.y = sinP * 0.12 * stride;
   f.legs.forEach((l, i) => {
     const p = gait + i * Math.PI;
-    l.thigh.rotation.x = Math.sin(p) * (run ? 0.75 : 0.45) * stride - (run ? 0.15 : 0);
-    l.knee.rotation.x = Math.max(0, Math.cos(p)) * (run ? 1.2 : 0.7) * stride + 0.08;
+    l.thigh.rotation.x = Math.sin(p) * 0.45 * stride;
+    l.knee.rotation.x = Math.max(0, Math.cos(p)) * 0.7 * stride + 0.08;
   });
-  const hunch = run ? 0.75 : mode === 'grab' ? 0.35 : 0.5;
+  const hunch = run ? 0.95 : mode === 'grab' ? 0.35 : 0.5;
   f.torso.rotation.x = hunch + Math.sin(t * 1.3) * 0.03;
   f.torso.rotation.z = Math.sin(gait) * 0.06 * stride;
   f.neck.rotation.x = -hunch * 0.7 + (twitch ? twitch.x : 0);
+  if (run) {
+    // the run: a low, lunging lope. Hips dropped, chest thrown forward over long strides, the trailing foot
+    // kicked up high behind as it comes through, the body bouncing twice a stride, head up and locked on you
+    f.hips.rotation.y = sinP * 0.2 * stride;
+    let reach = 0;
+    f.legs.forEach((l, i) => {
+      const p = gait + i * Math.PI;
+      l.thigh.rotation.x = (Math.sin(p) * 0.6 - 0.2) * stride;
+      l.knee.rotation.x = (0.2 + Math.max(0, -Math.cos(p)) * 1.6) * stride + 0.08; // folds as it swings through
+      reach = Math.max(reach, 0.62 * Math.cos(l.thigh.rotation.x) + 0.56 * Math.cos(l.thigh.rotation.x + l.knee.rotation.x));
+    });
+    f.hips.position.y = reach + 0.01; // the lowest foot stays on the floor, so the body rises and drops with the stride
+    f.torso.rotation.x = hunch + Math.sin(gait * 2) * 0.06 * stride;
+    f.torso.rotation.z = sinP * 0.1 * stride;
+    f.neck.rotation.x = -hunch * 0.9 + (twitch ? twitch.x * 0.5 : 0);
+  }
   f.head.rotation.set(twitch ? twitch.y : 0, twitch ? twitch.z : 0, twitch ? twitch.r : 0);
   f.jaw.rotation.x = 0.1 + jawOpen * 0.9;
   if (mode === 'stunned') {
@@ -43,7 +59,8 @@ export function poseForeman(f, s) {
     let sh = -hunch + Math.sin(p) * 0.35 * stride;
     let el = -0.15 - Math.max(0, Math.sin(p)) * 0.3 * stride;
     let side = (i ? -1 : 1) * 0.12;
-    if (run) { sh = -hunch - 0.9 + Math.sin(p) * 0.5; el = -0.5; side = (i ? -1 : 1) * 0.25; }
+    if (run && i === 0) { sh = -hunch - 0.7 + Math.sin(p) * 0.95; el = -0.55 - Math.max(0, Math.sin(p)) * 0.7; side = 0.3; } // the free hand claws forward
+    if (run && i === 1) { sh = -hunch + 0.35 + Math.sin(p) * 0.45; el = -0.3; side = -0.35; } // the hook swung low and back
     if (mode === 'attack' && i === 1) { sh = -hunch - 2.6 + swing * 3.2; el = -0.6 + swing * 0.5; }
     if (mode === 'grab') { sh = -hunch - 1.35; el = -0.35; side = (i ? 1 : -1) * 0.2; }
     a.sh.rotation.set(sh, 0, side);
@@ -426,7 +443,7 @@ export class Hunter {
     }
 
     // animation
-    this.gait += dt * this.speed * 2.6;
+    this.gait += dt * this.speed * (this.state === 'chase' ? 3.1 : 2.6); // a quicker cadence running
     this.twitchT -= dt;
     if (this.twitchT < 0) {
       // the head snaps to odd angles, too fast

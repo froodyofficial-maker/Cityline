@@ -1197,6 +1197,7 @@ function updateLamps(t) {
 function updateSwingers(dt, t) {
   for (const o of G.B.swingers) {
     const s = o.userData.swing;
+    if (s.still) continue;
     // anything big walking past sets them moving
     for (const h of G.hunters) {
       const d = Math.hypot(h.pos.x - o.position.x, h.pos.z - o.position.z);
