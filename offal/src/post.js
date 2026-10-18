@@ -6,10 +6,11 @@ import * as THREE from 'three';
 const frag = /* glsl */ `
 uniform sampler2D tDiffuse;
 uniform vec2 res;
-uniform float time, fear, damage, health, blackout, bright, tear, flash, hidden, warm;
+uniform float time, fear, damage, health, blackout, bright, tear, flash, hidden, warm, soft;
 uniform vec3 tint;
 varying vec2 vUv;
-float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+// a hash without sin(): phones run this at low precision, and the sin() kind turns to a blocky checker there
+float hash(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float bayer(vec2 p){
   vec2 q = mod(p, 4.0);
   float i = q.x + q.y * 4.0;
@@ -53,9 +54,10 @@ void main(){
   col = mix(col, vec3(0.45, 0.0, 0.0), clamp(damage * 0.7 + pulse * 0.35 * (1.0 - v), 0.0, 0.85));
   // grain + dither on the low-res grid
   col += (hash(px + fract(time * 13.0) * 100.0) - 0.5) * (0.07 + fear * 0.08);
-  float d = bayer(px) / 16.0 - 0.5;
+  // soft (phones): no ordered dither and no scanlines; on a small screen at low resolution they read as a big checkerboard
+  float d = (bayer(px) / 16.0 - 0.5) * (1.0 - soft);
   col = floor(col * 24.0 + d + 0.5) / 24.0;
-  col *= 0.94 + 0.06 * sin(uv.y * res.y * 3.14159);
+  col *= mix(0.94 + 0.06 * sin(uv.y * res.y * 3.14159), 1.0, soft);
   col = mix(col, vec3(1.0, 0.92, 0.88), flash);
   col *= 1.0 - blackout;
   gl_FragColor = vec4(col, 1.0);
@@ -67,7 +69,7 @@ export class Post {
     this.height = 300;
     this.rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
     this.u = {
-      tDiffuse: { value: this.rt.texture }, res: { value: new THREE.Vector2(4, 4) }, time: { value: 0 }, fear: { value: 0 }, damage: { value: 0 },
+      tDiffuse: { value: this.rt.texture }, res: { value: new THREE.Vector2(4, 4) }, time: { value: 0 }, soft: { value: 0 }, fear: { value: 0 }, damage: { value: 0 },
       health: { value: 1 }, blackout: { value: 0 }, bright: { value: 1 }, tear: { value: 0 }, flash: { value: 0 }, hidden: { value: 0 },
       tint: { value: new THREE.Vector3(1, 1, 1) }, warm: { value: 0 },
     };

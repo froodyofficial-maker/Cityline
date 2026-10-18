@@ -33,7 +33,7 @@ import { BEATS, ENDING } from './story.js';
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, uiMenu: 100, uiGame: 100, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, tsens: 1, uiMenu: 100, uiGame: 100, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
@@ -114,7 +114,7 @@ function applySettings() {
   G.hints = s.hints;
   resize();
   scaleUI();
-  const show = { sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%', uiMenu: (s.uiMenu ?? 100) + '%', uiGame: (s.uiGame ?? 100) + '%' };
+  const show = { tsens: (s.tsens ?? 1).toFixed(2) + '\u00D7', sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%', uiMenu: (s.uiMenu ?? 100) + '%', uiGame: (s.uiGame ?? 100) + '%' };
   for (const k in show) UI.$(k + 'V').textContent = show[k];
 }
 function resize() {
@@ -1435,6 +1435,7 @@ document.addEventListener('mouseover', (e) => { if (e.target.closest && e.target
 function fillSettings() {
   const s = save.settings;
   UI.$('sens').value = s.sens;
+  UI.$('tsens').value = s.tsens ?? 1;
   UI.$('vol').value = s.vol;
   UI.$('gamma').value = s.gamma;
   UI.$('pix').value = String(s.pix);
@@ -1453,7 +1454,7 @@ UI.$('fullscreen').addEventListener('input', () => {
   setFullscreen(save.settings.fullscreen);
 });
 const CHECKS = ['shake', 'invert', 'bob', 'hints'];
-for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'uiMenu', 'uiGame', 'fov', 'beam', 'power', ...CHECKS]) {
+for (const id of ['sens', 'tsens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'uiMenu', 'uiGame', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
     const s = save.settings, el = UI.$(id);
     s[id] = CHECKS.includes(id) ? el.checked : +el.value;
@@ -1715,8 +1716,9 @@ if (TOUCH) {
   document.body.classList.add('touch');
   audio.lite = true;
   UI.setTouch(true);
+  post.u.soft.value = 1;
   initTouch({
-    look: (dx, dy) => player.look(dx, dy), active: () => G.state === 'play',
+    look: (dx, dy) => { const k = (save.settings.tsens ?? 1) / (player.sens || 1); player.look(dx * k, dy * k); }, active: () => G.state === 'play', // touch has its own sensitivity
     show: () => ({ fire: G.mode === 'hunt' || G.inv.built, breath: !!player.hidden }),
     tap: (id) => { if (id === 'syringe') tapKey('KeyR'); }, // a syringe tapped in the hotbar goes in
     fire: () => {
