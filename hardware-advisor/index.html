@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loadout: Gear Matcher</title>
+<meta name="description" content="Gaming hardware recommendations matched to your games, budget and comfort, with the reasons why.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <div>
+      <h1>Loadout</h1>
+      <p>Gaming gear matched to how <em>you</em> play, with the reasons why.</p>
+    </div>
+  </div>
+  <ul class="promises">
+    <li>Scores ignore popularity</li>
+    <li>No sponsored rankings</li>
+    <li>Results update live</li>
+  </ul>
+</header>
+
+<main class="layout">
+  <form id="prefs" class="prefs" autocomplete="off" onsubmit="return false">
+    <section class="block">
+      <div class="bh"><h2><span class="n">1</span>Games you play</h2><span id="gameCount" class="count"></span></div>
+      <input id="gameSearch" class="search" type="search" placeholder="Search games or genres…" aria-label="Search games">
+      <div id="games" class="chips games"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2><span class="n">2</span>Hardware categories</h2></div>
+      <div id="cats" class="chips"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2><span class="n">3</span>Budget per item</h2></div>
+      <div id="budgets" class="budgets"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2><span class="n">4</span>Platforms</h2></div>
+      <div id="platforms" class="chips"></div>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2><span class="n">5</span>Body and comfort</h2></div>
+      <div class="field"><label>Hand size <small>wrist to middle fingertip</small></label><div class="seg" data-key="hand"></div></div>
+      <div class="field"><label>Mouse grip</label><div class="seg" data-key="grip"></div></div>
+      <div class="field"><label>Dominant hand</label><div class="seg" data-key="handed"></div></div>
+      <div class="field"><label>Mouse weight feel</label><div class="seg" data-key="weight"></div></div>
+      <label class="toggle"><input type="checkbox" data-key="glasses"><span></span>I wear glasses while gaming</label>
+      <label class="toggle"><input type="checkbox" data-key="long"><span></span>I often play 3+ hours at a time</label>
+    </section>
+
+    <section class="block">
+      <div class="bh"><h2><span class="n">6</span>Your setup</h2></div>
+      <div class="field"><label>Desk space</label><div class="seg" data-key="desk"></div></div>
+      <div class="field"><label>Connection</label><div class="seg" data-key="conn"></div></div>
+      <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around other people (keep it quiet)</label>
+    </section>
+
+    <div class="formfoot">
+      <button type="button" id="reset" class="ghost">Reset preferences</button>
+      <a href="#results" class="jump">See results ↓</a>
+    </div>
+  </form>
+
+  <section id="results" class="results" aria-live="polite">
+    <div class="rhead">
+      <div>
+        <h2>Your matches</h2>
+        <p id="summary" class="summary"></p>
+      </div>
+      <div class="rtools">
+        <span id="updated" class="updated">Updated</span>
+        <label class="sort">Sort
+          <select id="sort">
+            <option value="match">Best match for you</option>
+            <option value="low">Price: low to high</option>
+            <option value="high">Price: high to low</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="note">
+      <strong>No product is best for everyone.</strong>
+      Each match percentage reflects only the games, budget and comfort details you entered. A lower-ranked product can still be the right call for you.
+      Prices are approximate street prices and change often.
+    </div>
+    <div id="out"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  Loadout scores products on game fit (what your games demand), comfort (your body and setup) and budget.
+  Popularity is shown for context but never affects a score.
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
