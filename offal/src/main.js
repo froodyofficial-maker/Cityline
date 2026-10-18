@@ -1278,7 +1278,8 @@ function updateSwingers(dt, t) {
 
 function updateWater(dt) {
   const w = G.B && G.B.water;
-  if (w) { w.material.map.offset.x += dt * 0.02; w.material.map.offset.y += dt * 0.035; }
+  // the scum drifts one way, the ripples run another, so the surface never looks painted on
+  if (w) { w.material.map.offset.x += dt * 0.012; w.material.map.offset.y += dt * 0.02; const n = w.material.normalMap; if (n) { n.offset.x -= dt * 0.05; n.offset.y += dt * 0.031; } }
 }
 function updateLockers(dt) {
   for (const lk of G.B.lockers) {

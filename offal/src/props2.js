@@ -50,9 +50,14 @@ function M(mats) {
   }), shininess: 80, specular: 0x444444 });
   p.files = phong({ map: tex(64, 64, (g) => { g.fillStyle = '#c8b890'; g.fillRect(0, 0, 64, 64); for (let i = 0; i < 8; i++) { g.fillStyle = ['#a08a5a', '#8a2a20', '#2a4a7a', '#c8c0a0'][i % 4]; g.fillRect(i * 8, 0, 6, 64); } }), shininess: 4 });
   p.boxes = phong({ map: tex(64, 64, (g) => { g.fillStyle = '#8a6a42'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#3a2a1a'; g.font = 'bold 9px monospace'; g.fillText('HOLLOW', 6, 22); g.fillText('PINES', 6, 34); g.fillText('-20°C', 6, 50); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(0, 28, 64, 4); }), shininess: 4 });
-  const wt = tex(128, 128, (g, w, h) => { g.fillStyle = '#16200e'; g.fillRect(0, 0, w, h); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(120,140,90,${Math.random() * 0.25})`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 6 + Math.random() * 20, 2 + Math.random() * 5, 0, 0, Math.PI * 2); g.stroke(); } });
+  // the water: murky, with scum drifting on it in patches, and a ripple normal map so the torch glints off it
+  const wt = tex(256, 256, (g, w, h) => {
+    g.fillStyle = '#0e130a'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { const x = Math.random() * w, y = Math.random() * h, r = 10 + Math.random() * 40; const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${40 + Math.random() * 30},${44 + Math.random() * 20},${22},${0.25 + Math.random() * 0.3})`); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; for (const dx of [-w, 0, w]) for (const dy of [-h, 0, h]) g.fillRect(x - r + dx, y - r + dy, r * 2, r * 2); }
+    for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(90,96,60,${Math.random() * 0.35})`; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1); } // flecks of scum
+  });
   wt.wrapS = wt.wrapT = THREE.RepeatWrapping;
-  p.water = phong({ map: wt, color: 0x6a7458, transparent: true, opacity: 0.8, shininess: 200, specular: 0xb0b8a0, depthWrite: false });
+  p.water = phong({ map: wt, normalMap: rippleNormals(), normalScale: new THREE.Vector2(0.35, 0.35), color: 0x7a8466, transparent: true, opacity: 0.9, shininess: 260, specular: 0xd0d4c0, depthWrite: false });
   mats.p2 = p;
   return p;
 }
@@ -313,17 +318,61 @@ export function pump(mats, rng) {
   const pipe = mesh(cyl(0.12, 0.12, 2.2, 8), m.pipe); g.add(at(pipe, 0, 2.2 + 0.2, 0));
   return g;
 }
+// a long bone: a shaft swelling to a knuckle at each end (the joints), lying along X
+function longBone(mat, len) {
+  const g = g0();
+  const shaft = mesh(new THREE.CylinderGeometry(0.016, 0.019, len, 6), mat, false);
+  shaft.rotation.z = Math.PI / 2;
+  g.add(shaft);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const k = mesh(sph(0.024, 6), mat, false); k.position.set(sx * len / 2, 0, sz * 0.014); g.add(k); }
+  return g;
+}
+// a skull: the dome, the brow and the face under it, sockets and a nose hole, a few teeth; no jaw
+function skull(mat, rng) {
+  const g = g0();
+  const dome = mesh(sph(0.09, 10), mat, false); dome.scale.set(0.8, 0.85, 1.05); dome.position.set(0, 0.02, -0.01); g.add(dome);
+  const face = mesh(box(0.11, 0.07, 0.06), mat, false); face.position.set(0, -0.035, 0.065); g.add(face);
+  const dark = phong({ color: 0x060404 });
+  for (const sx of [-1, 1]) { const s = mesh(sph(0.022, 6), dark, false); s.scale.set(1, 0.85, 0.6); s.position.set(sx * 0.03, -0.01, 0.092); g.add(s); }
+  const nose = mesh(box(0.016, 0.022, 0.01), dark, false); nose.position.set(0, -0.04, 0.096); g.add(nose);
+  for (let i = 0; i < 6; i++) { if (rng() < 0.3) continue; const t = mesh(box(0.009, 0.014, 0.008), mat, false); t.position.set(-0.025 + i * 0.01, -0.075, 0.088); g.add(t); }
+  return g;
+}
 // where he sleeps, if he sleeps: rags, bones, a mattress, what's left of people
 export function nest(mats, rng) {
   const m = M(mats), g = g0();
   const mat = mesh(box(1.8, 0.15, 0.9), m.rag); g.add(at(mat, 0, 0.075, 0, rng()));
   g.add(decal(mats.pool[(rng() * 3) | 0], 2.6, 0, 0, rng() * 6));
-  for (let i = 0; i < 18; i++) { const b = mesh(cyl(0.02, 0.025, 0.2 + rng() * 0.3, 5), mats.bone, false); b.rotation.set(Math.PI / 2, rng() * 6, (rng() - 0.5)); g.add(at(b, (rng() - 0.5) * 2, 0.05 + rng() * 0.15, (rng() - 0.5) * 2)); }
-  for (let i = 0; i < 3; i++) { const sk = mesh(sph(0.1, 8), mats.bone, false); sk.scale.set(0.85, 1, 1.1); g.add(at(sk, (rng() - 0.5) * 1.8, 0.1, (rng() - 0.5) * 1.8)); const eye = mesh(sph(0.025, 5), mats.black, false); g.add(at(eye, sk.position.x + 0.03, 0.13, sk.position.z + 0.09)); }
+  // the bones: a heap beside the mattress, lying on the floor (long bones, ribs, skulls), older ones darker
+  const boneMats = [mats.bone, phong({ color: 0x9a8a6a, shininess: 18, specular: 0x222218 }), phong({ color: 0x6a5c44, shininess: 10, specular: 0x111111 })];
+  const heap = () => { const r = Math.pow(rng(), 1.6) * 1.1, a = rng() * Math.PI * 2; return [1.25 + Math.cos(a) * r, Math.sin(a) * r * 0.8]; };
+  for (let i = 0; i < 16; i++) { const [x, z] = heap(); g.add(at(longBone(boneMats[(rng() * 3) | 0], 0.22 + rng() * 0.26), x, 0.03 + rng() * 0.03 * (i % 3), z, rng() * 6)); }
+  for (let i = 0; i < 7; i++) { const [x, z] = heap(); const rib = mesh(new THREE.TorusGeometry(0.13 + rng() * 0.05, 0.011, 4, 10, Math.PI * 0.85), boneMats[(rng() * 3) | 0], false); rib.rotation.set(-Math.PI / 2 + (rng() - 0.5) * 0.3, 0, rng() * 6); g.add(at(rib, x, 0.02, z)); }
+  for (let i = 0; i < 3; i++) { const [x, z] = heap(); const sk = skull(boneMats[(rng() * 2) | 0], rng); sk.rotation.set((rng() - 0.5) * 0.5, rng() * 6, (rng() - 0.5) * 0.9); g.add(at(sk, x, 0.085, z, sk.rotation.y)); }
   for (let i = 0; i < 4; i++) g.add(at(meatChunk(mats, rng), (rng() - 0.5) * 2, 0.04, (rng() - 0.5) * 2, rng() * 6));
   g.add(at(severedArm(mats, rng), 0.6, 0.18, -0.2, rng() * 6));
   for (let i = 0; i < 5; i++) { const r = mesh(box(0.3 + rng() * 0.4, 0.04, 0.2 + rng() * 0.3), m.rag, false); g.add(at(r, (rng() - 0.5) * 2.4, 0.03, (rng() - 0.5) * 2.4, rng() * 6)); }
+  g.userData.nest = true;
   return g;
+}
+// a tiling normal map of small overlapping ripples, from a height field of a few wrapped sine waves and noise
+function rippleNormals() {
+  const N = 128, hgt = new Float32Array(N * N);
+  const waves = [];
+  for (let i = 0; i < 9; i++) waves.push([((Math.random() * 6) | 0) + 1, ((Math.random() * 6) | 0) - 3, Math.random() * 6, 0.3 + Math.random() * 0.7]);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let v = 0; for (const [a, b, ph, amp] of waves) v += Math.sin(((a * x + b * y) / N) * Math.PI * 2 + ph) * amp; hgt[y * N + x] = v; }
+  const c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N);
+  const H = (x, y) => hgt[((y + N) % N) * N + ((x + N) % N)];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const dx = (H(x + 1, y) - H(x - 1, y)) * 0.6, dy = (H(x, y + 1) - H(x, y - 1)) * 0.6, l = Math.hypot(dx, dy, 1), i = (y * N + x) * 4;
+    img.data[i] = (-dx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (-dy / l * 0.5 + 0.5) * 255; img.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(4, 4);
+  return t;
 }
 // the water: one sheet over every wet tile, scrolled each frame so it moves
 export function waterSheet(mats, tiles, TILE) {

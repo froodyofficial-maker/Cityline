@@ -787,23 +787,54 @@ export class Cutscene {
     const backLight = new THREE.PointLight(0xfff0e0, 14, 8, 1.5);
     backLight.position.set(0, 2.4, -8.2);
     s.add(backLight);
-    // beyond the door: nothing under you for a very long way
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(10, 160, 10), new THREE.MeshLambertMaterial({ map: m.ceil.map, side: THREE.BackSide }));
-    shaft.position.set(0, -77, -15.01);
-    s.add(shaft);
-    for (let y = -6; y > -150; y -= 9) {
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffd090, fog: false }));
-      l.position.set(-4.9, y, -15 + ((y / 9) % 2 ? 3 : -3));
-      s.add(l);
+    // beyond the door: the inside of the building, a stairwell eight storeys deep, and at the bottom the shredders.
+    // The walls light themselves a little (emissive), so the shape of the place reads even out of the lamps' reach
+    s.fog.density = 0.009;
+    const SH = { x0: -5, x1: 5, z0: -10, z1: -20, top: 5, bot: -44 };
+    const shaftMat = (map, rx, ry, tint) => { const t = map.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.needsUpdate = true; return new THREE.MeshLambertMaterial({ map: t, emissiveMap: t, emissive: tint, color: 0xb8aa98 }); };
+    const brick = shaftMat(m.walls[3].map, 4, 18, 0x3a2e24), conc = shaftMat(m.walls[1].map, 4, 18, 0x2e2a26);
+    const H = SH.top - SH.bot, cy = (SH.top + SH.bot) / 2;
+    for (const [w, x, z, ry, mat] of [[10, 0, SH.z1, 0, brick], [10, SH.x0, -15, Math.PI / 2, conc], [10, SH.x1, -15, -Math.PI / 2, conc]]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, H), mat); pl.position.set(x, cy, z); pl.rotation.y = ry; s.add(pl); }
+    // the door wall, from the shaft side (with the doorway left open)
+    for (const [x, w] of [[-3, 4], [3, 4]]) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, H), conc); pl.position.set(x, cy, SH.z0 - 0.02); pl.rotation.y = Math.PI; s.add(pl); }
+    const under = new THREE.Mesh(new THREE.PlaneGeometry(2, -SH.bot), conc); under.position.set(0, SH.bot / 2, SH.z0 - 0.02); under.rotation.y = Math.PI; s.add(under);
+    // every storey: a landing round three sides with a railing, doorways off it, a caged lamp and a pipe run
+    const slab = new THREE.MeshLambertMaterial({ color: 0x6a645a, emissive: 0x1a1814 });
+    const rail = new THREE.MeshLambertMaterial({ color: 0x8a6a2a, emissive: 0x2a1e0a });
+    const doorDark = new THREE.MeshBasicMaterial({ color: 0x050404 });
+    const lampM = new THREE.MeshBasicMaterial({ color: 0xffd8a0, fog: false });
+    for (let y = -2; y > SH.bot + 6; y -= 5) {
+      const back = mesh(new THREE.BoxGeometry(10, 0.25, 1.4), slab, false); back.position.set(0, y, SH.z1 + 0.7); s.add(back);
+      for (const sx of [-1, 1]) { const side = mesh(new THREE.BoxGeometry(1.4, 0.25, 8.6), slab, false); side.position.set(sx * 4.3, y, -15.7); s.add(side); }
+      const r1 = mesh(new THREE.BoxGeometry(7.2, 0.05, 0.05), rail, false); r1.position.set(0, y + 1, SH.z1 + 1.4); s.add(r1);
+      for (let x = -3.5; x <= 3.5; x += 1) { const post = mesh(new THREE.BoxGeometry(0.04, 1, 0.04), rail, false); post.position.set(x, y + 0.5, SH.z1 + 1.4); s.add(post); }
+      for (const sx of [-1, 1]) { const r2 = mesh(new THREE.BoxGeometry(0.05, 0.05, 7.2), rail, false); r2.position.set(sx * 3.6, y + 1, -15.4); s.add(r2); }
+      for (const x of [-2.6, 2.4]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.1), doorDark); d.position.set(x, y + 1.18, SH.z1 + 0.01); s.add(d); }
+      const lmp = mesh(new THREE.BoxGeometry(0.35, 0.18, 0.12), lampM, false); lmp.position.set(-0.2, y + 2.6, SH.z1 + 0.08); s.add(lmp);
+      const pipe = mesh(new THREE.CylinderGeometry(0.12, 0.12, 10, 8), rail, false); pipe.rotation.z = Math.PI / 2; pipe.position.set(0, y + 3.4, SH.z1 + 0.2); s.add(pipe);
     }
-    const deep = new THREE.PointLight(0xffa060, 80, 120, 1);
-    deep.position.set(0, -60, -15);
-    s.add(deep);
+    const mid = new THREE.PointLight(0xffd8b0, 40, 30, 1.2); mid.position.set(0, -14, -16); s.add(mid);
+    // the bottom: the shredders. Two drums of teeth turning into each other, in a pit of what's gone before
+    const floorB = mesh(new THREE.BoxGeometry(10, 0.4, 10), new THREE.MeshLambertMaterial({ color: 0x3a1410, emissive: 0x1a0604 }), false); floorB.position.set(0, SH.bot, -15); s.add(floorB);
+    const steel = new THREE.MeshPhongMaterial({ color: 0x8a8a84, shininess: 90, specular: 0x888888, emissive: 0x141414 });
+    const bloodSteel = new THREE.MeshPhongMaterial({ color: 0x6a1410, shininess: 60, specular: 0x552222, emissive: 0x1a0402 });
+    this.shredders = [-1, 1].map((sz) => {
+      const r = new THREE.Group();
+      r.position.set(0, SH.bot + 1.6, -15 + sz * 1.15);
+      const drum = mesh(new THREE.CylinderGeometry(1.0, 1.0, 8, 16), steel, false); drum.rotation.z = Math.PI / 2; r.add(drum);
+      for (let k = 0; k < 7; k++) for (let a = 0; a < 10; a++) { const tooth = mesh(new THREE.BoxGeometry(0.16, 0.5, 0.22), (a + k) % 3 ? steel : bloodSteel, false); const ang = (a / 10) * Math.PI * 2 + k * 0.3; tooth.position.set(-3.4 + k * 1.13, Math.cos(ang) * 1.1, Math.sin(ang) * 1.1); tooth.rotation.x = ang; r.add(tooth); }
+      s.add(r);
+      return r;
+    });
+    for (const sx of [-1, 1]) { const hop = mesh(new THREE.BoxGeometry(0.3, 4, 5), bloodSteel, false); hop.position.set(sx * 4.2, SH.bot + 2, -15); hop.rotation.z = sx * 0.35; s.add(hop); }
+    const glow = new THREE.PointLight(0xff6a30, 70, 40, 1.1); glow.position.set(0, SH.bot + 3.5, -15); s.add(glow);
+    const glow2 = new THREE.PointLight(0xff2a10, 60, 25, 1.3); glow2.position.set(0, SH.bot + 0.8, -15); s.add(glow2);
     this.him.root.position.set(0, 0, 2.6);
     this.him.root.rotation.y = Math.PI;
   }
   exitUpdate() {
     const t = this.t;
+    for (const [i, r] of this.shredders.entries()) r.rotation.x += (i ? -1 : 1) * 0.06; // turning into each other
     const head = this.headPos();
     if (t < 2) {
       // walking to the door. it's right there.
@@ -846,8 +877,10 @@ export class Cutscene {
       this.him.root.position.set(0, 0, -9.7);
       this.pose({ mode: 'grab', jaw: 0.4, twitch: { x: 0.6, y: 0, z: 0, r: 0 } });
       head.y += 0.1;
-      this.cam.lookAt(t < 5.9 ? V(0, -30, -15) : head);
-      this.cam.rotation.z += Math.sin(t * 3) * 0.3;
+      // up at him in the doorway as you fall; then, the last second, down at what you're falling into
+      const below = V(0, -42, -15), down2 = ease((t - 7.5) / 0.5);
+      this.cam.lookAt(t < 5.9 ? V(0, -30, -15) : head.clone().lerp(below, down2));
+      this.cam.rotation.z += Math.sin(t * 3) * 0.3 * (1 - down2);
       this.at(5.8, 'wind', () => { this.audio.windRush(3.2, 1); this.audio.scream(); });
       this.at(8.6, 'land', () => { this.audio.crack(); this.audio.squelch(2); this.blackout = 1; });
       this.fear = 0.9;
