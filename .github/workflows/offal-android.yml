@@ -1,0 +1,28 @@
+# Builds the OFFAL Android app (APK) on GitHub's servers, which have the Android SDK.
+# Download it from the run's page under Artifacts: "OFFAL-android".
+name: OFFAL Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/cool-euler-bkrns1]
+    paths: ['offal/**', 'offal-android/**', 'dist/offal.html', '.github/workflows/offal-android.yml']
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.14.3' }
+      - name: Build the game (dist/offal.html)
+        run: npm ci && node tools/build-offal.mjs
+      - name: Build the APK
+        working-directory: offal-android
+        run: gradle assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OFFAL-android
+          path: offal-android/app/build/outputs/apk/release/*.apk
