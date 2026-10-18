@@ -33,7 +33,7 @@ import { BEATS, ENDING } from './story.js';
 const SAVE_KEY = 'offal-save-v1';
 const save = (() => {
   const fresh = { v: 1, runs: [], best: 0, deaths: 0, totalTags: 0, shifts: 0,
-    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
+    story: { active: false, floor: 1, seed: 0, deaths: 0, time: 0, tags: 0, done: 0, bestTime: 0, inv: null }, collection: { keep: [], cuts: [] }, settings: { dev: false, devPresolve: true, sens: 1, vol: 0.8, gamma: 1, pix: 300, draw: 1, fps: 0, ui: 0, shake: true, fov: 75, invert: false, bob: true, beam: 0.55, power: 160, hints: true, fullscreen: true } };
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
     if (s && s.v === 1) return { ...fresh, ...s, story: { ...fresh.story, ...s.story }, collection: { ...fresh.collection, ...s.collection }, settings: { ...fresh.settings, ...s.settings } };
@@ -113,6 +113,7 @@ function applySettings() {
   G.bobScale = s.bob ? 1 : 0;
   G.hints = s.hints;
   resize();
+  scaleUI();
   const show = { sens: s.sens.toFixed(2) + '\u00D7', fov: s.fov + '\u00B0', gamma: Math.round(s.gamma * 100) + '%', vol: Math.round(s.vol * 100) + '%', beam: Math.round(s.beam * 114.6) + '\u00B0', power: Math.round(s.power / 1.6) + '%' };
   for (const k in show) UI.$(k + 'V').textContent = show[k];
 }
@@ -125,7 +126,14 @@ function resize() {
   menu.cam.updateProjectionMatrix();
   post.resize(w, h);
 }
-addEventListener('resize', resize);
+addEventListener('resize', () => { resize(); scaleUI(); });
+// the interface size: everything on the screens (menus, panels, the HUD) scales together. Auto fits it to the
+// screen it's on: full size on a monitor, smaller on a phone held sideways.
+function scaleUI() {
+  const want = +save.settings.ui || 0;
+  const z = want || Math.max(0.45, Math.min(1, innerHeight / 760, innerWidth / 1280));
+  for (const el of document.querySelectorAll('.screen > *')) el.style.zoom = z;
+}
 
 // ---------- menu backdrop: a swinging lamp, meat on hooks, and sometimes him ----------
 const menu = (() => {
@@ -1427,6 +1435,7 @@ function fillSettings() {
   UI.$('gamma').value = s.gamma;
   UI.$('pix').value = String(s.pix);
   UI.$('draw').value = String(s.draw ?? 1);
+  UI.$('ui').value = String(s.ui ?? 0);
   UI.$('fps').value = String(s.fps ?? 0);
   UI.$('shake').checked = s.shake;
   for (const id of ['fov', 'beam', 'power']) UI.$(id).value = s[id];
@@ -1439,7 +1448,7 @@ UI.$('fullscreen').addEventListener('input', () => {
   setFullscreen(save.settings.fullscreen);
 });
 const CHECKS = ['shake', 'invert', 'bob', 'hints'];
-for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'fov', 'beam', 'power', ...CHECKS]) {
+for (const id of ['sens', 'vol', 'gamma', 'pix', 'draw', 'fps', 'ui', 'fov', 'beam', 'power', ...CHECKS]) {
   UI.$(id).addEventListener('input', () => {
     const s = save.settings, el = UI.$(id);
     s[id] = CHECKS.includes(id) ? el.checked : +el.value;

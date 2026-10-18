@@ -395,3 +395,5 @@ body.touch .tasks { top: 19vmin; }
 #touch .t-tasks { top: 12vmin; }
 body.touch .tasks { top: 22vmin; }
 body.touch #hotbar kbd { display: none; } /* no keys on a phone */
+/* long panels scroll on short screens, so nothing ends up out of reach */
+.panel-screen.on, #menu.on { overflow-y: auto; align-items: safe center; }
