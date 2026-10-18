@@ -4,7 +4,7 @@
 // at the bottom; Overtime is the endless version where dying sends you back to B1.
 import * as THREE from 'three';
 import { makeMaterials } from './textures.js';
-import { makeLayout, buildLevel, lineOfSight, toTile, findPath, collide, inCrawl } from './level.js';
+import { makeLayout, buildLevel, lineOfSight, toTile, findPath, collide } from './level.js';
 import { Puzzles } from './puzzles.js';
 import { Survivor } from './survivor.js';
 import { Cinema, SHOTS } from './cinema.js';
@@ -1297,12 +1297,6 @@ function updateGame(dt, t) {
   storyBeats();
   updateWater(dt);
   audio.setMuffle(!!player.hidden); // follows you in and out, whatever path got you there
-  // walking up to a crouchway standing: say how to get in (once in a while, not every time)
-  G.crawlHintT = Math.max(0, (G.crawlHintT || 0) - dt);
-  if (!player.crouch && !player.hidden && G.crawlHintT <= 0) {
-    const ax = player.pos.x - Math.sin(player.yaw) * 0.9, az = player.pos.z - Math.cos(player.yaw) * 0.9;
-    if (inCrawl(G.L, ax, az)) { UI.message('A crouchway. Press C to crouch and crawl in. He can\u2019t follow you in there.', 3.5); G.crawlHintT = 25; }
-  }
   G.saveT -= dt;
   if (G.saveT < 0) { G.saveT = 4; saveSnapshot(); }
   G.lampKill -= dt;

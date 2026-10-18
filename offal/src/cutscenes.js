@@ -1744,104 +1744,154 @@ export class Cutscene {
     if (i < 2) return this.you.arms[i].userData.hand.getWorldPosition(out);
     return this.you.legs[i - 2].userData.boot.getWorldPosition(out);
   }
+  // where to stand, and how far to raise arm `j`, for that hand to close on `target`: a few rounds of
+  // "raise or lower the arm by how far off the hand is, then step so the hand is over it"
+  rackReach(j, target) {
+    const f = this.him, root = f.root;
+    // always from the far side of the table, square on to it (facing the camera), never in the table
+    root.position.set(target.x, 0, -0.95);
+    root.rotation.y = 0;
+    let rx = -1.2;
+    const hand = V();
+    for (let k = 0; k < 12; k++) {
+      this.pose({ mode: 'walk', jaw: 0.4 });
+      f.torso.rotation.x = 0.55;
+      f.arms[j].sh.rotation.set(rx, 0, 0);
+      f.arms[j].el.rotation.x = -0.15;
+      this.handPos(j, hand);
+      rx = Math.max(-2.6, Math.min(0, rx + (hand.y - target.y) * 0.9));
+      root.position.x += target.x - hand.x;
+      root.position.z = Math.min(-0.62, root.position.z + (target.z - hand.z));
+    }
+    return { x: root.position.x, z: root.position.z, ry: 0, rx };
+  }
   rackUpdate(dt) {
     const t = this.t, you = this.you, f = this.him;
-    // the crank: slow, then faster, then he leans into it
-    const crank = t < 1.5 ? 0.8 : t < 4 ? 1.6 + (t - 1.5) * 0.6 : 3.5;
-    if (t < 6.8) this.drum.rotation.z -= dt * crank;
-    const pull = clamp01((t - 0.8) / 3.4); // how far you've been stretched before things start to give
+    // the crank turns until he lets go of it: slow, then faster
+    const crank = t < 1.5 ? 0.8 : 1.6 + (t - 1.5) * 0.6;
+    if (t < 3.9) this.drum.rotation.z -= dt * crank;
+    const pull = clamp01((t - 0.8) / 3.1);
     // stretched: every limb a little longer, the body taut, the head thrown back screaming
     you.arms.forEach((a, i) => { if (!this.torn[i]) a.scale.y = 1 + pull * 0.32; });
-    you.legs.forEach((l, i) => { if (!this.torn[2 + i]) l.scale.y = 1 + pull * 0.22; });
+    you.legs.forEach((l, i) => { l.scale.y = 1 + pull * 0.22; });
     you.torso.scale.y = 1 + pull * 0.08;
-    you.head.rotation.x = -0.4 - pull * 0.4 + Math.sin(t * 13) * 0.08 * (1 - clamp01((t - 6.3) / 0.5));
+    you.head.rotation.x = -0.4 - pull * 0.4 + Math.sin(t * 13) * 0.08 * (1 - clamp01((t - 6.5) / 0.5));
     you.jaw.rotation.x = 0.3 + pull * 0.6;
-    if (t < 6.4) you.root.position.x = 0.15 + Math.sin(t * 17) * 0.015 * pull; // straining
-    // him turning the wheel, both hands on the pegs
-    this.pose({ mode: 'walk', jaw: 0.25 + pull * 0.3, twitch: this.twitch(0.12) });
-    const ph = -this.drum.rotation.z;
-    f.torso.rotation.x = 0.6 + pull * 0.25;
-    f.arms[0].sh.rotation.set(-1.2 + Math.sin(ph) * 0.45, 0, 0.3);
-    f.arms[1].sh.rotation.set(-1.2 + Math.sin(ph + 0.6) * 0.45, 0, -0.1);
-    f.arms.forEach((a) => (a.el.rotation.x = -0.5 + Math.cos(ph) * 0.3));
-    // the chains run from each wrist and ankle to the drum or the post
+    you.root.position.x = 0.15 + Math.sin(t * 17) * 0.015 * pull * (t < 6.5 ? 1 : 0); // straining
+    // the chains run from each wrist and ankle to the drum or the post; an arm torn off leaves its chain slack
     const anchors = [V(-1.55, 1.05, 0.12), V(-1.55, 1.05, -0.12), V(1.5, 1.0, 0.12), V(1.5, 1.0, -0.12)];
     const e = V();
     this.chains.forEach((c, i) => {
       const a = anchors[i];
-      if (this.torn[i]) { // slack: hanging off the anchor
-        c.position.set(a.x + (i < 2 ? 0.05 : -0.05), a.y - 0.25, a.z);
-        c.quaternion.identity();
-        c.scale.y = 0.5;
-        return;
-      }
+      if (this.torn[i]) { c.position.set(a.x + 0.05, a.y - 0.25, a.z); c.quaternion.identity(); c.scale.y = 0.5; return; }
       this.rackEnd(i, e);
       c.position.copy(a).add(e).multiplyScalar(0.5);
       const d = e.clone().sub(a);
       c.scale.y = d.length();
       c.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
     });
-    // and then they give, one after another
-    const tear = (i, at, key) => this.at(at, key, () => {
-      const p = this.rackEnd(i);
-      this.torn[i] = true;
-      const limb = i < 2 ? you.arms[i] : you.legs[i - 2];
-      limb.visible = false;
-      const st = stump(this.mats, i < 2 ? 0.05 : 0.07);
-      st.position.copy(limb.position);
-      st.rotation.z = i < 2 ? 0 : Math.PI;
-      (i < 2 ? you.torso : you.root).add(st);
-      this.audio.crack();
-      this.audio.squelch(1.6);
-      this.audio.tear();
-      this.shake = 1.2;
-      this.flash = 0.25;
-      const piece = i < 2 ? severedArm(this.mats, Math.random) : severedArm(this.mats, Math.random);
-      if (i >= 2) piece.scale.set(1.3, 1.3, 1.3);
-      const toward = (i < 2 ? V(-1, 0.5, 0) : V(1, 0.5, 0));
-      this.gore.burst(p, 10, 3, 0.7, [piece]);
-      this.gore.spray(p, toward.clone().negate().add(V(0, 0.8, 0)), 120, 4, 0.5);
-      this.gore.spray(p, V(0, 1, 0), 60, 3, 0.8);
-      this.scene.add(decal(this.mats.splat[(Math.random() * 4) | 0], 1.2, p.x + (Math.random() - 0.5) * 0.5, p.z + (Math.random() - 0.5) * 0.5, Math.random() * 6, 0.012));
-    });
+    // him: at the wheel on the far side; then round to the head of the table, and the arms come off in his hands
+    const WHEEL = { x: -1.95, z: -0.7, ry: Math.atan2(0.33, 0.7) };
+    const RIPS = (this.rips ||= [{ i: 0, j: 0, reach: 4.0, rip: 4.75, toss: 5.35 }, { i: 1, j: 1, reach: 5.45, rip: 6.05, toss: 6.6 }]);
+    let posed = false;
+    if (t < 3.9) {
+      f.root.position.set(WHEEL.x, 0, WHEEL.z);
+      f.root.rotation.y = WHEEL.ry;
+      this.pose({ mode: 'walk', jaw: 0.25 + pull * 0.3, twitch: this.twitch(0.12) });
+      const ph = -this.drum.rotation.z;
+      f.torso.rotation.x = 0.6 + pull * 0.25;
+      f.arms[0].sh.rotation.set(-1.2 + Math.sin(ph) * 0.45, 0, 0.3);
+      f.arms[1].sh.rotation.set(-1.2 + Math.sin(ph + 0.6) * 0.45, 0, -0.1);
+      f.arms.forEach((a) => (a.el.rotation.x = -0.5 + Math.cos(ph) * 0.3));
+      posed = true;
+    }
+    for (const r of RIPS) {
+      if (t < r.reach || posed) continue;
+      // the first time: work out where he has to stand to take hold of that wrist
+      if (!r.at) { const from = { x: f.root.position.x, z: f.root.position.z, ry: f.root.rotation.y }; r.at = this.rackReach(r.j, this.rackEnd(r.i)); r.from = from; }
+      const next = RIPS[RIPS.indexOf(r) + 1];
+      if (next && t >= next.reach) continue;
+      const k = ease((t - r.reach) / (r.rip - r.reach - 0.1));
+      f.root.position.set(lerp(r.from.x, r.at.x, k), 0, lerp(r.from.z, r.at.z, k));
+      f.root.rotation.y = lerp(r.from.ry, r.at.ry, k);
+      this.pose({ mode: 'walk', gait: t * 6, speed: (1 - k) * 1.6, jaw: 0.5, twitch: this.twitch(0.1) });
+      f.torso.rotation.x = 0.55;
+      const other = f.arms[1 - r.j];
+      other.sh.rotation.set(-0.4, 0, (r.j ? 1 : -1) * 0.2);
+      // reaching in; then the wrench back and up with it; then it goes over his shoulder
+      const yank = ease((t - r.rip) / 0.35), throwK = ease((t - r.toss + 0.25) / 0.25);
+      const arm = f.arms[r.j];
+      arm.sh.rotation.set(lerp(-0.4, r.at.rx, k) + (r.at.rx < -1.5 ? 0.6 : 0.3) * yank - 1.4 * yank * (1 - throwK) - 0.9 * throwK, 0, (r.j ? -1 : 1) * 0.15 * yank);
+      arm.el.rotation.x = -0.15 - 0.6 * yank;
+      f.torso.rotation.x = 0.55 - 0.3 * yank + 0.25 * throwK;
+      posed = true;
+      this.at(r.reach + 0.1, 'step' + r.i, () => this.audio.thud({ x: f.root.position.x, y: 0, z: f.root.position.z }, 0.6));
+      this.at(r.rip, 'rip' + r.i, () => {
+        const limb = you.arms[r.i], p = this.rackEnd(r.i);
+        const sh = limb.getWorldPosition(V());
+        this.torn[r.i] = true;
+        arm.hand.attach(limb); // it comes away in his hand
+        const st = stump(this.mats, 0.05);
+        st.position.copy(you.torso.worldToLocal(sh.clone()));
+        you.torso.add(st);
+        this.audio.crack();
+        this.audio.squelch(1.6);
+        this.audio.tear();
+        this.audio.scream();
+        this.shake = 1.2;
+        this.flash = 0.25;
+        this.gore.spray(sh, V(0, 0.9, -0.4), 120, 4, 0.5);
+        this.gore.spray(sh, V(0, 1, 0), 60, 3, 0.8);
+        this.gore.burst(sh, 10, 3, 0.7);
+        this.scene.add(decal(this.mats.splat[(Math.random() * 4) | 0], 1.2, p.x, p.z, Math.random() * 6, 0.012));
+      });
+      this.at(r.toss, 'toss' + r.i, () => {
+        const limb = you.arms[r.i];
+        this.scene.attach(limb);
+        (this.thrown ||= []).push({ o: limb, v: V(0.6, 2.2, 1.6 - r.i * 0.6), spin: V(6, 2, 4) });
+        this.audio.whoosh(limb.getWorldPosition(V()));
+      });
+    }
+    // the arms he's thrown: over the table, and down on the concrete with a slap
+    for (const th of this.thrown || []) {
+      if (th.rest) continue;
+      th.v.y -= 9.8 * dt;
+      th.o.position.addScaledVector(th.v, dt);
+      th.o.rotation.x += th.spin.x * dt; th.o.rotation.y += th.spin.y * dt; th.o.rotation.z += th.spin.z * dt;
+      if (th.o.position.y < 0.08 && th.v.y < 0) { th.o.position.y = 0.08; th.rest = true; th.o.rotation.x = Math.PI / 2; this.audio.squelch(0.7); this.scene.add(decal(this.mats.splat[(Math.random() * 4) | 0], 0.9, th.o.position.x, th.o.position.z, Math.random() * 6, 0.012)); }
+    }
+    // the stumps keep pumping
+    if (t > 4.75 && t < 8 && Math.random() < dt * 10) { const i = Math.random() < 0.5 ? 0 : 1; if (this.torn[i]) this.gore.spray(you.torso.getWorldPosition(V()).add(V(-0.25, 0.05, 0)), V(0, 0.6, 0), 10, 2, 0.6); }
     this.at(1.2, 'creak1', () => this.audio.creak({ x: -1.6, y: 1, z: 0 }));
     this.at(2.3, 'scream', () => this.audio.scream());
     this.at(2.8, 'creak2', () => this.audio.chainRattle({ x: 0, y: 1, z: 0 }));
     this.at(3.6, 'creak3', () => this.audio.creak({ x: 0, y: 1, z: 0 }));
-    tear(0, 4.2, 't0');
-    tear(3, 5.0, 't3');
-    tear(1, 5.7, 't1');
-    tear(2, 6.2, 't2');
-    if (t > 6.2) { // what's left drops onto the slab, and keeps bleeding
-      you.root.position.y = Math.max(0.98, you.root.position.y - dt * 0.6);
-      if (Math.random() < dt * 8) this.gore.spray(you.root.getWorldPosition(V()), V(0, -0.4, 0.4), 6, 1, 0.6);
-    }
-    if (t > 4.2 && t < 7 && Math.random() < dt * 10) {
-      const i = (Math.random() * 4) | 0;
-      if (this.torn[i]) this.gore.spray(this.rackEnd(i), V(0, 0.6, 0), 10, 2, 0.6);
-    }
-    // camera: from the foot of the table, slowly coming in; then low and close; then onto his face
+    // camera: from the foot of the table, slowly coming in; then across the table at him; then onto his face
     if (t < 4) {
       const k = t / 4;
-      this.cam.position.set(lerp(2.4, 1.6, k), lerp(2.1, 1.9, k), lerp(2.1, 1.5, k));
+      this.cam.position.set(lerp(2.4, 1.6, k), lerp(2.1, 1.9, k), lerp(2.1, 1.6, k));
       this.cam.lookAt(-0.3, 1.0, 0);
-    } else if (t < 6.8) {
-      const k = (t - 4) / 2.8;
-      this.cam.position.set(lerp(1.5, 0.9, k), lerp(1.45, 1.6, k), lerp(1.9, 1.7, k));
-      this.cam.lookAt(-0.3, 1.0, 0);
+    } else if (t < 6.9) {
+      const k = (t - 4) / 2.9;
+      this.cam.position.set(lerp(1.5, 0.9, k), lerp(1.75, 1.85, k), lerp(1.9, 1.75, k));
+      this.cam.lookAt(lerp(-0.6, -0.9, k), 1.25, -0.3);
     } else {
-      // he stops, and turns to look at you
-      const look = ease((t - 6.8) / 0.3);
-      f.root.rotation.y = lerp(Math.PI * 0.7, Math.atan2(this.cam.position.x - f.root.position.x, this.cam.position.z - f.root.position.z), look);
-      f.torso.rotation.x = lerp(0.85, 0.4, look);
-      f.jaw.rotation.x = 0.95;
-      this.at(6.8, 'stare', () => { this.audio.jumpscare(0.7); this.flash = 0.4; });
+      // he stops, and turns to look at you: the camera comes in to his face, and stops short of it
+      const hold = f.root.rotation.y;
+      const look = ease((t - 6.9) / 0.3);
+      if (!this.faceFrom) this.faceFrom = { cam: this.cam.position.clone(), ry: hold };
+      f.root.rotation.y = lerp(this.faceFrom.ry, Math.atan2(this.faceFrom.cam.x - f.root.position.x, this.faceFrom.cam.z - f.root.position.z), look);
+      this.pose({ mode: 'walk', jaw: 0.95, twitch: this.twitch(0.15) });
+      f.torso.rotation.x = 0.4;
+      this.at(6.9, 'stare', () => { this.audio.jumpscare(0.7); this.flash = 0.4; });
       const hp = this.headPos();
-      this.cam.position.lerp(hp, ease((t - 6.9) / 1.4) * 0.5);
+      const away = this.faceFrom.cam.clone().sub(hp).normalize();
+      const stop = hp.clone().addScaledVector(away, 0.55); // no closer than this: his face fills the frame
+      this.cam.position.lerpVectors(this.faceFrom.cam, stop, ease((t - 7.0) / 1.3));
       this.cam.lookAt(hp);
     }
     this.fear = 0.55 + pull * 0.45;
-    this.at(8.6, 'black', () => (this.blackout = 1));
+    this.at(8.9, 'black', () => (this.blackout = 1));
   }
 
   // ---------- 5: eaten (third person) ----------

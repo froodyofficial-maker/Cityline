@@ -270,12 +270,31 @@ export function pipeRun(mats, len, rng) {
   if (rng() < 0.5) { const drip1 = mesh(cyl(0.004, 0.004, 2.0, 4), m.slime, false); g.add(at(drip1, (rng() - 0.5) * len * 0.6, 1.1, 0.3)); }
   return g;
 }
+// a drain pipe coming out of the wall: a rusted lip a hand's width proud of the brick with a bolted flange where it
+// meets it, a throat that goes back into the dark, and what runs out of it staining the wall and pooling below
 export function outflow(mats, rng) {
-  const m = M(mats), g = g0();
-  const p = mesh(cyl(0.35, 0.35, 0.6, 12), m.pipe); p.rotation.x = Math.PI / 2; g.add(at(p, 0, 0.6, 0.3));
-  const hole = mesh(cyl(0.29, 0.29, 0.62, 12), new THREE.MeshBasicMaterial({ color: 0x050504 }), false); hole.rotation.x = Math.PI / 2; g.add(at(hole, 0, 0.6, 0.31));
-  const stream = mesh(box(0.25, 0.6, 0.04), phong({ color: rng() < 0.4 ? 0x401008 : 0x3a4020, transparent: true, opacity: 0.8, shininess: 120 }), false);
-  stream.rotation.x = 0.4; g.add(at(stream, 0, 0.25, 0.7));
+  const g = g0(), R = 0.34, Y = 0.62;
+  const rust = mats.rust[1].clone();
+  rust.side = THREE.DoubleSide;
+  const lip = mesh(new THREE.CylinderGeometry(R, R, 0.42, 18, 1, true), rust);
+  lip.rotation.x = Math.PI / 2; g.add(at(lip, 0, Y, 0.21));
+  const rim = mesh(new THREE.TorusGeometry(R, 0.022, 6, 22), mats.rust[2], false); g.add(at(rim, 0, Y, 0.42));
+  const flange = mesh(new THREE.TorusGeometry(R + 0.06, 0.045, 6, 22), mats.rust[2]); g.add(at(flange, 0, Y, 0.02));
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + 0.2; const bolt = mesh(box(0.04, 0.04, 0.05), mats.rust[0], false); g.add(at(bolt, Math.cos(a) * (R + 0.07), Y + Math.sin(a) * (R + 0.07), 0.06)); }
+  // the throat: lit only at the mouth, black a little way in (all of it in front of the wall, or the wall hides it)
+  const throat = mesh(new THREE.CylinderGeometry(R - 0.015, R - 0.015, 0.4, 18, 1, true), phong({ color: 0x0e0c08, side: THREE.BackSide, shininess: 30 }), false);
+  throat.rotation.x = Math.PI / 2; g.add(at(throat, 0, Y, 0.22));
+  const back = mesh(new THREE.CircleGeometry(R, 18), new THREE.MeshBasicMaterial({ color: 0x010101 }), false); g.add(at(back, 0, Y, 0.03));
+  // sludge in the bottom of it, and the trickle over the lip
+  const wet = rng() < 0.5 ? 0x1e1a0c : 0x16140a;
+  const sludge = mesh(box(R * 1.2, 0.03, 0.4), phong({ color: wet, shininess: 140, specular: 0x555544 }), false); g.add(at(sludge, 0, Y - R + 0.03, 0.22));
+  const trickle = mesh(box(0.05, Y - R + 0.02, 0.012), phong({ color: wet, shininess: 160, specular: 0x666655, transparent: true, opacity: 0.85 }), false);
+  g.add(at(trickle, 0, (Y - R) / 2, 0.43));
+  // the stain it's left down the wall, and the puddle
+  const stain = mesh(new THREE.PlaneGeometry(0.75, Y + 0.1), phong({ color: 0x1a1a0e, transparent: true, opacity: 0.55, depthWrite: false }), false); g.add(at(stain, 0, (Y + 0.1) / 2 - 0.05, 0.004));
+  const pool = mesh(new THREE.CircleGeometry(0.42, 16), phong({ color: wet, shininess: 160, specular: 0x777766, transparent: true, opacity: 0.9, depthWrite: false }), false);
+  pool.rotation.x = -Math.PI / 2; pool.scale.set(1, 1.4, 1); g.add(at(pool, 0, 0.006, 0.72));
+  g.userData.outflow = true;
   return g;
 }
 export function ladder(mats) {
