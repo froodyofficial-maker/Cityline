@@ -7,8 +7,6 @@ import { makeMaterials } from './textures.js';
 import { makeLayout, buildLevel, lineOfSight, toTile, findPath, collide, inCrawl } from './level.js';
 import { Puzzles } from './puzzles.js';
 import { Survivor } from './survivor.js';
-import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
-import { applyCrew } from './net.js';
 import { Cinema, SHOTS } from './cinema.js';
 import { initTouch, tapKey } from './touch.js';
 const TOUCH = !!window.OFFAL_ANDROID || /[?&]android=1/.test(window.location.search) || matchMedia('(pointer: coarse)').matches; // the Android app, or any touch screen
@@ -241,7 +239,6 @@ function disposeLevel() {
 function loadFloor(depth, seed) {
   disposeLevel();
   const D = difficulty(depth, G.mode, Math.random, G.diff);
-  if (G.crew) Object.assign(D, applyCrew(D, G.crew.workers.length)); // a crew shift (Steam): a bigger floor, more to do
   if (G.mode === 'hunt') Object.assign(D, { hunters: 0, puzzles: [], tags: Math.min(D.tags, 5), screamers: 0 }); // you are what hunts on this floor
   const L = makeLayout(depth, seed, D);
   G.floorSeed = seed;
@@ -266,6 +263,8 @@ function loadFloor(depth, seed) {
   for (const l of lampLights) l.color.setHex(G.info.lamp);
   G.hunters = B.hunterSpawns.slice(0, D.hunters).map((p, i) => { const h = new Hunter(G, mats, p, i); scene.add(h.obj); return h; });
   G.flies = B.corpses.map((c) => audio.flies(c.pos));
+  // a locker or two on a floor has someone in it already
+  if (!D.intro && B.lockers.length > 2) { const n = B.lockers.length > 6 && Math.random() < 0.5 ? 2 : 1; for (const lk of B.lockers.slice().sort(() => Math.random() - 0.5).slice(0, n)) lk.filled = true; }
   // the gate across the lift mouth, as a collider that can be switched off
   const lp = B.lift.pos;
   B.gate = { x0: lp.x - 1, x1: lp.x + 1, z0: lp.z - 1.06, z1: lp.z - 0.9, hunters: true, off: false };
@@ -321,9 +320,11 @@ function startRun(mode = 'story', fresh = false, diff = null, opts = {}) {
   blood.clear();
   G.mode = mode;
   const st = save.story;
-  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: opts.floor ?? 0, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv() });
+  if (mode === 'story' && (fresh || !st.active)) Object.assign(st, { active: true, floor: opts.floor ?? 0, seed: 0, deaths: 0, time: 0, tags: 0, diff: diff || 'normal', inv: freshInv(), lockerScared: false });
   // what you're carrying: a story shift keeps it from floor to floor (as it was when you started the floor)
   G.inv = mode === 'story' ? cloneInv(st.inv) : freshInv();
+  // the first locker you open on a shift is never empty (see openFilled)
+  G.lockerScare = mode !== 'hunt' && !(mode === 'story' && st.lockerScared);
   G.diff = mode === 'story' ? st.diff || 'normal' : diff || G.diff || 'normal';
   if (diff && mode !== 'hunt') save.settings.lastDiff = diff;
   // dev mode: chosen on the difficulty screen, it stays with you until you turn it off there
@@ -627,6 +628,7 @@ function startEnding() {
   try { document.exitPointerLock(); } catch {}
   const st = save.story;
   const time = Math.round(G.runTime);
+  if (!st.done) G.huntUnlocked = true; // the first time out: playing the Foreman opens up
   st.done = (st.done || 0) + 1;
   st.bestTime = st.bestTime ? Math.min(st.bestTime, time) : time;
   st.active = false;
@@ -692,6 +694,7 @@ function endingText() {
   setTimeout(() => {
     if (G.state !== 'ending') return;
     UI.$('endStats').innerHTML = `<span>TIME ON SHIFT</span><b>${fmt(time)}</b><span>TIMES PROCESSED</span><b>${deaths}</b><span>TAGS CUT</span><b>${tags}</b><span>KEEPSAKES</span><b>${save.collection.keep.length}/${KEEPSAKES.length}</b><span>NEXT SHIFT</span><b class="rec">TONIGHT, 22:00</b>`;
+    if (G.huntUnlocked) { G.huntUnlocked = false; UI.$('endStats').insertAdjacentHTML('beforeend', '<span>UNLOCKED</span><b class="rec">PLAY AS THE FOREMAN</b>'); }
     UI.$('endStats').classList.add('on');
     UI.$('endNav').classList.add('on');
   }, tEnd + 2500);
@@ -701,6 +704,7 @@ function refreshMenu() {
   const st = save.story;
   UI.$('btnStory').textContent = st.active ? `Continue \u2014 ${floorInfo(st.floor).label} \u00B7 ${floorInfo(st.floor).name} (${(DIFFS[st.diff] || DIFFS.normal).label.toLowerCase()})` : st.done ? 'Clock in again' : 'Clock in';
   UI.$('btnNew').hidden = !st.active;
+  UI.$('btnHunt').hidden = !st.done; // unlocked by getting out alive once
   const ot = save.snap && save.snap.mode === 'overtime' ? save.snap : null;
   UI.$('btnOvertimeContinue').hidden = !ot;
   if (ot) UI.$('btnOvertimeContinue').textContent = `Continue overtime \u2014 B${ot.depth}`;
@@ -942,8 +946,9 @@ function handleInteract(dt) {
       break;
     }
     case 'locker':
+      if (it.lk.filled === 'open') { UI.prompt('SOMEONE GOT IN THIS ONE FIRST'); break; }
       UI.prompt('<kbd>E</kbd>&nbsp; HIDE');
-      if (tapE && performance.now() > (G.lockerCool || 0)) { G.lockerCool = performance.now() + 350; hide(it.lk); } // real time, so a slow frame rate can't swallow the key
+      if (tapE && performance.now() > (G.lockerCool || 0)) { G.lockerCool = performance.now() + 350; if (it.lk.filled || G.lockerScare) openFilled(it.lk); else hide(it.lk); } // real time, so a slow frame rate can't swallow the key
       break;
     case 'unhide':
       UI.prompt('<kbd>E</kbd>&nbsp; GET OUT');
@@ -1004,6 +1009,9 @@ function updateHunt(dt) {
   G.floorTime += dt;
   player.update(dt, G);
   bot.update(dt);
+  // within 20 m and nothing in the way, you can make him out, dark or not
+  const seen = !bot.done && Math.hypot(bot.pos.x - player.pos.x, bot.pos.z - player.pos.z) < 20 && lineOfSight(G.L, player.pos.x, player.pos.z, bot.pos.x, bot.pos.z);
+  bot.mark.intensity += ((seen ? 7 : 0) - bot.mark.intensity) * Math.min(1, dt * 4);
   // what you heard, and which way
   G.hearT -= dt;
   const comp = UI.$('compass');
@@ -1022,13 +1030,16 @@ function updateHunt(dt) {
 // his footsteps reach you the way yours reach the Foreman: by the same rules of noise
 G.botNoise = (pos, base, kind) => {
   const n = (DIFFS[G.diff] || DIFFS.normal).noise, m = n[kind] ?? n.other ?? 1;
-  const r = base * m * (G.D.hearing || 1);
-  if (m <= 0 || Math.hypot(pos.x - player.pos.x, pos.z - player.pos.z) > r) return;
-  audio.thud(pos, kind === 'run' ? 0.45 : 0.2);
+  const r = base * m * (G.D.hearing || 1), d = Math.hypot(pos.x - player.pos.x, pos.z - player.pos.z);
+  // running, or cutting a tag, carries right across the floor; anything quieter has to be close
+  const far = kind === 'run' || kind === 'cut';
+  if (!far && (m <= 0 || d > r)) return;
+  if (kind === 'cut') audio.squelch(Math.max(0.15, 0.6 - d / 80)); else audio.thud(pos, kind === 'run' ? 0.45 : 0.2);
   G.heard = { x: pos.x, z: pos.z };
   G.hearT = 1.6;
 };
 G.botHarvest = (c) => {
+  G.botNoise(c.pos, 999, 'cut');
   c.harvested = true;
   c.tag.visible = false;
   c.flies.visible = false;
@@ -1044,14 +1055,35 @@ function huntSwing() {
   const facing = (-Math.sin(player.yaw) * dx - Math.cos(player.yaw) * dz) / (d || 1);
   if (d < (G.D.reach || 2.1) + 0.3 && facing > 0.6 && !bot.safe) {
     audio.squelch(1); audio.crack();
-    blood.splash(0.6, true);
     bot.done = 'caught';
-    bot.obj.rotation.x = -1.4;
+    // you have him: through your own eyes, the drag to the grinder
+    G.state = 'huntcine';
+    try { document.exitPointerLock(); } catch {}
+    G.flash = 1;
+    G.cutscene = new Cutscene('process', { mats, audio, blood, aspect: camera.aspect });
+    UI.$('compass').classList.remove('on');
+    UI.prompt(null);
+  }
+}
+function updateHuntCine(dt) {
+  const cs = G.cutscene;
+  const done = cs.update(dt);
+  G.fear = cs.fear;
+  G.flash = Math.max(G.flash, cs.flash);
+  G.blackout = cs.blackout;
+  const skippable = cs.t > 1.2;
+  UI.$('skip').classList.toggle('on', skippable && cs.blackout < 1);
+  if (done || (skippable && (tapped('Space') || tapped('Enter')))) {
+    UI.$('skip').classList.remove('on');
+    cs.dispose();
+    G.cutscene = null;
+    G.blackout = 0;
+    blood.clear();
     G.huntOver('caught');
   }
 }
 G.huntOver = (how) => {
-  if (G.state !== 'play') return;
+  if (G.state !== 'play' && G.state !== 'huntcine') return;
   G.state = 'huntend';
   try { document.exitPointerLock(); } catch {}
   UI.message(how === 'caught' ? 'You got him. He goes on the rail with the others.' : 'The gate comes down. He got away with the tags. He will tell someone.', 5);
@@ -1104,6 +1136,38 @@ function hide(lk) {
   audio.lockerClose(lk.pos, true);
   audio.setMuffle(true);
   G.noise(lk.pos, 2.5, false, 'locker');
+}
+// a locker with someone already in it: the door swings open and he comes out at you, face first
+function openFilled(lk) {
+  const first = G.lockerScare;
+  G.lockerScare = false;
+  if (first && G.mode === 'story') { save.story.lockerScared = true; writeSave(); }
+  lk.filled = 'open';
+  lk.target = 1;
+  const b = P.makeBody(mats, Math.random, { dead: true });
+  const pivot = new THREE.Group(); // at his feet, at the back of the locker: he tips out from there
+  pivot.position.set(0, 0, -0.42);
+  b.root.rotation.y = Math.PI;
+  b.root.scale.setScalar(0.96);
+  b.root.position.y = 0.935 * 0.96; // the body is built round its hips: stand him on his feet
+  b.head.rotation.set(0.7, 0.3, 0.2);
+  b.jaw.rotation.x = 0.5;
+  pivot.add(b.root);
+  lk.obj.add(pivot);
+  lk.slump = { pivot, t: 0 };
+  audio.lockerOpen(lk.pos, true);
+  if (first) {
+    audio.jumpscare(1);
+    G.flash = 0.6;
+    player.shake = Math.max(player.shake, 1);
+    UI.message('Somebody got here first.', 3);
+  } else {
+    audio.stinger();
+    player.shake = Math.max(player.shake, 0.4);
+  }
+  setTimeout(() => audio.bodyDrop(lk.pos), 380);
+  G.scare = 1;
+  G.noise(lk.pos, 6, false, 'locker');
 }
 function unhide() {
   const lk = player.hidden;
@@ -1220,6 +1284,8 @@ function updateLockers(dt) {
   for (const lk of G.B.lockers) {
     lk.open += (lk.target - lk.open) * Math.min(1, dt * (lk.target ? 10 : 6));
     lk.obj.userData.hinge.rotation.y = -lk.open * 1.8;
+    // the one inside falls forward against the open door frame and stops there, half out
+    if (lk.slump && lk.slump.t < 1) { lk.slump.t += dt * 2.2; const k = Math.min(1, lk.slump.t); lk.slump.pivot.rotation.x = 0.42 * k * k + Math.sin(k * Math.PI) * 0.05; }
   }
 }
 
@@ -1407,10 +1473,8 @@ document.addEventListener('click', (e) => {
   else if (act === 'newstory') pickDifficulty('story', true);
   else if (act === 'overtime') pickDifficulty('overtime', false);
   else if (act === 'hunt') startRun('hunt', false, 'normal', { floor: 3 + ((Math.random() * 5) | 0) }); // no difficulty: you are the Foreman, at his normal pace
-  else if (act === 'lobby') openLobby(save);
   else if (act === 'cinema') openCinema();
   else if (act === 'cineShot') playShot(b.dataset.id);
-  else if (act.startsWith('crew')) { lobbyAct(act, b, save); writeSave(); }
   else if (act === 'diff') startRun(diffIntent.mode, diffIntent.fresh, b.dataset.diff, diffIntent.mode === 'story' ? { floor: diffIntent.floor } : {});
   else if (act === 'floorpick') { diffIntent.floor = +b.dataset.floor; drawFloorPick(); }
   else if (act === 'retry') {
@@ -1424,7 +1488,7 @@ document.addEventListener('click', (e) => {
   else if (act === 'keep') readKeepsake(b.dataset.id, b);
   else if (act === 'devsolve' && G.dev && G.puzzles) { devComplete(); UI.message('Dev: floor complete. Every tag is in the lift and every puzzle is solved: pull the lever.', 3); }
   else if (act === 'settings') { settingsFrom = G.state === 'paused' ? 'pause' : 'menu'; fillSettings(); UI.only('settings', ...(settingsFrom === 'pause' ? ['hud'] : [])); }
-  else if (act === 'back' && G.state === 'menu' && (UI.$('collection').classList.contains('on') || UI.$('lobby').classList.contains('on') || UI.$('cinema').classList.contains('on'))) UI.only('menu');
+  else if (act === 'back' && G.state === 'menu' && (UI.$('collection').classList.contains('on') || UI.$('cinema').classList.contains('on'))) UI.only('menu');
   else if (act === 'back') { if (settingsFrom === 'pause' && G.state === 'paused') UI.only('pause', 'hud'); else if (G.state === 'menu' || G.state === 'warn') UI.only('menu'); else toMenu(); settingsFrom = 'menu'; }
   else if (act === 'resume') resume();
   else if (act === 'fullscreen') setFullscreen(!document.fullscreenElement);
@@ -1503,7 +1567,6 @@ addEventListener('keydown', (e) => {
   }
 });
 
-UI.$('crewName').addEventListener('change', (e) => { lobbyRename(e.target.value, save); writeSave(); });
 
 // ---------- cinema: staged shots for trailers (see cinema.js) ----------
 // Only in the OFFAL Cinema app (its build sets window.OFFAL_CINEMA): players never see it. A shot loads a story
@@ -1789,6 +1852,9 @@ function frame(now) {
     case 'transition':
       updateTransition(dt);
       break;
+    case 'huntcine':
+      updateHuntCine(dt);
+      break;
     case 'dying':
       updateDeath(dt);
       break;
@@ -1801,7 +1867,7 @@ function frame(now) {
   }
   if (G.state === 'inspect') G.inspT += dt;
   if (G.state === 'letter') G.letterT += dt;
-  if (G.state === 'play' || G.state === 'cinema' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'huntend' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
+  if (G.state === 'play' || G.state === 'cinema' || G.state === 'paused' || G.state === 'inspect' || G.state === 'letter' || G.state === 'huntend' || G.state === 'huntcine' || G.state === 'devmenu' || G.state === 'transition' || G.state === 'dying') {
     G.damage = Math.max(0, G.damage - dt * 1.2);
     G.flash = Math.max(0, G.flash - dt * 3);
     const u = post.u;
@@ -1811,9 +1877,9 @@ function frame(now) {
     u.tear.value = Math.max(0, G.fear - 0.55) * 2 + G.scare * 0.6;
     u.flash.value = G.flash;
     u.hidden.value = player.hidden ? 1 : 0;
-    u.blackout.value = G.state === 'dying' ? G.blackout : 0;
+    u.blackout.value = G.state === 'dying' || G.state === 'huntcine' ? G.blackout : 0;
     u.warm.value = G.cutscene && G.cutscene.fire ? 1 : 0;
-    u.health.value = G.state === 'dying' ? 1 : u.health.value;
+    u.health.value = G.state === 'dying' || G.state === 'huntcine' ? 1 : u.health.value;
     if (G.cutscene) post.render(G.cutscene.scene, G.cutscene.cam);
     else if (G.B) post.render(scene, camera);
   }
@@ -1824,6 +1890,6 @@ requestAnimationFrame(frame);
 
 // debug handle for automated checks
 window.__offal = {
-  G, player, save, audio, gun, renderer, scene, updateEndCine, carried, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
+  G, player, save, audio, gun, renderer, scene, updateEndCine, openFilled, huntSwing, carried, openCollection, startReplay, startRun, KEEPSAKES, camera, startDeath, harvest, hide, director, post, keys, findPath, updateTransition, updateDeath, findInteract, handleInteract, nextFloor, startEnding, UI,
   step(dt, n) { for (let i = 0; i < n && G.state === 'play'; i++) { T += dt; updateGame(dt, T); endFrame(); } return G.state; },
 };

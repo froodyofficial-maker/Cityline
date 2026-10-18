@@ -6,7 +6,7 @@ import { findPath, findPathNav, lineOfSight, collide, tileCenter, toTile } from 
 import { makeBody } from './props.js';
 import { makeRng } from './rng.js';
 
-const RUN = 5.1, WALK = 2.6, CROUCH = 1.35;
+const RUN = 5.1, WALK = 2.6, CROUCH = 1.35, SIZE = 1.06, LEGS = 0.935; // a little taller than the dead; LEGS: the body is built round its hips, this far above its soles
 
 export class Survivor {
   constructor(G, mats, at) {
@@ -15,13 +15,17 @@ export class Survivor {
     this.yaw = 0;
     this.obj = new THREE.Group();
     this.body = makeBody(mats, makeRng(77), { dead: false });
-    this.body.root.position.y = 0;
+    this.body.root.position.y = LEGS * SIZE; // feet on the floor
     this.obj.add(this.body.root);
     // his torch: a cone you can see from across the floor
     this.torch = new THREE.SpotLight(0xffe4c4, 60, 22, 0.55, 0.6, 1.5);
     this.torch.position.set(0.2, 1.4, -0.2);
     this.torch.target.position.set(0, 1.0, -4);
     this.obj.add(this.torch, this.torch.target);
+    // what the Foreman makes out of him in the dark, from 20 m in plain sight (see main.js updateHunt)
+    this.mark = new THREE.PointLight(0xffd8c0, 0, 3.5, 1.2);
+    this.mark.position.set(0, 1.3, 0.6);
+    this.obj.add(this.mark);
     this.tags = 0;
     this.fed = 0;
     this.stamina = 100;
@@ -64,11 +68,11 @@ export class Survivor {
     const G = this.G, { L, B, D, player } = G;
     if (this.done) return;
     const dx = player.pos.x - this.pos.x, dz = player.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
-    const sees = dist < 18 && lineOfSight(L, this.pos.x, this.pos.z, player.pos.x, player.pos.z);
+    const sees = dist < 20 && lineOfSight(L, this.pos.x, this.pos.z, player.pos.x, player.pos.z);
     if (sees) this.alarm = dist < 10 ? 7 : 4;
     this.alarm -= dt;
     const was = this.mode;
-    this.mode = this.alarm > 0 && dist < 16 ? 'flee' : dist < 12 ? 'sneak' : 'work';
+    this.mode = this.alarm > 0 && dist < 20 ? 'flee' : dist < 12 ? 'sneak' : 'work';
     if (this.mode !== was) this.repath = 0;
     this.crouch = this.mode === 'sneak' || (this.mode === 'work' && dist < 16);
     this.torch.visible = this.mode === 'work' && dist > 20; // torch off when you're anywhere near
@@ -77,11 +81,15 @@ export class Survivor {
     const working = this.mode !== 'flee';
     if (working && this.target && !this.target.harvested && Math.hypot(this.target.pos.x - this.pos.x, this.target.pos.z - this.pos.z) < 1.6) {
       this.cutT += dt / 2.6;
+      // the saw on the tag: you hear it wherever you are on the floor
+      this.sawT = (this.sawT || 0) - dt;
+      if (this.sawT <= 0) { this.sawT = 0.9; G.botNoise(this.target.pos, 999, 'cut'); }
       this.anim(dt, 0, true);
       if (this.cutT >= 1) { this.cutT = 0; this.tags++; G.botHarvest(this.target); this.target = null; this.repath = 0; }
       return;
     }
     this.cutT = 0;
+    this.sawT = 0;
     if (working && this.tags + this.fed >= D.tags && Math.hypot(B.lift.pos.x - this.pos.x, B.lift.pos.z - this.pos.z) < 1.2) {
       this.fed += this.tags;
       this.tags = 0;
@@ -143,7 +151,9 @@ export class Survivor {
     const b = this.body, k = Math.min(1, v / 2.6), s = Math.sin(this.phase);
     b.legs.forEach((l, i) => (l.rotation.x = (i ? s : -s) * 0.6 * k));
     b.arms.forEach((a, i) => (a.rotation.x = (i ? -s : s) * 0.5 * k - (work ? 1.1 : 0)));
-    b.root.scale.y = this.crouch || work ? 0.72 : 1;
+    const sy = SIZE * (this.crouch || work ? 0.72 : 1);
+    b.root.scale.set(SIZE, sy, SIZE);
+    b.root.position.y = LEGS * sy;
     b.root.rotation.x = work ? 0.5 : this.crouch ? 0.25 : 0;
     this.obj.position.set(this.pos.x, Math.abs(Math.sin(this.phase)) * 0.04 * k, this.pos.z);
     this.obj.rotation.y = this.yaw;

@@ -43,6 +43,7 @@
       <button data-act="newstory" id="btnNew" hidden>Start a new shift</button>
       <button data-act="overtime">Overtime <small>endless</small></button>
       <button data-act="overtimeContinue" id="btnOvertimeContinue" hidden>Continue overtime</button>
+      <button data-act="hunt" id="btnHunt" hidden>Play as the Foreman <small>you hunt</small></button>
       <button data-act="howto">Orientation</button>
       <button data-act="collection">Collection</button>
       <button data-act="settings">Settings</button>
@@ -165,23 +166,6 @@
   </div>
   <div id="pa"></div>
   <div id="devBadge">DEV MODE &middot; <kbd>~</kbd> MENU</div>
-</section>
-
-<section id="lobby" class="screen panel-screen">
-  <div class="crew">
-    <h2 class="crew-title">THE CREW ROOM</h2>
-    <p class="crew-sub" id="crewSub"></p>
-    <div class="crew-slots" id="crewSlots"></div>
-    <div class="crew-bar">
-      <label class="crew-name">YOUR NAME <input id="crewName" maxlength="16" spellcheck="false"></label>
-      <button data-act="crewReady" id="crewReady">READY</button>
-      <button data-act="crewInvite" class="crew-steam" title="Steam multiplayer is not connected yet">INVITE FRIENDS <small>STEAM</small></button>
-      <button data-act="crewTest">ADD A TEST WORKER <small>OFFLINE PREVIEW</small></button>
-    </div>
-    <button data-act="crewStart" id="crewStart" class="crew-start">START THE SHIFT</button>
-    <p class="crew-why" id="crewWhy"></p>
-    <button class="back" data-act="back">Back</button>
-  </div>
 </section>
 
 <section id="cinema" class="screen panel-screen">

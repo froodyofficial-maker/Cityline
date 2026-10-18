@@ -333,38 +333,6 @@ kbd { font-family: var(--mono); font-size: .85em; border: 1px solid currentColor
 .letter-from { font-size: 20px; letter-spacing: .4em; color: #6a0a06; margin: 0 0 16px; }
 .letter-help { font-size: 11px; letter-spacing: .2em; }
 
-/* the crew room: up to four of you under one lamp, waiting for the shift */
-#lobby { background: radial-gradient(ellipse at 50% 30%, rgba(70,10,6,.55), rgba(0,0,0,.96) 70%); }
-.crew { width: min(980px, 96vw); margin: 0 auto; text-align: center; }
-.crew-title { font-family: var(--serif); font-weight: 400; letter-spacing: .5em; color: var(--bone); margin-bottom: 4px; text-shadow: 0 0 18px rgba(160,10,0,.6); }
-.crew-sub { font-size: 11px; letter-spacing: .35em; color: rgba(216,205,184,.5); margin-bottom: 22px; }
-.crew-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.crew-slot { position: relative; height: 300px; border: 1px solid #3a0a06; background: linear-gradient(180deg, rgba(20,6,5,.9), rgba(6,2,2,.95)); overflow: hidden; }
-.crew-slot::before { content: ''; position: absolute; left: 50%; top: -30px; width: 160px; height: 220px; transform: translateX(-50%); background: radial-gradient(ellipse at 50% 0, rgba(255,200,140,.18), transparent 70%); }
-.crew-slot svg { position: absolute; left: 50%; bottom: 74px; width: 120px; height: 200px; transform: translateX(-50%); }
-.crew-slot.empty { border-style: dashed; animation: crewWait 2.4s infinite; }
-.crew-slot.empty span { position: absolute; left: 0; right: 0; top: 46%; font-size: 11px; letter-spacing: .35em; color: rgba(216,205,184,.3); }
-@keyframes crewWait { 50% { border-color: #1a0503; } }
-.crew-slot.foreman { border-color: var(--fresh); box-shadow: inset 0 0 40px rgba(160,10,0,.35); }
-.crew-slot .nm { position: absolute; left: 0; right: 0; bottom: 44px; font-size: 14px; letter-spacing: .2em; color: var(--bone); }
-.crew-slot .tags { position: absolute; left: 6px; top: 6px; display: flex; gap: 4px; }
-.crew-slot .tags i { font-style: normal; font-size: 9px; letter-spacing: .15em; padding: 2px 5px; border: 1px solid rgba(216,205,184,.3); color: rgba(216,205,184,.7); }
-.crew-slot .tags i.rd { border-color: #4a8a3a; color: #8ac870; }
-.crew-slot .role { position: absolute; left: 0; right: 0; bottom: 26px; font-size: 10px; letter-spacing: .3em; color: rgba(216,205,184,.5); }
-.crew-slot.foreman .role { color: var(--fresh); }
-.crew-slot .acts { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: center; gap: 6px; }
-.crew-slot .acts button { font-size: 9px; letter-spacing: .15em; padding: 2px 6px; border: 1px solid #3a0a06; color: rgba(216,205,184,.6); }
-.crew-bar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin: 18px 0 10px; }
-.crew-bar button, .crew-start { font-size: 12px; letter-spacing: .25em; padding: 8px 14px; border: 1px solid #3a0a06; color: var(--bone); background: rgba(10,4,4,.7); }
-.crew-bar button small { display: block; font-size: 8px; opacity: .6; }
-.crew-bar #crewReady.on { border-color: #4a8a3a; color: #8ac870; }
-.crew-steam { opacity: .45; }
-.crew-name { font-size: 10px; letter-spacing: .3em; color: rgba(216,205,184,.6); }
-.crew-name input { margin-left: 8px; width: 150px; background: #0c0606; border: 1px solid #3a0a06; color: var(--bone); padding: 6px 8px; letter-spacing: .15em; font: inherit; }
-.crew-start { font-size: 16px; padding: 10px 30px; }
-.crew-start:disabled { opacity: .35; }
-.crew-why { font-size: 10px; letter-spacing: .3em; color: var(--fresh); min-height: 1.2em; margin: 8px 0 14px; }
-@media (max-width: 700px) { .crew-slots { grid-template-columns: repeat(2, 1fr); } .crew-slot { height: 240px; } }
 
 /* playing the Foreman: no torch, no stamina, nothing in your hands but the hook */
 #hud.foreman .hotbar, #hud.foreman .hud-br, #hud.foreman #stamina { display: none; }

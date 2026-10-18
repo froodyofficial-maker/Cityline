@@ -35,6 +35,19 @@ function orient(obj, y, z) {
   obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
 }
 
+// hanging by one ankle from `hand`: the hips a leg's length below it, head down. While the hand is too low for
+// that, the body lies along the floor away from `away` instead, shoulders and head on the concrete, never through it
+const LEG = 0.92, TRUNK = 0.85;
+function hangFromHand(you, hand, away) {
+  const hipY = Math.max(0.16, hand.y - LEG);
+  const flat = Math.sqrt(Math.max(0, LEG * LEG - (hand.y - hipY) ** 2)); // how far the leg lies out sideways
+  const a = away.clone().setY(0).normalize();
+  you.root.position.set(hand.x + a.x * flat, hipY, hand.z + a.z * flat);
+  const drop = Math.min(1, (hipY - 0.12) / TRUNK); // how far the head can hang below the hips
+  const head = new THREE.Vector3(a.x * Math.sqrt(1 - drop * drop), -drop, a.z * Math.sqrt(1 - drop * drop));
+  orient(you.root, head, drop > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0));
+}
+
 // ---------- gore ----------
 class Gore {
   constructor(scene, mats) {
@@ -941,12 +954,11 @@ export class Cutscene {
       this.pose({ mode: 'walk', jaw: 0.5 });
       this.him.arms[1].sh.rotation.set(lerp(-0.2, -2.9, k), 0, -0.2);
       this.handPos(1, hand);
-      you.root.position.set(hand.x, hand.y - 1.1, hand.z);
+      hangFromHand(you, hand, V(1, 0, 1)); // off the floor as he lifts, lying back away from the machine till then
       // until he's high enough to go over the rim, keep him off the machine: nothing passes through the steel
       const over = clamp01((hand.y - 2.6) / 0.6);
-      you.root.position.x = lerp(Math.max(hand.x, 1.25), hand.x, over);
-      you.root.position.z = lerp(Math.max(hand.z, -1.75), hand.z, over);
-      orient(you.root, V(0, -1, 0), V(0, 0, 1));
+      you.root.position.x = lerp(Math.max(you.root.position.x, 1.25), you.root.position.x, over);
+      you.root.position.z = lerp(Math.max(you.root.position.z, -1.75), you.root.position.z, over);
       this.at(3.2, 'growl', () => this.audio.growl({ x: 0.9, y: 2, z: -2 }, 1));
     } else {
       // in
@@ -966,6 +978,95 @@ export class Cutscene {
       if (t > 4.5 && t < 7 && Math.random() < dt * 14) { this.gore.burst(mouth, 3, 4, 1); this.gore.spray(V(0, 0.7, -1.7), V(0, 0.2, 1), 25, 5, 0.4); }
       this.at(7.6, 'black', () => (this.blackout = 1));
       this.fear = 0.9;
+    }
+  }
+
+  // ---------- playing the Foreman: through his eyes, the worker hooked by the ankle and fed to the grinder ----------
+  processBuild() {
+    this.grinderBuild();
+    this.dur = 9.5;
+    // his arms, seen from behind his own eyes; the rest of him isn't there to see
+    this.him.root.visible = false;
+    for (const [i, a] of this.him.arms.entries()) { a.sh.position.set(i ? 0.34 : -0.34, -0.42, 0.05); this.cam.add(a.sh); }
+    this.him.arms[0].sh.rotation.set(0.25, 0, 0.12);
+    this.him.arms[0].el.rotation.x = -0.25;
+    this.follow.intensity = 22;
+    this.cam.fov = 78;
+    this.cam.updateProjectionMatrix();
+  }
+  processUpdate(dt) {
+    const t = this.t, you = this.you, arm = this.him.arms[1], hand = V();
+    for (const r of this.rollers) r.rotation.y += dt * (t > 4.3 ? 14 : 6) * (r.position.x > 0 ? 1 : -1);
+    const bob = (k) => Math.abs(Math.sin(k)) * 0.06;
+    if (t < 3.4) {
+      // walking backwards to the grinder, looking down at him: on his back, hooked by the ankle, clawing at the floor
+      const k = ease(t / 3.4), z = lerp(3.8, 0.4, k);
+      this.cam.position.set(0.05 + Math.sin(t * 2.6) * 0.04, 2.05 - bob(t * 2.6), z);
+      this.cam.lookAt(0.15 + Math.sin(t * 1.3) * 0.15, 0.25, z + 2.6);
+      arm.sh.rotation.set(0.9 + Math.sin(t * 5.2) * 0.05, 0, -0.1);
+      arm.el.rotation.x = -0.25;
+      this.cam.updateMatrixWorld(true);
+      arm.hand.getWorldPosition(hand);
+      const leg = 0.92, lift = Math.asin(clamp01((hand.y - 0.13) / leg));
+      you.root.position.set(hand.x, 0.13, hand.z + Math.cos(lift) * leg + Math.sin(t * 11) * 0.02);
+      orient(you.root, V(0, 0, 1), V(0, 1, 0));
+      // the free leg kicks (up, off the floor); the arms claw at it and grab at the air, never down through it
+      you.legs.forEach((l, i) => { l.rotation.set(-lift - (i ? 0 : 0.25 + Math.abs(Math.sin(t * 7)) * 0.35), 0, i ? 0 : 0.2); l.userData.knee.rotation.x = i ? 0 : 0.4 + Math.sin(t * 7) * 0.3; });
+      you.arms.forEach((a, i) => { a.rotation.set(Math.abs(Math.sin(t * 8 + i * 2)) * 0.6, 0, (i ? 1 : -1) * (2.2 + Math.sin(t * 6 + i) * 0.45)); a.userData.el.rotation.z = 0; });
+      you.head.rotation.set(0.45 + Math.sin(t * 4) * 0.15, Math.sin(t * 9) * 0.3, 0); // up off the floor, looking down himself at you
+      you.jaw.rotation.x = 0.4 + Math.sin(t * 13) * 0.1;
+      this.follow.position.set(0.8, 2.2, z + 1.6);
+      this.at(0.15, 'scream', () => this.audio.distantScream({ x: you.root.position.x, y: 0.3, z: you.root.position.z }));
+      this.at(0.3, 'drag', () => this.audio.drag());
+      this.at(1.8, 'drag2', () => this.audio.drag());
+      this.at(2.1, 'scream2', () => this.audio.distantScream({ x: you.root.position.x, y: 0.3, z: you.root.position.z }));
+      if (Math.random() < dt * 14) this.scene.add(decal(this.mats.drag || this.mats.splat[0], 0.5, you.root.position.x + (Math.random() - 0.5) * 0.15, you.root.position.z + 0.4, Math.PI / 2, 0.011));
+      this.fear = 0.6;
+      return;
+    }
+    // turn round to the hopper and lift him up over it, upside down, by the leg
+    const turn = ease((t - 3.4) / 0.7), up = ease((t - 3.6) / 0.9);
+    const yaw = lerp(0, Math.PI, turn) + Math.sin(t * 17) * 0.004 * (t > 4.6 ? 1 : 0);
+    const look = V(0, lerp(0.25, 2.1, turn), 0);
+    this.cam.position.set(0.05, 2.05 - bob(t * 3) * (1 - turn), lerp(0.4, -0.55, turn));
+    look.x = this.cam.position.x + Math.sin(yaw) * 2.6 * (1 - 0.3 * turn);
+    look.z = this.cam.position.z + Math.cos(yaw) * 2.6;
+    if (t > 4.6) look.y = lerp(2.1, 1.3, ease((t - 4.6) / 0.6)); // and down into it
+    this.cam.lookAt(look);
+    this.follow.intensity = Math.max(0, 22 - (t - 3.4) * 30);
+    this.key.intensity = 24;
+    const drop = clamp01((t - 4.55) / 0.35);
+    arm.sh.rotation.set(lerp(0.9, 2.35, up) - drop * 0.6, 0, -0.1);
+    arm.el.rotation.x = lerp(-0.25, -0.05, up);
+    this.cam.updateMatrixWorld(true);
+    arm.hand.getWorldPosition(hand);
+    if (t < 4.55) {
+      // hanging from the hook by one ankle, head down, swinging, arms reaching for the floor
+      hangFromHand(you, hand, V(Math.sin(t * 5) * 0.15, 0, 1));
+      const up2 = clamp01((hand.y - LEG - 0.16) / TRUNK); // the free leg only folds once he's off the floor
+      you.legs.forEach((l, i) => { l.rotation.set(i ? 0 : 0.6 * up2, 0, 0); l.userData.knee.rotation.x = i ? 0 : 0.9 * up2; });
+      you.arms.forEach((a, i) => { a.rotation.set((0.3 + Math.sin(t * 9 + i) * 0.4) * up2, 0, (i ? 1 : -1) * 0.4); a.userData.el.rotation.z = 0; });
+      this.at(3.5, 'growl', () => this.audio.growl({ x: 0, y: 2, z: -1 }, 1));
+      this.at(3.9, 'scream3', () => this.audio.distantScream({ x: hand.x, y: 1.5, z: hand.z }));
+    } else {
+      // let go: down into the rollers
+      const k = clamp01((t - 4.55) / 0.4);
+      you.root.position.set(lerp(hand.x, 0, k), lerp(hand.y - LEG, 0.9, k * k), lerp(hand.z, -3, k));
+      orient(you.root, V(0, -1, 0), V(0, 0, 1));
+      you.root.visible = t < 4.95;
+      const mouth = V(0, 2.2, -3);
+      this.at(4.85, 'crunch', () => {
+        this.audio.grind();
+        this.shake = 1.6;
+        this.flash = 0.5;
+        this.blood.splash(1, true); // it comes back up at you
+        this.gore.burst(mouth, 40, 5, 0.9, [severedArm(this.mats, Math.random), severedHead(this.mats, Math.random), severedArm(this.mats, Math.random)]);
+        this.gore.spray(V(0, 1.9, -2.4), V(0, 0.6, 1), 120, 6, 0.5);
+      });
+      if (t > 4.9 && t < 8 && Math.random() < dt * 14) { this.gore.burst(mouth, 3, 4, 1); this.gore.spray(V(0, 1.9, -2.4), V(0, 0.5, 1), 20, 5, 0.4); }
+      this.at(6.4, 'breath', () => this.audio.growl({ x: 0, y: 2, z: -1 }, 0.6));
+      this.at(9.0, 'black', () => (this.blackout = 1));
+      this.fear = 0.85;
     }
   }
 
