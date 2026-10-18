@@ -22,7 +22,11 @@ npm start            # serves the project at http://localhost:8080
 
 ## Loadout (hardware advisor)
 
-`hardware-advisor/` is a separate static website that recommends gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels) from your games, budget, body and setup. Each pick comes with a match percentage, the reasons it fits, strengths and weaknesses, and cheaper or pricier alternatives. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`. The product catalog lives in `hardware-advisor/data.js`.
+`hardware-advisor/` is a separate static website that recommends gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels) from your games, budget, body and setup. Each pick comes with a match percentage, the reasons it fits, strengths and weaknesses, and cheaper or pricier alternatives. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`.
+
+- **Catalog:** `hardware-advisor/data.js`. Each product has a typical US street price and the manufacturer list price, both checked in October 2026.
+- **Currencies:** prices convert with live European Central Bank rates (via the free Frankfurter API) and fall back to built-in rates from 15 Oct 2026 when offline.
+- **Product photos:** add them in `hardware-advisor/images.js` (a file in `hardware-advisor/img/` or an image URL per product id). Products without a photo show an illustration drawn from their real shape and brand colors.
 
 ## Build
 

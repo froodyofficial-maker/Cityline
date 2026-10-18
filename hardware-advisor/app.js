@@ -1,7 +1,8 @@
 /* Loadout: scores every product against the user's games, body, setup and budget,
    then explains the score. Popularity (`pop`) is display-only. */
 (() => {
-  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS } = window.LOADOUT;
+  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED } = window.LOADOUT;
+  const art = window.LOADOUT_ART;
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
   const GAME = Object.fromEntries(GAMES.map(g => [g.id, g]));
   const PROD = Object.fromEntries(PRODUCTS.map(p => [p.id, p]));
@@ -18,6 +19,24 @@
   const HAND_WORD = { S: 'small', M: 'medium', L: 'large' };
   const LAYOUT_WORD = { full: 'full-size', tkl: 'tenkeyless', 75: '75%', 65: '65%', 60: '60%' };
 
+  // Exchange rates per 1 USD. The fallback is the ECB fixing of 15 Oct 2026 (via Banque de France);
+  // live rates from the ECB (via Frankfurter) replace it when the browser can reach them.
+  const CURRENCY_NAMES = {
+    USD: 'US dollar', EUR: 'Euro', GBP: 'British pound', CAD: 'Canadian dollar', AUD: 'Australian dollar', JPY: 'Japanese yen',
+    INR: 'Indian rupee', BRL: 'Brazilian real', MXN: 'Mexican peso', PLN: 'Polish zloty', SEK: 'Swedish krona', NOK: 'Norwegian krone',
+    DKK: 'Danish krone', CHF: 'Swiss franc', NZD: 'New Zealand dollar', SGD: 'Singapore dollar', KRW: 'South Korean won',
+    ZAR: 'South African rand', TRY: 'Turkish lira', CNY: 'Chinese yuan', HKD: 'Hong Kong dollar', CZK: 'Czech koruna',
+  };
+  let fx = { live: false, date: '2026-10-15', rates: { USD: 1, EUR: .8922, GBP: .7549, JPY: 157.98, CAD: 1.4207, AUD: 1.4470 } };
+  const REGION_CURRENCY = { US: 'USD', GB: 'GBP', CA: 'CAD', AU: 'AUD', JP: 'JPY', IN: 'INR', BR: 'BRL', MX: 'MXN', PL: 'PLN', SE: 'SEK', NO: 'NOK', DK: 'DKK', CH: 'CHF', NZ: 'NZD', SG: 'SGD', KR: 'KRW', ZA: 'ZAR', TR: 'TRY', CN: 'CNY', HK: 'HKD', CZ: 'CZK',
+    DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR', SK: 'EUR', SI: 'EUR', LT: 'EUR', LV: 'EUR', EE: 'EUR', HR: 'EUR', LU: 'EUR' };
+  function guessCurrency() {
+    try {
+      const region = new Intl.Locale(navigator.language).maximize().region;
+      return REGION_CURRENCY[region] || 'USD';
+    } catch { return 'USD'; }
+  }
+
   const DEFAULTS = {
     games: ['valorant', 'eldenring'],
     cats: CATEGORIES.map(c => c.id),
@@ -27,6 +46,7 @@
     desk: 'medium', conn: 'any',
     glasses: false, long: false, quiet: false,
     sort: 'match',
+    currency: guessCurrency(),
   };
 
   let state = load();
@@ -49,7 +69,10 @@
   /* ---------------- text helpers ---------------- */
   const $ = s => document.querySelector(s);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const money = n => '$' + n.toLocaleString('en-US');
+  const rate = () => fx.rates[state.currency] || 1;
+  const fmt = (n, exact) => new Intl.NumberFormat('en-US', { style: 'currency', currency: fx.rates[state.currency] ? state.currency : 'USD', maximumFractionDigits: exact ? undefined : 0 }).format(n * rate());
+  const money = n => fmt(n, false);
+  const moneyExact = n => fmt(n, state.currency === 'USD');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
   function list(items, max = 2) {
     if (items.length <= 1) return items.join('');
@@ -285,15 +308,21 @@
     const alt = (lbl, a) => a ? `<button type="button" class="alt" data-goto="${a.p.id}"><span class="lbl">${lbl}</span><span class="nm">${esc(a.p.brand)} ${esc(a.p.name)}</span><span class="pc">${money(a.p.price)}</span><span class="pill ${tone(a.match)}">${a.match}%</span></button>` : '';
     const altHtml = alt('Spend less', alts.cheaper) + alt('Spend more', alts.pricier);
 
-    return `<article class="card${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
+    const listTag = p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s title="Manufacturer list price">List ${moneyExact(p.msrp)}</s>` : '';
+    const shop = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(p.brand + ' ' + p.name)}`;
+    return `<article class="card cat-${p.cat}${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
+      <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
+        <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
+        <div class="rank">${label}</div>
+      </div>
       <div class="ctop">
         <div class="ctitle">
-          <div class="rank">${label}</div>
+          <div class="brandline">${esc(p.brand)}</div>
           <h4>${esc(p.name)}</h4>
-          <div class="brandline">${esc(p.brand)} · <span class="price">${money(p.price)}</span></div>
         </div>
-        <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
+        <div class="pricebox"><b>${money(p.price)}</b><span>typical price</span>${listTag}</div>
       </div>
+      <a class="shop" href="${shop}" target="_blank" rel="noopener noreferrer">Check live prices ↗</a>
       <div class="badges">${badges}</div>
       <div class="spec">${esc(specLine(p))}</div>
       <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Budget', r.parts.budget)}</div>
@@ -361,7 +390,7 @@
 
       return `<section class="cat" id="cat-${cat.id}">
         <div class="cathead">
-          <h3>${icon(cat.id)}${cat.name}</h3>
+          <h3 class="cat-${cat.id}">${icon(cat.id)}${cat.name}</h3>
           <span class="catmeta">${within.length} of ${pool.length} within ${money(state.budget[cat.id])}${gems ? ` · ${gems} lesser-known pick${gems > 1 ? 's' : ''} in your top results` : ''}</span>
         </div>
         ${note ? `<div class="catnote">${esc(note)}</div>` : ''}
@@ -369,9 +398,9 @@
         ${emptyMsg}
         <div class="cards">${top.map((r, i) => card(r, i, pool, sortedByMatch && !emptyMsg)).join('')}</div>
         ${rest.length ? `<details class="more"><summary>See all ${pool.length} ranked ${cat.name.toLowerCase()}, including over-budget options</summary>
-          <div class="rows">${rest.map(r => `<div class="row${r.within ? '' : ' over'}">
+          <div class="rows">${rest.map(r => `<div class="row${r.within ? '' : ' over'}" data-id="${r.p.id}">
             <span class="pill ${tone(r.match)}">${r.match}%</span>
-            <span class="rn">${esc(r.p.brand)} ${esc(r.p.name)}<small>${esc(r.why[0] || r.p.pros[0])}</small></span>
+            <span class="rn"><span class="thumb cat-${r.p.cat}">${art(r.p)}</span><span>${esc(r.p.brand)} ${esc(r.p.name)}<small>${esc(r.why[0] || r.p.pros[0])}</small></span></span>
             <span class="rtag">${r.within ? (r.p.pop <= 2 ? '<span class="badge gem">Lesser-known</span>' : '') : `<span class="tag">+${money(r.p.price - state.budget[cat.id])} over</span>`}</span>
             <span class="rp">${money(r.p.price)}</span>
           </div>`).join('')}</div></details>` : ''}
@@ -384,13 +413,53 @@
   }
 
   /* ---------------- preference controls ---------------- */
-  function chip(kind, id, label, sub, on) {
-    return `<button type="button" class="chip" data-multi="${kind}" data-val="${id}" aria-pressed="${on}">${esc(label)}${sub ? ` <small>${esc(sub)}</small>` : ''}</button>`;
+  function chip(kind, id, label, sub, on, cls = '') {
+    return `<button type="button" class="chip ${cls}" data-multi="${kind}" data-val="${id}" aria-pressed="${on}">${esc(label)}${sub ? ` <small>${esc(sub)}</small>` : ''}</button>`;
+  }
+
+  function renderCurrency() {
+    const sel = $('#currency');
+    if (!fx.rates[state.currency]) state.currency = 'USD';
+    sel.innerHTML = Object.keys(CURRENCY_NAMES).filter(c => fx.rates[c])
+      .map(c => `<option value="${c}">${c} · ${CURRENCY_NAMES[c]}</option>`).join('');
+    sel.value = state.currency;
+    $('#curCount').textContent = sel.options.length;
+    const d = new Date(fx.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    $('#fxnote').textContent = state.currency === 'USD'
+      ? `Prices checked ${PRICES_CHECKED} at US retailers`
+      : `Converted from US prices at ECB rates of ${d}${fx.live ? '' : ' (saved)'}. Local shop prices often differ because of taxes and regional pricing.`;
+  }
+
+  async function loadRates() {
+    for (const url of ['https://api.frankfurter.dev/v1/latest?base=USD', 'https://api.frankfurter.app/latest?from=USD']) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data.rates || !data.rates.EUR) continue;
+        fx = { live: true, date: data.date, rates: { ...data.rates, USD: 1 } };
+        renderCurrency();
+        refreshMoney();
+        return;
+      } catch { /* offline or blocked: keep saved rates */ }
+    }
+  }
+
+  // Re-render everything that shows a price.
+  function refreshMoney() {
+    CATEGORIES.forEach(c => { const o = $('#o-' + c.id); if (o) o.textContent = 'up to ' + money(state.budget[c.id]); });
+    renderResults();
+  }
+
+  function renderHero() {
+    const show = ['viperv3', 'w60he', 'novapro', 'aw2725df', 'edge'].map(id => PROD[id]).filter(Boolean);
+    $('#heroArt').innerHTML = show.map((p, i) => `<div class="float f${i} cat-${p.cat}">${art(p)}</div>`).join('');
+    $('#heroStats').innerHTML = `<span><b>${PRODUCTS.length}</b> products</span><span><b>${GAMES.length}</b> games</span><span><b>${CATEGORIES.length}</b> categories</span><span><b id="curCount"></b> currencies</span>`;
   }
 
   function renderControls() {
     $('#games').innerHTML = GAMES.map(g => chip('games', g.id, g.name, g.genre, state.games.includes(g.id))).join('');
-    $('#cats').innerHTML = CATEGORIES.map(c => chip('cats', c.id, c.name, '', state.cats.includes(c.id))).join('');
+    $('#cats').innerHTML = CATEGORIES.map(c => chip('cats', c.id, c.name, '', state.cats.includes(c.id), 'cat-' + c.id)).join('');
     $('#platforms').innerHTML = Object.entries(PLATFORMS).map(([id, n]) => chip('platforms', id, n, '', state.platforms.includes(id))).join('');
     document.querySelectorAll('.seg').forEach(seg => {
       const key = seg.dataset.key;
@@ -406,7 +475,7 @@
 
   function renderBudgets() {
     const cats = CATEGORIES.filter(c => state.cats.includes(c.id));
-    $('#budgets').innerHTML = cats.length ? cats.map(c => `<div class="budget">
+    $('#budgets').innerHTML = cats.length ? cats.map(c => `<div class="budget cat-${c.id}">
       <label for="b-${c.id}">${c.name} <output id="o-${c.id}">up to ${money(state.budget[c.id])}</output></label>
       <input id="b-${c.id}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${state.budget[c.id]}" data-budget="${c.id}">
     </div>`).join('') : '<p class="empty">Select a category to set its budget.</p>';
@@ -460,11 +529,14 @@
     } else if (t.id === 'gameSearch') filterGames();
   });
   $('#sort').addEventListener('change', e => { state.sort = e.target.value; changed(); });
+  $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); refreshMoney(); });
   $('#reset').addEventListener('click', () => {
     state = structuredClone(DEFAULTS);
     $('#gameSearch').value = '';
     renderControls();
-    changed();
+    renderCurrency();
+    refreshMoney();
+    save();
   });
 
   // Clicking an alternative jumps to its card, or opens the full ranking where it's listed.
@@ -478,7 +550,7 @@
       const det = sec && sec.querySelector('details.more');
       if (det) {
         det.open = true;
-        el = [...det.querySelectorAll('.row')].find(r => r.querySelector('.rn').textContent.startsWith(`${PROD[id].brand} ${PROD[id].name}`));
+        el = det.querySelector(`.row[data-id="${id}"]`);
       }
     }
     if (el) {
@@ -487,6 +559,9 @@
     }
   });
 
+  renderHero();
   renderControls();
+  renderCurrency();
   renderResults();
+  loadRates();
 })();

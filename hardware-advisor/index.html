@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Loadout: Gear Matcher</title>
 <meta name="description" content="Gaming hardware recommendations matched to your games, budget and comfort, with the reasons why.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,12 +19,28 @@
       <p>Gaming gear matched to how <em>you</em> play, with the reasons why.</p>
     </div>
   </div>
-  <ul class="promises">
-    <li>Scores ignore popularity</li>
-    <li>No sponsored rankings</li>
-    <li>Results update live</li>
-  </ul>
+  <div class="topright">
+    <label class="cur">Currency
+      <select id="currency" aria-describedby="fxnote"></select>
+    </label>
+    <small id="fxnote" class="fxnote"></small>
+  </div>
 </header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <span class="kicker">Gear matcher · v2</span>
+    <h2>Find gear that fits <span class="grad">how you play</span>.</h2>
+    <p>Pick your games, set a budget and tell us about your hands and desk. Every match comes with a score and the reasons behind it.</p>
+    <ul class="promises">
+      <li>Scores ignore popularity</li>
+      <li>No sponsored rankings</li>
+      <li>Results update live</li>
+    </ul>
+    <div id="heroStats" class="hero-stats"></div>
+  </div>
+  <div id="heroArt" class="hero-art" aria-hidden="true"></div>
+</section>
 
 <main class="layout">
   <form id="prefs" class="prefs" autocomplete="off" onsubmit="return false">
@@ -89,7 +108,7 @@
     <div class="note">
       <strong>No product is best for everyone.</strong>
       Each match percentage reflects only the games, budget and comfort details you entered. A lower-ranked product can still be the right call for you.
-      Prices are approximate street prices and change often.
+      Prices are typical US street prices checked in October 2026, next to the official list price. Use “Check live prices” before you buy.
     </div>
     <div id="out"></div>
   </section>
@@ -101,6 +120,8 @@
 </footer>
 
 <script src="data.js"></script>
+<script src="images.js"></script>
+<script src="art.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
