@@ -11,7 +11,7 @@ import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
 import { applyCrew } from './net.js';
 import { Cinema, SHOTS } from './cinema.js';
 import { initTouch } from './touch.js';
-const TOUCH = !!window.OFFAL_ANDROID || /[?&]android=1/.test(location.search) || matchMedia('(pointer: coarse)').matches; // the Android app, or any touch screen
+const TOUCH = !!window.OFFAL_ANDROID || /[?&]android=1/.test(window.location.search) || matchMedia('(pointer: coarse)').matches; // the Android app, or any touch screen
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
 import { AudioEngine } from './audio.js';
