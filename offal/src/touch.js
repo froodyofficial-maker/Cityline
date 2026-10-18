@@ -2,16 +2,19 @@
 // anywhere else to look, and buttons on the right. The buttons press the same keys the keyboard does, so
 // everything in the game answers them without knowing they're fingers.
 const key = (code, down) => window.dispatchEvent(new window.KeyboardEvent(down ? 'keydown' : 'keyup', { code, bubbles: true }));
+// a quick press of one key, as if typed
+export const tapKey = (code) => { key(code, true); setTimeout(() => key(code, false), 60); };
 const BUTTONS = [
   // [label, key, hold (true) or tap]
-  ['USE', 'KeyE', true], ['FIRE', 'fire', false], ['CROUCH', 'KeyC', false], ['LISTEN', 'KeyQ', true],
-  ['TORCH', 'KeyF', false], ['SYRINGE', 'KeyR', false], ['BREATH', 'Space', true], ['TASKS', 'Tab', false],
+  ['USE', 'KeyE', true], ['CROUCH', 'KeyC', false], ['LISTEN', 'KeyQ', true], ['TORCH', 'KeyF', false],
+  ['FIRE', 'fire', false], ['BREATH', 'Space', true],
 ];
 
-export function initTouch({ look, fire, active }) {
+// show: which buttons belong on screen right now ({ fire, breath }); tap(id): a hotbar box was tapped
+export function initTouch({ look, fire, active, show: showing, tap }) {
   const root = document.createElement('div');
   root.id = 'touch';
-  root.innerHTML = `<div class="t-stick"><i></i></div><div class="t-pad">${BUTTONS.map(([l, k]) => `<button data-k="${k}">${l}</button>`).join('')}</div><button class="t-pause">II</button>`;
+  root.innerHTML = `<div class="t-stick"><i></i></div><div class="t-pad">${BUTTONS.map(([l, k]) => `<button data-k="${k}">${l}</button>`).join('')}</div><button class="t-pause">II</button><button class="t-tasks">TASKS</button>`;
   document.body.appendChild(root);
   const stick = root.querySelector('.t-stick'), knob = stick.querySelector('i');
   let stickId = null, sx = 0, sy = 0, held = new Set();
@@ -56,8 +59,18 @@ export function initTouch({ look, fire, active }) {
     b.addEventListener('touchend', (e) => { e.preventDefault(); b.classList.remove('on'); if (hold) key(k, false); }, { passive: false });
   }
   root.querySelector('.t-pause').addEventListener('touchstart', (e) => { e.preventDefault(); key('KeyP', true); setTimeout(() => key('KeyP', false), 60); }, { passive: false });
-  // only while you're playing
-  const show = () => { root.classList.toggle('on', active()); requestAnimationFrame(show); };
+  // tasks: top left, by the floor's name
+  root.querySelector('.t-tasks').addEventListener('touchstart', (e) => { e.preventDefault(); key('Tab', true); setTimeout(() => key('Tab', false), 60); }, { passive: false });
+  // the hotbar: tap a box to use what's in it (a syringe goes in)
+  document.getElementById('hotbar').addEventListener('touchstart', (e) => { const s = e.target.closest('.slot[data-id]'); if (s && active()) { e.preventDefault(); tap(s.dataset.id); } }, { passive: false });
+  // only while you're playing; FIRE only with the gun in hand, BREATH only in a locker
+  const fireB = root.querySelector('[data-k=fire]'), breathB = root.querySelector('[data-k=Space]');
+  const show = () => {
+    const on = active();
+    root.classList.toggle('on', on);
+    if (on) { const w = showing(); fireB.hidden = !w.fire; breathB.hidden = !w.breath; }
+    requestAnimationFrame(show);
+  };
   show();
   return root;
 }

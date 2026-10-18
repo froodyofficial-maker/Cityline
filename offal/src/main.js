@@ -10,7 +10,7 @@ import { Survivor } from './survivor.js';
 import { openLobby, lobbyAct, lobbyRename } from './lobby.js';
 import { applyCrew } from './net.js';
 import { Cinema, SHOTS } from './cinema.js';
-import { initTouch } from './touch.js';
+import { initTouch, tapKey } from './touch.js';
 const TOUCH = !!window.OFFAL_ANDROID || /[?&]android=1/.test(window.location.search) || matchMedia('(pointer: coarse)').matches; // the Android app, or any touch screen
 import { Hunter, createForemanMesh, poseForeman } from './monster.js';
 import { Player, keys, tapped, endFrame } from './player.js';
@@ -1696,7 +1696,11 @@ refreshMenu();
 // phones and tablets: touch controls, and lighter graphics the first time
 if (TOUCH) {
   document.body.classList.add('touch');
-  initTouch({ look: (dx, dy) => player.look(dx, dy), active: () => G.state === 'play', fire: () => {
+  initTouch({
+    look: (dx, dy) => player.look(dx, dy), active: () => G.state === 'play',
+    show: () => ({ fire: G.mode === 'hunt' || G.inv.built, breath: !!player.hidden }),
+    tap: (id) => { if (id === 'syringe') tapKey('KeyR'); }, // a syringe tapped in the hotbar goes in
+    fire: () => {
     if (G.mode === 'hunt') { huntSwing(); return; }
     if (gun.fire(player) === false && G.inv.built && G.inv.ammo <= 0) UI.message('Empty.', 1.2);
   } });

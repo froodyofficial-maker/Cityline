@@ -180,7 +180,7 @@ function hotbar(items) {
   for (let i = 0; i < SLOTS; i++) {
     const it = items[i];
     if (!it) { html += '<div class="slot empty"></div>'; continue; }
-    html += `<div class="slot"><svg viewBox="0 0 40 40">${ICON[it.id] || ''}</svg>`
+    html += `<div class="slot" data-id="${it.id}"><svg viewBox="0 0 40 40">${ICON[it.id] || ''}</svg>`
       + (it.n > 1 ? `<span class="n">\u00D7${it.n}</span>` : '')
       + (it.key ? `<kbd>${it.key}</kbd>` : '')
       + `<span class="nm">${it.name}${it.sub ? `<i>${it.sub}</i>` : ''}</span></div>`;
