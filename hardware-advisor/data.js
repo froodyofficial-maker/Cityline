@@ -125,6 +125,19 @@ window.LOADOUT = (() => {
       pros: ['11 programmable controls', 'Free-spin and tilt scroll wheel', 'Very comfortable palm shape'],
       cons: ['Heavy for fast shooters', 'Wired only', 'Right-handed only'] },
 
+    { id: 'gm340', cat: 'mouse', name: 'GM340', brand: 'Ant Esports', price: 7, msrp: null, pop: 1,
+      weight: null, handed: 'right', sizes: ['M', 'L'], grips: ['palm', 'claw'], wireless: false,
+      traits: { speed: .55, aim: .6, binds: .6 },
+      why: { speed: 'it plugs in with a 1000 Hz polling rate', aim: 'its ergonomic shape and 800 to 12,800 DPI range are enough for casual aiming', binds: 'it has 8 programmable buttons, including a rapid-fire button on the side' },
+      pros: ['Very cheap (around ₹650 in India)', '8 programmable buttons with a side rapid-fire button', 'Braided cable and adjustable DPI'],
+      cons: ['Budget sensor and build', 'Wired only, and right-handed only', 'Sold mainly in India, and listings disagree on its weight'] },
+    { id: 'modelo', cat: 'mouse', name: 'Model O', brand: 'Glorious', price: 70, msrp: 49.99, pop: 3,
+      weight: 67, handed: 'sym', sizes: ['M', 'L'], grips: ['palm', 'claw'], wireless: false,
+      traits: { speed: .8, aim: .85, binds: .35 },
+      why: { speed: 'it weighs 67 g and has a flexible cable', aim: 'its PixArt 3360 sensor sits in a well-liked honeycomb shell', binds: 'it has six buttons' },
+      pros: ['Light at 67 g for a wired mouse', 'Proven PMW3360 sensor', 'Omron switches rated for 20 million clicks'],
+      cons: ['Honeycomb shell lets in dust', 'Wired only', 'Side buttons only on the left, so left-handers lose them'] },
+
     /* ---------------- Keyboards ---------------- */
     { id: 'w60he', cat: 'keyboard', name: '60HE+', brand: 'Wooting', price: 175, msrp: 174.99, pop: 3,
       layout: '60', wireless: false, rapid: true, noise: .5, wristRest: false,

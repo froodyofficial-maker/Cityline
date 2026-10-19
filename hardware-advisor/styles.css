@@ -147,15 +147,6 @@ a { color: #bfe9ff; }
 .pimg.has-photo img { filter: none; }
 .thumb img.photo { background: #fff; border-radius: 6px; }
 .pimg .ring { position: absolute; right: 10px; top: 10px; z-index: 2; }
-.phbtn { position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--edge2); background: rgba(20, 18, 90, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; opacity: .75; transition: opacity .15s, background .15s; }
-.phbtn svg { width: 17px; height: 17px; }
-.card:hover .phbtn, .phbtn:focus-visible { opacity: 1; }
-.phbtn:hover { background: rgba(255, 255, 255, .25); }
-.pimg.has-photo .phbtn { color: #fff; background: rgba(20, 18, 90, .6); }
-.photomenu { position: fixed; z-index: 20; width: 220px; padding: 6px; background: rgba(30, 28, 120, .9); display: grid; }
-.photomenu .pm-title { font-size: 12px; color: var(--mut); padding: 6px 10px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.photomenu button { text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; font-size: 13.5px; cursor: pointer; }
-.photomenu button:hover, .photomenu button:focus-visible { background: rgba(255, 255, 255, .16); outline: none; }
 .budgetrow { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 6px; }
 .rank { position: absolute; z-index: 2; left: 10px; top: 10px; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .2); border: 1px solid var(--edge2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff; }
 .card.first .rank { background: #fff; color: var(--sel); }

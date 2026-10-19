@@ -95,18 +95,19 @@
   const money = n => fmt(n, false);
   const moneyExact = n => fmt(n, state.currency === 'USD');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-  // Round a USD amount, after conversion, to two significant figures for bracket labels.
-  function roundMoney(usd) {
+  // Round a converted amount to two significant figures; `up` rounds up (for upper limits), else down.
+  function roundMoney(usd, up) {
     const v = usd * rate();
     if (v < 10) return fmt(usd, false);
     const step = 10 ** (Math.floor(Math.log10(v)) - 1);
-    return new Intl.NumberFormat(LOCALE[cur()] || 'en-US', { style: 'currency', currency: cur(), maximumFractionDigits: 0 }).format(Math.round(v / step) * step);
+    const r = (up ? Math.ceil(v / step) : Math.floor(v / step)) * step;
+    return new Intl.NumberFormat(LOCALE[cur()] || 'en-US', { style: 'currency', currency: cur(), maximumFractionDigits: 0 }).format(r);
   }
   function bracketLabel(cat, i) {
     const [lo, hi] = BUDGETS[cat][i];
-    if (!lo) return `Under ${roundMoney(hi)}`;
-    if (hi == null) return `${roundMoney(lo)} and up`;
-    return `${roundMoney(lo)} – ${roundMoney(hi)}`;
+    if (!lo) return `Under ${roundMoney(hi, true)}`;
+    if (hi == null) return `${roundMoney(lo, false)} and up`;
+    return `${roundMoney(lo, false)} – ${roundMoney(hi, true)}`;
   }
   function list(items, max = 2) {
     if (items.length <= 1) return items.join('');
@@ -196,9 +197,11 @@
         else add(.75, null, 'Symmetric shape works in either hand, but the side buttons are on the left only');
       }
       const w = p.weight;
+      if (w == null) { /* weight unknown: skip the weight preference */ } else {
       if (s.weight === 'light') w <= 62 ? add(1, `${w} g, in your 40–60 g range`) : add(w <= 80 ? .65 : .3, null, `${w} g is heavier than your 40–60 g preference`);
       if (s.weight === 'balanced') w >= 58 && w <= 92 ? add(1, `${w} g, in your 60–90 g range`) : add(.7, null, `${w} g is ${w < 60 ? 'lighter' : 'heavier'} than the 60–90 g you want`);
       if (s.weight === 'heavy') w >= 90 ? add(1, `${w} g, the planted feel you like`) : add(w >= 70 ? .75 : .5, null, `${w} g may feel floaty if you like some heft`);
+      }
       if (s.long && p.handed === 'right' && (s.grip === 'palm' || s.grip === 'unsure') && s.handed === 'right') add(1, 'Ergonomic hump supports long palm-grip sessions');
     }
 
@@ -328,7 +331,7 @@
   const toneColor = m => m >= 75 ? 'var(--good)' : m >= 60 ? 'var(--warn)' : 'var(--bad)';
 
   function specLine(p) {
-    if (p.cat === 'mouse') return `${p.weight} g · ${p.handed === 'right' ? 'Right-hand ergonomic' : p.handed === 'ambi' ? 'Ambidextrous' : 'Symmetric'} · ${p.wireless ? 'Wireless' : 'Wired'}`;
+    if (p.cat === 'mouse') return `${p.weight == null ? 'Weight unconfirmed' : p.weight + ' g'} · ${p.handed === 'right' ? 'Right-hand ergonomic' : p.handed === 'ambi' ? 'Ambidextrous' : 'Symmetric'} · ${p.wireless ? 'Wireless' : 'Wired'}`;
     if (p.cat === 'keyboard') return `${cap(LAYOUT_WORD[p.layout])} · ${p.rapid ? 'Rapid Trigger · ' : ''}${p.wireless ? 'Wireless' : 'Wired'}`;
     if (p.cat === 'headset') return `${p.weight} g · ${cap(p.back)}-back · ${p.wireless ? 'Wireless' : 'Wired'} · ${p.platforms.map(x => PLATFORMS[x]).join(', ')}`;
     if (p.cat === 'monitor') return p.spec;
@@ -354,7 +357,6 @@
       <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
         <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
         <div class="rank">${label}</div>
-        <button type="button" class="phbtn" data-photo="${p.id}" aria-haspopup="menu" aria-label="Add or change the photo of the ${esc(p.brand)} ${esc(p.name)}" title="${userPhotos[p.id] ? 'Change photo' : 'Add a real photo'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       </div>
       <div class="ctop">
         <div class="ctitle">
@@ -470,87 +472,6 @@
       } catch { /* offline or blocked: keep saved rates */ }
     }
   }
-
-  /* ---------------- your own product photos ----------------
-     Photos you upload (resized) or image links you paste are kept in this browser and
-     override images.js. A link that fails to load falls back to the illustration. */
-  const PHOTO_STORE = 'gearguide-photos-v1';
-  window.LOADOUT_IMAGES = window.LOADOUT_IMAGES || {};
-  const BASE_IMAGES = { ...window.LOADOUT_IMAGES };
-  let userPhotos = {};
-  try { userPhotos = JSON.parse(localStorage.getItem(PHOTO_STORE) || '{}') || {}; } catch { /* storage unavailable */ }
-  Object.assign(window.LOADOUT_IMAGES, userPhotos);
-
-  function setPhoto(id, src) {
-    const next = { ...userPhotos };
-    if (src) next[id] = src; else delete next[id];
-    try { localStorage.setItem(PHOTO_STORE, JSON.stringify(next)); }
-    catch { alert('Your browser is out of space for photos. Remove a few, or use image links instead.'); return; }
-    userPhotos = next;
-    if (src) window.LOADOUT_IMAGES[id] = src;
-    else if (BASE_IMAGES[id]) window.LOADOUT_IMAGES[id] = BASE_IMAGES[id];
-    else delete window.LOADOUT_IMAGES[id];
-    renderResults();
-  }
-
-  // Shrink uploads to at most 640 px on a white background so they fit in browser storage.
-  function readPhoto(file) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, 640 / Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(img.src);
-        resolve(c.toDataURL('image/jpeg', .85));
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
-  }
-
-  let photoFor = null;
-  function openPhotoMenu(btn) {
-    photoFor = btn.dataset.photo;
-    const m = $('#photoMenu');
-    m.querySelector('[data-act="remove"]').hidden = !userPhotos[photoFor];
-    m.querySelector('.pm-title').textContent = `${PROD[photoFor].brand} ${PROD[photoFor].name}`;
-    m.hidden = false;
-    const r = btn.getBoundingClientRect();
-    m.style.top = Math.min(r.bottom + 6, innerHeight - m.offsetHeight - 8) + 'px';
-    m.style.left = Math.max(8, Math.min(r.right - m.offsetWidth, innerWidth - m.offsetWidth - 8)) + 'px';
-    m.querySelector('button:not([hidden])').focus();
-  }
-  const closePhotoMenu = () => { $('#photoMenu').hidden = true; };
-
-  $('#photoMenu').addEventListener('click', e => {
-    const act = e.target.closest('[data-act]')?.dataset.act;
-    if (!act) return;
-    const id = photoFor;
-    closePhotoMenu();
-    if (act === 'upload') $('#photoFile').click();
-    if (act === 'remove') setPhoto(id, null);
-    if (act === 'link') {
-      const url = prompt('Paste an image link.\nTip: on the brand or shop page, right-click the product photo and choose "Copy image address".');
-      if (url == null) return;
-      if (!/^https?:\/\/\S+$/i.test(url.trim())) { alert('That doesn\'t look like an image link. It should start with https://'); return; }
-      setPhoto(id, url.trim());
-    }
-  });
-  $('#photoFile').addEventListener('change', async e => {
-    const file = e.target.files[0];
-    e.target.value = '';
-    if (!file || !photoFor) return;
-    try { setPhoto(photoFor, await readPhoto(file)); }
-    catch { alert('That file could not be read as an image.'); }
-  });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePhotoMenu(); });
-  document.addEventListener('click', e => {
-    if (!$('#photoMenu').hidden && !e.target.closest('#photoMenu') && !e.target.closest('[data-photo]')) closePhotoMenu();
-  });
 
   /* ---------------- screens ---------------- */
   const SCREENS = ['welcome', 'prepare', 'loading', 'dashboard'];
@@ -713,8 +634,6 @@
 
   // Clicking an alternative jumps to its card, or opens the full ranking where it's listed.
   $('#out').addEventListener('click', e => {
-    const ph = e.target.closest('[data-photo]');
-    if (ph) return openPhotoMenu(ph);
     const a = e.target.closest('[data-goto]');
     if (!a) return;
     const id = a.dataset.goto;
