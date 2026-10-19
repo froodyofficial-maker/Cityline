@@ -40,7 +40,9 @@
     DKK: 'Danish krone', CHF: 'Swiss franc', NZD: 'New Zealand dollar', SGD: 'Singapore dollar', KRW: 'South Korean won',
     ZAR: 'South African rand', TRY: 'Turkish lira', CNY: 'Chinese yuan', HKD: 'Hong Kong dollar', CZK: 'Czech koruna',
   };
-  let fx = { live: false, date: '2026-10-15', rates: { USD: 1, EUR: .8922, GBP: .7549, JPY: 157.98, CAD: 1.4207, AUD: 1.4470 } };
+  // INR is not in that fixing; its fallback is the market rate of 16 Sep 2026.
+  let fx = { live: false, date: '2026-10-15', dates: { INR: '2026-09-16' }, rates: { USD: 1, EUR: .8922, GBP: .7549, JPY: 157.98, CAD: 1.4207, AUD: 1.4470, INR: 95.95 } };
+  const LOCALE = { INR: 'en-IN' };
   const REGION_CURRENCY = { US: 'USD', GB: 'GBP', CA: 'CAD', AU: 'AUD', JP: 'JPY', IN: 'INR', BR: 'BRL', MX: 'MXN', PL: 'PLN', SE: 'SEK', NO: 'NOK', DK: 'DKK', CH: 'CHF', NZ: 'NZD', SG: 'SGD', KR: 'KRW', ZA: 'ZAR', TR: 'TRY', CN: 'CNY', HK: 'HKD', CZ: 'CZK',
     DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', IE: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR', SK: 'EUR', SI: 'EUR', LT: 'EUR', LV: 'EUR', EE: 'EUR', HR: 'EUR', LU: 'EUR' };
   function guessCurrency() {
@@ -88,7 +90,8 @@
   const $ = s => document.querySelector(s);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rate = () => fx.rates[state.currency] || 1;
-  const fmt = (n, exact) => new Intl.NumberFormat('en-US', { style: 'currency', currency: fx.rates[state.currency] ? state.currency : 'USD', maximumFractionDigits: exact ? undefined : 0 }).format(n * rate());
+  const cur = () => fx.rates[state.currency] ? state.currency : 'USD';
+  const fmt = (n, exact) => new Intl.NumberFormat(LOCALE[cur()] || 'en-US', { style: 'currency', currency: cur(), maximumFractionDigits: exact ? undefined : 0 }).format(n * rate());
   const money = n => fmt(n, false);
   const moneyExact = n => fmt(n, state.currency === 'USD');
   const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
@@ -97,7 +100,7 @@
     const v = usd * rate();
     if (v < 10) return fmt(usd, false);
     const step = 10 ** (Math.floor(Math.log10(v)) - 1);
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: fx.rates[state.currency] ? state.currency : 'USD', maximumFractionDigits: 0 }).format(Math.round(v / step) * step);
+    return new Intl.NumberFormat(LOCALE[cur()] || 'en-US', { style: 'currency', currency: cur(), maximumFractionDigits: 0 }).format(Math.round(v / step) * step);
   }
   function bracketLabel(cat, i) {
     const [lo, hi] = BUDGETS[cat][i];
@@ -351,6 +354,7 @@
       <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
         <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
         <div class="rank">${label}</div>
+        <button type="button" class="phbtn" data-photo="${p.id}" aria-haspopup="menu" aria-label="Add or change the photo of the ${esc(p.brand)} ${esc(p.name)}" title="${userPhotos[p.id] ? 'Change photo' : 'Add a real photo'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
       </div>
       <div class="ctop">
         <div class="ctitle">
@@ -435,16 +439,21 @@
   }
 
   /* ---------------- currency ---------------- */
+  function symbol(c) {
+    try { return new Intl.NumberFormat('en', { style: 'currency', currency: c, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(x => x.type === 'currency').value; }
+    catch { return c; }
+  }
+
   function renderCurrency() {
     const sel = $('#currency');
     if (!fx.rates[state.currency]) state.currency = 'USD';
     sel.innerHTML = Object.keys(CURRENCY_NAMES).filter(c => fx.rates[c])
-      .map(c => `<option value="${c}">${c} · ${CURRENCY_NAMES[c]}</option>`).join('');
+      .map(c => `<option value="${c}" title="${CURRENCY_NAMES[c]}">${symbol(c)} ${c}</option>`).join('');
     sel.value = state.currency;
-    const d = new Date(fx.date + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const d = new Date(((!fx.live && fx.dates[state.currency]) || fx.date) + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     $('#fxnote').textContent = state.currency === 'USD'
       ? `Prices are typical US prices checked ${PRICES_CHECKED}.`
-      : `Prices are converted from US prices (checked ${PRICES_CHECKED}) at ECB rates of ${d}; local shops often differ because of taxes.`;
+      : `Prices are converted from US prices (checked ${PRICES_CHECKED}) at ${state.currency === 'INR' && !fx.live ? 'the market rate' : 'ECB rates'} of ${d}; local shops often differ because of taxes and import duties.`;
   }
 
   async function loadRates() {
@@ -454,13 +463,94 @@
         if (!res.ok) continue;
         const data = await res.json();
         if (!data.rates || !data.rates.EUR) continue;
-        fx = { live: true, date: data.date, rates: { ...data.rates, USD: 1 } };
+        fx = { live: true, date: data.date, dates: {}, rates: { ...fx.rates, ...data.rates, USD: 1 } };
         renderCurrency();
         if (!$('#dashboard').hidden) { renderBudget(); renderResults(); }
         return;
       } catch { /* offline or blocked: keep saved rates */ }
     }
   }
+
+  /* ---------------- your own product photos ----------------
+     Photos you upload (resized) or image links you paste are kept in this browser and
+     override images.js. A link that fails to load falls back to the illustration. */
+  const PHOTO_STORE = 'gearguide-photos-v1';
+  window.LOADOUT_IMAGES = window.LOADOUT_IMAGES || {};
+  const BASE_IMAGES = { ...window.LOADOUT_IMAGES };
+  let userPhotos = {};
+  try { userPhotos = JSON.parse(localStorage.getItem(PHOTO_STORE) || '{}') || {}; } catch { /* storage unavailable */ }
+  Object.assign(window.LOADOUT_IMAGES, userPhotos);
+
+  function setPhoto(id, src) {
+    const next = { ...userPhotos };
+    if (src) next[id] = src; else delete next[id];
+    try { localStorage.setItem(PHOTO_STORE, JSON.stringify(next)); }
+    catch { alert('Your browser is out of space for photos. Remove a few, or use image links instead.'); return; }
+    userPhotos = next;
+    if (src) window.LOADOUT_IMAGES[id] = src;
+    else if (BASE_IMAGES[id]) window.LOADOUT_IMAGES[id] = BASE_IMAGES[id];
+    else delete window.LOADOUT_IMAGES[id];
+    renderResults();
+  }
+
+  // Shrink uploads to at most 640 px on a white background so they fit in browser storage.
+  function readPhoto(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 640 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        resolve(c.toDataURL('image/jpeg', .85));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  let photoFor = null;
+  function openPhotoMenu(btn) {
+    photoFor = btn.dataset.photo;
+    const m = $('#photoMenu');
+    m.querySelector('[data-act="remove"]').hidden = !userPhotos[photoFor];
+    m.querySelector('.pm-title').textContent = `${PROD[photoFor].brand} ${PROD[photoFor].name}`;
+    m.hidden = false;
+    const r = btn.getBoundingClientRect();
+    m.style.top = Math.min(r.bottom + 6, innerHeight - m.offsetHeight - 8) + 'px';
+    m.style.left = Math.max(8, Math.min(r.right - m.offsetWidth, innerWidth - m.offsetWidth - 8)) + 'px';
+    m.querySelector('button:not([hidden])').focus();
+  }
+  const closePhotoMenu = () => { $('#photoMenu').hidden = true; };
+
+  $('#photoMenu').addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act) return;
+    const id = photoFor;
+    closePhotoMenu();
+    if (act === 'upload') $('#photoFile').click();
+    if (act === 'remove') setPhoto(id, null);
+    if (act === 'link') {
+      const url = prompt('Paste an image link.\nTip: on the brand or shop page, right-click the product photo and choose "Copy image address".');
+      if (url == null) return;
+      if (!/^https?:\/\/\S+$/i.test(url.trim())) { alert('That doesn\'t look like an image link. It should start with https://'); return; }
+      setPhoto(id, url.trim());
+    }
+  });
+  $('#photoFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file || !photoFor) return;
+    try { setPhoto(photoFor, await readPhoto(file)); }
+    catch { alert('That file could not be read as an image.'); }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePhotoMenu(); });
+  document.addEventListener('click', e => {
+    if (!$('#photoMenu').hidden && !e.target.closest('#photoMenu') && !e.target.closest('[data-photo]')) closePhotoMenu();
+  });
 
   /* ---------------- screens ---------------- */
   const SCREENS = ['welcome', 'prepare', 'loading', 'dashboard'];
@@ -623,6 +713,8 @@
 
   // Clicking an alternative jumps to its card, or opens the full ranking where it's listed.
   $('#out').addEventListener('click', e => {
+    const ph = e.target.closest('[data-photo]');
+    if (ph) return openPhotoMenu(ph);
     const a = e.target.closest('[data-goto]');
     if (!a) return;
     const id = a.dataset.goto;

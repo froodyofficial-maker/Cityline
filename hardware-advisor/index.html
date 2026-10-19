@@ -65,7 +65,10 @@
 
     <div class="sgroup">
       <h3><label for="budget">Budget</label></h3>
-      <select id="budget" class="sel"></select>
+      <div class="budgetrow">
+        <select id="budget" class="sel"></select>
+        <select id="currency" class="sel cur" aria-label="Currency" aria-describedby="fxnote"></select>
+      </div>
     </div>
 
     <div class="sgroup">
@@ -117,13 +120,20 @@
             <option value="high">Price: high to low</option>
           </select>
         </label>
-        <label class="tool">Currency <select id="currency" class="sel" aria-describedby="fxnote"></select></label>
       </div>
     </header>
     <p class="note">No product is best for everyone. Matches reflect only what you told us, and popularity never affects a score. <span id="fxnote"></span></p>
     <div id="out"></div>
   </main>
 </div>
+
+<div id="photoMenu" class="photomenu glass" role="menu" hidden>
+  <div class="pm-title"></div>
+  <button type="button" role="menuitem" data-act="upload">Upload a photo</button>
+  <button type="button" role="menuitem" data-act="link">Paste an image link</button>
+  <button type="button" role="menuitem" data-act="remove">Remove my photo</button>
+</div>
+<input type="file" id="photoFile" accept="image/*" hidden>
 
 <script src="data.js"></script>
 <script src="images.js"></script>
