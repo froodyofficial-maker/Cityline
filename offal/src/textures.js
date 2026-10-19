@@ -7,7 +7,7 @@ export function canvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  return { c, g: c.getContext('2d') };
+  return { c, g: c.getContext('2d', { willReadFrequently: true }) }; // kept in memory, not on the GPU: a GPU reset blanks GPU-backed canvases, and every texture re-uploads from these
 }
 
 function toTex(c, { srgb = true, nearest = true } = {}) {

@@ -362,7 +362,7 @@ function rippleNormals() {
   for (let i = 0; i < 9; i++) waves.push([((Math.random() * 6) | 0) + 1, ((Math.random() * 6) | 0) - 3, Math.random() * 6, 0.3 + Math.random() * 0.7]);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let v = 0; for (const [a, b, ph, amp] of waves) v += Math.sin(((a * x + b * y) / N) * Math.PI * 2 + ph) * amp; hgt[y * N + x] = v; }
   const c = document.createElement('canvas'); c.width = c.height = N;
-  const g = c.getContext('2d'), img = g.createImageData(N, N);
+  const g = c.getContext('2d', { willReadFrequently: true }), img = g.createImageData(N, N);
   const H = (x, y) => hgt[((y + N) % N) * N + ((x + N) % N)];
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const dx = (H(x + 1, y) - H(x - 1, y)) * 0.6, dy = (H(x, y + 1) - H(x, y - 1)) * 0.6, l = Math.hypot(dx, dy, 1), i = (y * N + x) * 4;

@@ -1812,6 +1812,9 @@ applySettings();
 let last = performance.now(), T = 0, lastDraw = 0;
 // F3: frames per second, and draw calls, top right
 const fps = { on: false, n: 0, t: 0, el: null };
+// the graphics driver reset under us (Chromium restores WebGL and every texture re-uploads); counted on the F3 line
+let gpuResets = 0;
+canvas.addEventListener('webglcontextlost', () => { gpuResets++; window.console.warn('OFFAL: WebGL context lost'); });
 addEventListener('keydown', (e) => {
   if (e.code !== 'F3') return;
   e.preventDefault();
@@ -1823,7 +1826,7 @@ function countFrame(now) {
   if (!fps.on) return;
   fps.n++;
   if (now - fps.t > 500) {
-    fps.el.textContent = `${Math.round((fps.n * 1000) / (now - fps.t))} FPS · ${renderer.info.render.calls} DRAWS`;
+    fps.el.textContent = `${Math.round((fps.n * 1000) / (now - fps.t))} FPS · ${renderer.info.render.calls} DRAWS${gpuResets ? ` · GPU RESETS ${gpuResets}` : ''}`;
     fps.n = 0;
     fps.t = now;
   }

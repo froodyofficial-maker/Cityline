@@ -576,7 +576,7 @@ function bagAt(u) { // half-width and height of the bag at u (-1 feet .. 1 head)
 function bagMaterial(mats) {
   if (mats.bagV) return mats.bagV;
   const c = document.createElement('canvas'); c.width = 512; c.height = 256;
-  const g = c.getContext('2d');
+  const g = c.getContext('2d', { willReadFrequently: true });
   g.fillStyle = '#1a1d1f'; g.fillRect(0, 0, 512, 256);
   for (let i = 0; i < 260; i++) { // creases: the vinyl folds where it has been lifted and dropped
     const x = Math.random() * 512, y = Math.random() * 256, l = 10 + Math.random() * 60, a = (Math.random() - 0.5) * 1.2 + (Math.random() < 0.5 ? 0 : Math.PI / 2);
@@ -932,7 +932,7 @@ export function crawlMouth(mats, rng) {
     // worn yellow-and-black stripes, the way anything low is painted in a plant
     const c = document.createElement('canvas');
     c.width = 128; c.height = 16;
-    const g2 = c.getContext('2d');
+    const g2 = c.getContext('2d', { willReadFrequently: true });
     g2.fillStyle = '#16120c'; g2.fillRect(0, 0, 128, 16);
     g2.fillStyle = '#9a7a1c';
     for (let x = -16; x < 140; x += 16) { g2.beginPath(); g2.moveTo(x, 16); g2.lineTo(x + 8, 16); g2.lineTo(x + 16, 0); g2.lineTo(x + 8, 0); g2.fill(); }
