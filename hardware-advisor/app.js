@@ -414,7 +414,7 @@
     const within = pool.filter(r => r.within);
     const sortedByMatch = state.sort === 'match';
     const ordered = sortedByMatch ? within : [...within].sort((a, b) => state.sort === 'low' ? a.p.price - b.p.price : b.p.price - a.p.price);
-    let top = ordered.slice(0, 3);
+    let top = ordered.slice(0, 6);
     let emptyMsg = '';
     if (!top.length) {
       // Nothing fits the budget: show the closest stretch options instead of an empty shelf.
@@ -425,12 +425,14 @@
     const rest = pool.filter(r => !shown.has(r.p.id));
     const note = categoryNote(cat, needs);
     const limit = budgetCap(cat.id);
+    renderOverview(needs);
 
     out.innerHTML = `
       ${note ? `<div class="catnote">${esc(note)}</div>` : ''}
       ${hidden.length ? `<div class="hidden-note">Hidden ${hidden.length}: ${hidden.map(h => `${esc(h.p.brand)} ${esc(h.p.name)} (${esc(h.reason)})`).join(', ')}.</div>` : ''}
       ${emptyMsg}
       <div class="cards">${top.map((r, i) => card(r, i, pool, sortedByMatch && !emptyMsg)).join('')}</div>
+      ${top.length > 1 ? compareTable(top, cat) : ''}
       ${rest.length ? `<details class="allrank glass"><summary>See all ${pool.length} ranked ${cat.name.toLowerCase()}</summary>
         <div class="rows">${rest.map(r => `<div class="row${r.within ? '' : ' over'}" data-id="${r.p.id}">
           <span class="pill ${tone(r.match)}">${r.match}%</span>
@@ -438,6 +440,40 @@
           <span class="rtag">${r.within ? (r.p.pop <= 2 ? '<span class="badge gem">Lesser-known</span>' : '') : `<span class="tag">+${money(r.p.price - limit)} over</span>`}</span>
           <span class="rp">${money(r.p.price)}</span>
         </div>`).join('')}</div></details>` : ''}`;
+  }
+
+  // Side-by-side view of the shown picks.
+  function compareTable(top, cat) {
+    const rows = top.map(r => `<tr>
+      <th scope="row"><button type="button" class="linkbtn" data-goto="${r.p.id}">${esc(r.p.brand)} ${esc(r.p.name)}</button></th>
+      <td><span class="pill ${tone(r.match)}">${r.match}%</span></td>
+      <td class="num">${money(r.p.price)}</td>
+      <td>${esc(specLine(r.p))}</td>
+      <td>${esc(r.p.pros[0])}</td>
+      <td>${esc(r.p.cons[0])}</td>
+    </tr>`).join('');
+    return `<section class="compare glass"><h3>Compare these ${esc(cat.name.toLowerCase())}</h3>
+      <div class="tablewrap"><table><thead><tr><th>Product</th><th>Match</th><th>Price</th><th>Specs</th><th>Best thing</th><th>Watch out for</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  }
+
+  // One best pick per selected product type, with a running total for the whole setup.
+  function renderOverview(needs) {
+    let total = 0;
+    const items = state.cats.map(id => {
+      const cat = CAT[id];
+      const { pool } = rankCategory(cat, needs);
+      const within = pool.filter(r => r.within);
+      const best = (within.length ? within : pool.slice().sort((a, b) => a.p.price - b.p.price))[0];
+      if (best) total += best.p.price;
+      return { cat, best, over: best && !best.within };
+    });
+    $('#overview').innerHTML = `<div class="ovhead"><h3>Your setup at a glance</h3>
+        <p>The closest fit for each product type. Tap one to see all of its matches.</p></div>
+      <div class="ovgrid">${items.map(({ cat, best, over }) => best ? `<button type="button" class="ovcard cat-${cat.id}" data-view="${cat.id}" aria-pressed="${cat.id === state.view}">
+        <span class="ovart">${art(best.p)}</span>
+        <span class="ovtxt"><small>${cap(cat.one)}</small><b>${esc(best.p.brand)} ${esc(best.p.name)}</b>
+        <em>${money(best.p.price)} · ${best.match}% match${over ? ' · over budget' : ''}</em></span></button>` : '').join('')}</div>
+      <div class="ovtotal">Full setup <b>${money(total)}</b><small>${items.length} item${items.length === 1 ? '' : 's'} at typical prices</small></div>`;
   }
 
   /* ---------------- currency ---------------- */
@@ -625,6 +661,13 @@
     if (!$('#gamePicker').hidden && !e.target.closest('#gamePicker') && e.target.id !== 'addGame') $('#gamePicker').hidden = true;
   });
 
+  $('#overview').addEventListener('click', e => {
+    const t = e.target.closest('[data-view]');
+    if (!t) return;
+    state.view = t.dataset.view;
+    renderTypes(); renderBudget(); changed();
+    $('#out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('#sort').addEventListener('change', e => { state.sort = e.target.value; changed(); });
   $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); renderBudget(); renderResults(); });
 
