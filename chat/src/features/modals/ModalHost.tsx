@@ -1,13 +1,12 @@
 import { AnimatePresence } from 'motion/react';
-import { lazy, Suspense } from 'react';
 import { useUI, type ModalSpec } from '../../store/ui';
 import { BoostModal, CatchUpModal, CreateChannelModal, CreateEventModal, CreateServerModal, EventsModal, InviteModal, JoinServerModal, LeaderboardModal, ModerateModal, NicknameModal } from './ServerModals';
 import { CreateGroupModal, CreateThreadModal, ForwardModal, PollModal, ReminderModal, ScheduleModal } from './MessageModals';
 import { ConfirmModal, ProfileModal, ShortcutsModal, StatusModal } from './MiscModals';
 
-const UserSettings = lazy(() => import('../settings/UserSettings').then((m) => ({ default: m.UserSettings })));
-const ServerSettings = lazy(() => import('../settings/ServerSettings').then((m) => ({ default: m.ServerSettings })));
-const ChannelSettings = lazy(() => import('../settings/ChannelSettings').then((m) => ({ default: m.ChannelSettings })));
+import { UserSettings } from '../settings/UserSettings';
+import { ServerSettings } from '../settings/ServerSettings';
+import { ChannelSettings } from '../settings/ChannelSettings';
 
 function render(m: ModalSpec) {
   switch (m.kind) {
@@ -41,11 +40,9 @@ function render(m: ModalSpec) {
 export function ModalHost() {
   const modals = useUI((s) => s.modals);
   return (
-    <Suspense fallback={null}>
-      <AnimatePresence>
-        {modals.map((m, i) => <ModalSlot key={`${m.kind}-${i}`} spec={m} />)}
-      </AnimatePresence>
-    </Suspense>
+    <AnimatePresence>
+      {modals.map((m, i) => <ModalSlot key={`${m.kind}-${i}`} spec={m} />)}
+    </AnimatePresence>
   );
 }
 

@@ -1,4 +1,7 @@
-// Emoji data is loaded on first use (keeps the first page load small).
+// Emoji data ships in the bundle (the site is one self-contained file) and is
+// indexed on first use.
+import rawEmoji from '../data/emoji.json';
+
 export type EmojiRow = [string, string[], string, number, string[]?];
 
 export interface EmojiEntry { emoji: string; names: string[]; keywords: string; group: number; skins?: string[] }
@@ -17,20 +20,14 @@ export const EMOJI_GROUPS: { id: number; label: string; icon: string }[] = [
 
 let cache: EmojiEntry[] | null = null;
 let byName: Map<string, EmojiEntry> | null = null;
-let loading: Promise<EmojiEntry[]> | null = null;
 
 export function loadEmoji(): Promise<EmojiEntry[]> {
-  if (cache) return Promise.resolve(cache);
-  if (!loading) {
-    loading = import('../data/emoji.json').then((mod) => {
-      const rows = (mod.default ?? mod) as unknown as EmojiRow[];
-      cache = rows.map(([emoji, names, keywords, group, skins]) => ({ emoji, names, keywords, group, skins }));
-      byName = new Map();
-      for (const e of cache) for (const n of e.names) if (!byName.has(n)) byName.set(n, e);
-      return cache;
-    });
+  if (!cache) {
+    cache = (rawEmoji as unknown as EmojiRow[]).map(([emoji, names, keywords, group, skins]) => ({ emoji, names, keywords, group, skins }));
+    byName = new Map();
+    for (const e of cache) for (const n of e.names) if (!byName.has(n)) byName.set(n, e);
   }
-  return loading;
+  return Promise.resolve(cache);
 }
 
 export function emojiSync() { return cache; }

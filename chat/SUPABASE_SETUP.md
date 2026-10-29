@@ -71,13 +71,19 @@ npm run dev
 
 Open http://localhost:5173, register, and create your first server.
 
+### Or just open the file
+
+`npm run build` makes a single self-contained `dist/index.html`. You can double-click it to run Cityline straight from your computer, with no server. Fill in `dist/config.js` first, or paste your URL and key into the setup screen.
+
+When running from a file, turn **Confirm email** off (step 3). Email links and Google/GitHub sign-in need to send people back to a web address, and a file on your computer isn't one. Everything else works the same.
+
 ## 6. Deploy
 
 ```bash
 npm run build
 ```
 
-This produces a static `dist/` folder. Upload it to any static host. The app uses hash routes (`/#/channels/...`) and relative asset paths, so it needs no rewrite rules and works in a sub-folder too.
+This produces a static `dist/` folder (`index.html` with everything inlined, plus `config.js`, the icon and the web manifest). Upload it to any static host. The app uses hash routes (`/#/channels/...`) and relative asset paths, so it needs no rewrite rules and works in a sub-folder too.
 
 - **Netlify / Cloudflare Pages / Vercel**: set the build command to `npm run build`, the output directory to `dist` and the base directory to `chat`. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as environment variables (or fill in `public/config.js`).
 - **GitHub Pages / any web server**: upload the contents of `dist/`.
