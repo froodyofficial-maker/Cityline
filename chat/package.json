@@ -1,0 +1,34 @@
+{
+  "name": "cityline-chat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cityline: a Discord-style chat site (servers, channels, DMs, voice and video, Neon premium) on Supabase",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "build:emoji": "node scripts/build-emoji.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "highlight.js": "^11.12.0",
+    "lucide-react": "^1.63.0",
+    "motion": "^14.7.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "emojibase-data": "^18.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

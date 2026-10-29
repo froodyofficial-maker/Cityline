@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Neon cosmetics: avatar decorations, name styles, profile effects,
+   message effects canvas
+   ========================================================================== */
+
+.effects-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 2800; }
+
+/* ---------- avatar decorations ---------- */
+.deco { position: absolute; inset: -14%; pointer-events: none; border-radius: 50%; z-index: 1; }
+.deco-neon-ring {
+  background: conic-gradient(from 0deg, #ff5fd2, #8b7bff, #2fd0ff, #3dfbc0, #ff5fd2);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: spin 3s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 95, 210, 0.8));
+}
+.deco-aurora-halo { inset: -22%; background: conic-gradient(from 90deg, rgba(61, 251, 192, 0.0), rgba(61, 251, 192, 0.9), rgba(79, 157, 255, 0.9), rgba(167, 107, 255, 0.0)); -webkit-mask: radial-gradient(farthest-side, transparent 66%, #000 70%, transparent 100%); mask: radial-gradient(farthest-side, transparent 66%, #000 70%, transparent 100%); animation: spin 5s linear infinite; filter: blur(2px); }
+.deco-flames { inset: -10% -10% -18% -10%; }
+.deco-flames .flames { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; display: flex; justify-content: center; gap: 0; }
+.deco-flames .flames i { width: 26%; height: 100%; margin: 0 -4%; border-radius: 50% 50% 35% 35% / 60% 60% 40% 40%; background: radial-gradient(ellipse at 50% 90%, #fff3b0 0%, #ffb547 30%, #ff5c38 60%, transparent 72%); animation: flame 0.9s ease-in-out infinite alternate; transform-origin: 50% 100%; mix-blend-mode: screen; opacity: 0.9; }
+.deco-flames .flames i:nth-child(2) { animation-delay: -0.3s; height: 115%; }
+.deco-flames .flames i:nth-child(3) { animation-delay: -0.6s; height: 135%; }
+.deco-flames .flames i:nth-child(4) { animation-delay: -0.2s; height: 110%; }
+.deco-flames .flames i:nth-child(5) { animation-delay: -0.5s; }
+@keyframes flame { from { transform: scaleY(0.85) skewX(-4deg); } to { transform: scaleY(1.08) skewX(4deg); } }
+.deco-crown { position: absolute; width: 62%; left: 19%; top: -26%; transform: rotate(-14deg); animation: crown-bob 2.4s ease-in-out infinite; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)); }
+@keyframes crown-bob { 0%, 100% { transform: rotate(-14deg) translateY(0); } 50% { transform: rotate(-10deg) translateY(-3px); } }
+.deco-cat-ears .ear { position: absolute; top: 2%; width: 34%; height: 34%; background: linear-gradient(135deg, #ffc1dd, #ff7ab6); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.deco-cat-ears .ear::after { content: ''; position: absolute; inset: 30% 25% 0; background: #ffe3ef; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.deco-cat-ears .ear.l { left: 8%; transform: rotate(-22deg); animation: ear-l 3s ease-in-out infinite; }
+.deco-cat-ears .ear.r { right: 8%; transform: rotate(22deg); animation: ear-r 3s ease-in-out infinite; }
+@keyframes ear-l { 0%, 90%, 100% { transform: rotate(-22deg); } 94% { transform: rotate(-34deg); } }
+@keyframes ear-r { 0%, 90%, 100% { transform: rotate(22deg); } 95% { transform: rotate(34deg); } }
+.deco-orbit-hearts .orbit { position: absolute; inset: 0; animation: spin 4s linear infinite; }
+.deco-orbit-hearts .orbit i { position: absolute; font-size: 0.8em; font-style: normal; animation: spin 4s linear infinite reverse; }
+.deco-orbit-hearts .orbit i:nth-child(1) { top: -6%; left: 44%; }
+.deco-orbit-hearts .orbit i:nth-child(2) { bottom: 4%; left: 2%; }
+.deco-orbit-hearts .orbit i:nth-child(3) { bottom: 4%; right: 2%; }
+.deco-pixel { inset: -10%; border-radius: 22%; border: 4px dashed #3dfbc0; animation: pixel-hue 2s steps(6) infinite; }
+@keyframes pixel-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+.deco-sakura .petal-ring { position: absolute; inset: 0; animation: spin 14s linear infinite; }
+.deco-sakura .petal-ring i { position: absolute; left: 50%; top: 50%; font-style: normal; font-size: 0.75em; transform: rotate(calc(var(--i) * 45deg)) translateY(-62%) translateY(-0.4em); transform-origin: 0 0; }
+.avatar .deco { font-size: calc(var(--size, 40px) * 0.35); }
+
+/* ---------- name styles ---------- */
+.name-tag { overflow-wrap: anywhere; }
+.name-tag.role-gradient { -webkit-background-clip: text; background-clip: text; color: transparent; }
+.name-fx { -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% 100%; animation: gradient-pan 4s linear infinite; font-weight: 700; }
+.name-fx-aurora { background-image: linear-gradient(90deg, #3dfbc0, #4f9dff, #a76bff, #3dfbc0); }
+.name-fx-sunset { background-image: linear-gradient(90deg, #ff5f6d, #ffc371, #ff7a59, #ff5f6d); }
+.name-fx-ocean { background-image: linear-gradient(90deg, #2fd0ff, #3d7bff, #3dfbe0, #2fd0ff); }
+.name-fx-rainbow { background-image: linear-gradient(90deg, #ff5c7a, #ffb547, #ffe36b, #2fd88c, #31d0ff, #a76bff, #ff5c7a); background-size: 300% 100%; animation-duration: 6s; }
+.name-fx-gold { background-image: linear-gradient(100deg, #b8862e 20%, #fff2b0 40%, #ffd36b 50%, #b8862e 70%); background-size: 250% 100%; animation-duration: 3s; }
+.name-fx-glow { color: #fff; background: none; -webkit-background-clip: initial; background-clip: initial; text-shadow: 0 0 6px #ff5fd2, 0 0 14px #ff5fd2, 0 0 22px #8b7bff; animation: glow-pulse 2.4s ease-in-out infinite; }
+[data-light='1'] .name-fx-glow { color: #a3007f; }
+@keyframes glow-pulse { 0%, 100% { text-shadow: 0 0 6px #ff5fd2, 0 0 14px #ff5fd2, 0 0 22px #8b7bff; } 50% { text-shadow: 0 0 3px #ff5fd2, 0 0 8px #8b7bff; } }
+.name-fx-glitch { position: relative; color: var(--text); background: none; -webkit-background-clip: initial; background-clip: initial; animation: none; display: inline-block; }
+.name-fx-glitch::before, .name-fx-glitch::after { content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; overflow: hidden; }
+.name-fx-glitch::before { color: #ff3df0; animation: glitch-a 2.4s infinite steps(1); clip-path: inset(0 0 55% 0); }
+.name-fx-glitch::after { color: #2fd0ff; animation: glitch-b 2.4s infinite steps(1); clip-path: inset(50% 0 0 0); }
+@keyframes glitch-a { 0%, 86%, 100% { transform: none; opacity: 0; } 88% { transform: translate(-2px, -1px); opacity: 1; } 92% { transform: translate(2px, 1px); opacity: 1; } }
+@keyframes glitch-b { 0%, 86%, 100% { transform: none; opacity: 0; } 89% { transform: translate(2px, 0); opacity: 1; } 93% { transform: translate(-2px, 1px); opacity: 1; } }
+
+/* ---------- profile effects ---------- */
+.pfx { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; border-radius: inherit; }
+.pfx-p { position: absolute; top: -20px; font-size: calc(14px * var(--s, 1)); color: #fff; animation: pfx-fall linear infinite; opacity: 0.9; }
+@keyframes pfx-fall { from { transform: translate(0, -20px) rotate(0); } to { transform: translate(var(--drift, 0), 520px) rotate(360deg); } }
+.pfx-stars .pfx-p { color: #ffe9a8; text-shadow: 0 0 8px #ffd36b; animation-name: pfx-twinkle; top: auto; bottom: 0; }
+@keyframes pfx-twinkle { 0% { transform: translateY(20px) scale(0.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-420px) scale(1.1); opacity: 0; } }
+.pfx-embers .pfx-p { top: auto; bottom: -10px; width: calc(5px * var(--s, 1)); height: calc(5px * var(--s, 1)); border-radius: 50%; background: radial-gradient(#fff3b0, #ff7a45 60%, transparent 70%); box-shadow: 0 0 8px #ff7a45; animation-name: pfx-rise; }
+@keyframes pfx-rise { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(var(--drift, 0), -460px); opacity: 0; } }
+.pfx-bubbles .pfx-p { top: auto; bottom: -30px; width: calc(16px * var(--s, 1)); height: calc(16px * var(--s, 1)); border-radius: 50%; border: 1.5px solid rgba(160, 230, 255, 0.85); background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6), transparent 40%); animation-name: pfx-rise; }
+.pfx-snow .pfx-p { color: #fff; text-shadow: 0 0 4px rgba(255, 255, 255, 0.8); }
+.pfx-petals .pfx-p { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2)); }
+.pfx-grid { position: absolute; inset: 40% -20% -20%; background-image: linear-gradient(rgba(61, 216, 255, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 61, 240, 0.5) 1px, transparent 1px); background-size: 28px 28px; transform: perspective(240px) rotateX(60deg); animation: grid-move 2s linear infinite; mask-image: linear-gradient(transparent, #000 60%); opacity: 0.6; }
+@keyframes grid-move { from { background-position: 0 0; } to { background-position: 0 28px; } }
+.cosmetic-fx .pfx { border-radius: 10px; }
+.cosmetic-fx .pfx-p { font-size: calc(9px * var(--s, 1)); animation-duration: 3s !important; }

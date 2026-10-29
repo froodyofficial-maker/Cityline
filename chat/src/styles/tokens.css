@@ -1,0 +1,277 @@
+/* ==========================================================================
+   Design tokens. Every colour in the app comes from here, so a theme is just
+   a different set of these variables.
+   ========================================================================== */
+
+:root {
+  --font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-scale: 1;
+  --saturation: 1;
+
+  --radius-xs: 4px;
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 14px;
+  --radius-xl: 20px;
+  --avatar-radius: 50%;
+
+  --rail-w: 72px;
+  --side-w: 248px;
+  --members-w: 256px;
+  --header-h: 52px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 120ms;
+  --t: 200ms;
+  --t-slow: 360ms;
+
+  --grad-brand: linear-gradient(135deg, #8b7bff 0%, #6a8cff 50%, #2fd0ff 100%);
+  --grad-neon: linear-gradient(115deg, #ff5fd2 0%, #8b7bff 45%, #2fd0ff 100%);
+  --grad-neon-anim: linear-gradient(115deg, #ff5fd2, #8b7bff, #2fd0ff, #3dfbc0, #ff5fd2);
+  --grad-gold: linear-gradient(120deg, #ffd36b, #ff9f43, #ffd36b);
+
+  --success: #2fd88c;
+  --warning: #ffb547;
+  --danger: #ff5c7a;
+  --info: #5aa8ff;
+  --online: #2fd88c;
+  --idle: #f5b83d;
+  --dnd: #ff4d6d;
+  --offline: #6b7389;
+  --neon-pink: #ff5fd2;
+  --neon-cyan: #2fd0ff;
+}
+
+/* ---------- Midnight (default) ---------- */
+:root,
+[data-theme='midnight'] {
+  --app-bg: #0a0c13;
+  --bg-rail: #0a0c13;
+  --bg-side: #0f121b;
+  --bg-chat: #141824;
+  --bg-elev: #1a1f2e;
+  --bg-elev-2: #222839;
+  --bg-input: #1c2131;
+  --bg-float: #161a27;
+  --bg-modal: #141825;
+  --bg-hover: rgba(148, 163, 214, 0.07);
+  --bg-active: rgba(148, 163, 214, 0.13);
+  --bg-selected: rgba(124, 108, 255, 0.16);
+  --bg-code: #0e111a;
+  --line: rgba(160, 175, 220, 0.08);
+  --line-strong: rgba(160, 175, 220, 0.16);
+  --text: #eef1f8;
+  --text-2: #b4bccf;
+  --text-3: #7f88a0;
+  --text-4: #596178;
+  --brand: #7c6cff;
+  --brand-hover: #6c5bf7;
+  --brand-2: #31d0ff;
+  --brand-soft: rgba(124, 108, 255, 0.16);
+  --brand-text: #a99fff;
+  --link: #6cb8ff;
+  --mention-bg: rgba(255, 181, 71, 0.08);
+  --mention-line: #ffb547;
+  --mention-pill: rgba(124, 108, 255, 0.24);
+  --mention-pill-text: #c9c2ff;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.16);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-3: 0 30px 80px rgba(0, 0, 0, 0.6);
+  --glass: rgba(18, 22, 34, 0.74);
+  --scroll-thumb: rgba(160, 175, 220, 0.16);
+  --overlay: rgba(4, 6, 12, 0.72);
+  color-scheme: dark;
+}
+
+/* ---------- Slate (classic grey) ---------- */
+[data-theme='slate'] {
+  --app-bg: #1e1f22;
+  --bg-rail: #1e1f22;
+  --bg-side: #2b2d31;
+  --bg-chat: #313338;
+  --bg-elev: #383a40;
+  --bg-elev-2: #404249;
+  --bg-input: #383a40;
+  --bg-float: #232428;
+  --bg-modal: #313338;
+  --bg-hover: rgba(78, 80, 88, 0.3);
+  --bg-active: rgba(78, 80, 88, 0.6);
+  --bg-selected: rgba(78, 80, 88, 0.6);
+  --bg-code: #2b2d31;
+  --line: rgba(255, 255, 255, 0.06);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --text: #f2f3f5;
+  --text-2: #b5bac1;
+  --text-3: #949ba4;
+  --text-4: #6d6f78;
+  --brand: #5865f2;
+  --brand-hover: #4752c4;
+  --brand-2: #00a8fc;
+  --brand-soft: rgba(88, 101, 242, 0.18);
+  --brand-text: #949cf7;
+  --link: #00a8fc;
+  --mention-pill: rgba(88, 101, 242, 0.3);
+  --mention-pill-text: #c9cdfb;
+}
+
+/* ---------- AMOLED ---------- */
+[data-theme='amoled'] {
+  --app-bg: #000;
+  --bg-rail: #000;
+  --bg-side: #050506;
+  --bg-chat: #000;
+  --bg-elev: #0e0f12;
+  --bg-elev-2: #16171b;
+  --bg-input: #0e0f12;
+  --bg-float: #0b0c0f;
+  --bg-modal: #07080a;
+  --bg-code: #0a0a0c;
+  --line: rgba(255, 255, 255, 0.07);
+}
+
+/* ---------- Daylight (light) ---------- */
+[data-theme='daylight'] {
+  --app-bg: #e6e9f2;
+  --bg-rail: #e6e9f2;
+  --bg-side: #f2f4f9;
+  --bg-chat: #ffffff;
+  --bg-elev: #f1f3f8;
+  --bg-elev-2: #e7eaf2;
+  --bg-input: #eef0f6;
+  --bg-float: #ffffff;
+  --bg-modal: #ffffff;
+  --bg-hover: rgba(40, 50, 90, 0.06);
+  --bg-active: rgba(40, 50, 90, 0.1);
+  --bg-selected: rgba(91, 76, 255, 0.12);
+  --bg-code: #f4f5f9;
+  --line: rgba(30, 40, 80, 0.08);
+  --line-strong: rgba(30, 40, 80, 0.16);
+  --text: #141826;
+  --text-2: #3d4459;
+  --text-3: #687089;
+  --text-4: #959cb0;
+  --brand: #5b4cff;
+  --brand-hover: #4a3bec;
+  --brand-2: #0aa4e6;
+  --brand-soft: rgba(91, 76, 255, 0.12);
+  --brand-text: #4c3df0;
+  --link: #0068e0;
+  --mention-bg: rgba(255, 170, 40, 0.12);
+  --mention-pill: rgba(91, 76, 255, 0.14);
+  --mention-pill-text: #4636e6;
+  --shadow-1: 0 1px 2px rgba(20, 30, 60, 0.08), 0 2px 8px rgba(20, 30, 60, 0.06);
+  --shadow-2: 0 10px 30px rgba(20, 30, 60, 0.14), 0 2px 6px rgba(20, 30, 60, 0.08);
+  --shadow-3: 0 30px 80px rgba(20, 30, 60, 0.25);
+  --glass: rgba(255, 255, 255, 0.78);
+  --scroll-thumb: rgba(30, 40, 80, 0.18);
+  --overlay: rgba(20, 24, 40, 0.42);
+  color-scheme: light;
+}
+
+/* ---------- Neon gradient themes ----------
+   Panels are translucent so the animated background shows through. */
+[data-theme='aurora'],
+[data-theme='sunset'],
+[data-theme='synthwave'],
+[data-theme='sakura'],
+[data-theme='ocean'],
+[data-theme='forest'] {
+  --bg-rail: rgba(0, 0, 0, 0.32);
+  --bg-side: rgba(0, 0, 0, 0.22);
+  --bg-chat: rgba(0, 0, 0, 0.12);
+  --bg-elev: rgba(255, 255, 255, 0.06);
+  --bg-elev-2: rgba(255, 255, 255, 0.1);
+  --bg-input: rgba(0, 0, 0, 0.28);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.11);
+  --bg-code: rgba(0, 0, 0, 0.35);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --glass: rgba(10, 10, 20, 0.6);
+}
+
+[data-theme='aurora'] {
+  --app-bg: radial-gradient(1200px 800px at 10% -10%, #0f5a57 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 0%, #1e2d6b 0%, transparent 55%),
+    radial-gradient(1000px 900px at 60% 120%, #0b4a3a 0%, transparent 60%), #06141b;
+  --bg-float: #0c1f26;
+  --bg-modal: #0b1c23;
+  --brand: #22d3a6;
+  --brand-hover: #1bbf95;
+  --brand-2: #4f9dff;
+  --brand-soft: rgba(34, 211, 166, 0.18);
+  --brand-text: #6ef2cf;
+  --mention-pill: rgba(34, 211, 166, 0.22);
+  --mention-pill-text: #9ff7de;
+}
+[data-theme='sunset'] {
+  --app-bg: radial-gradient(1100px 700px at 0% 0%, #6b1d3a 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 20%, #7a3a12 0%, transparent 55%),
+    radial-gradient(900px 800px at 50% 120%, #3d1046 0%, transparent 60%), #1a0b14;
+  --bg-float: #2a1220;
+  --bg-modal: #25101c;
+  --brand: #ff7a59;
+  --brand-hover: #f2694a;
+  --brand-2: #ffc35a;
+  --brand-soft: rgba(255, 122, 89, 0.18);
+  --brand-text: #ffab92;
+  --mention-pill: rgba(255, 122, 89, 0.22);
+  --mention-pill-text: #ffcbbb;
+}
+[data-theme='synthwave'] {
+  --app-bg: radial-gradient(1100px 700px at 0% 100%, #5b0f6b 0%, transparent 60%),
+    radial-gradient(1000px 700px at 100% 0%, #10307a 0%, transparent 55%),
+    linear-gradient(180deg, #120a24, #1b0c2e);
+  --bg-float: #1d1036;
+  --bg-modal: #1a0e31;
+  --brand: #ff3df0;
+  --brand-hover: #e830d9;
+  --brand-2: #3dd8ff;
+  --brand-soft: rgba(255, 61, 240, 0.16);
+  --brand-text: #ff8ef6;
+  --mention-pill: rgba(255, 61, 240, 0.2);
+  --mention-pill-text: #ffb4f9;
+}
+[data-theme='sakura'] {
+  --app-bg: radial-gradient(1000px 700px at 100% 0%, #6b2342 0%, transparent 60%),
+    radial-gradient(900px 700px at 0% 100%, #3d1a3a 0%, transparent 60%), #1c1016;
+  --bg-float: #2a1820;
+  --bg-modal: #26151d;
+  --brand: #ff8fb8;
+  --brand-hover: #f57ca8;
+  --brand-2: #ffd1e3;
+  --brand-soft: rgba(255, 143, 184, 0.18);
+  --brand-text: #ffb3cf;
+  --mention-pill: rgba(255, 143, 184, 0.22);
+  --mention-pill-text: #ffd0e1;
+}
+[data-theme='ocean'] {
+  --app-bg: radial-gradient(1100px 800px at 0% 0%, #0d3d6b 0%, transparent 60%),
+    radial-gradient(900px 800px at 100% 100%, #08445a 0%, transparent 60%), #071423;
+  --bg-float: #0d2238;
+  --bg-modal: #0b1e33;
+  --brand: #38b6ff;
+  --brand-hover: #26a6f2;
+  --brand-2: #3dfbe0;
+  --brand-soft: rgba(56, 182, 255, 0.18);
+  --brand-text: #8dd4ff;
+  --mention-pill: rgba(56, 182, 255, 0.22);
+  --mention-pill-text: #bfe6ff;
+}
+[data-theme='forest'] {
+  --app-bg: radial-gradient(1000px 800px at 0% 0%, #1f4a26 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 100%, #3a4a12 0%, transparent 60%), #0b140d;
+  --bg-float: #132216;
+  --bg-modal: #111e13;
+  --brand: #6fdc7a;
+  --brand-hover: #5ccb68;
+  --brand-2: #d4f56a;
+  --brand-soft: rgba(111, 220, 122, 0.16);
+  --brand-text: #a6efad;
+  --mention-pill: rgba(111, 220, 122, 0.2);
+  --mention-pill-text: #c8f6cc;
+}
