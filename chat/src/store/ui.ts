@@ -112,7 +112,8 @@ export function routeToHash(r: Route) {
 export const useUI = create<UIState>()(() => ({
   route: parseHash(),
   modals: [],
-  rightPanel: (localStorage.getItem('cityline:members') ?? '1') === '1' ? 'members' : null,
+  // on phones the member list would cover the chat, so it starts closed
+  rightPanel: window.innerWidth > 860 && (localStorage.getItem('cityline:members') ?? '1') === '1' ? 'members' : null,
   threadId: null,
   replyTo: {},
   editing: null,
@@ -138,14 +139,15 @@ export const useUI = create<UIState>()(() => ({
 export const ui = () => useUI.getState();
 export const setUI = (p: Partial<UIState> | ((s: UIState) => Partial<UIState>)) => useUI.setState(p);
 
-export function navigate(r: Route, opts: { replace?: boolean } = {}) {
+/** `keepNav` leaves the mobile drawer open, e.g. after picking a server so its channels show. */
+export function navigate(r: Route, opts: { replace?: boolean; keepNav?: boolean } = {}) {
   const hash = routeToHash(r);
   if (window.location.hash !== hash) {
     if (opts.replace) history.replaceState(null, '', hash);
     else history.pushState(null, '', hash);
   }
   if (r.kind !== 'invite') localStorage.setItem(ROUTE_KEY, JSON.stringify(r));
-  setUI({ route: r, mobileNav: false, editing: null, voiceView: r.kind === 'server' ? ui().voiceView : null });
+  setUI({ route: r, mobileNav: opts.keepNav ? ui().mobileNav : false, editing: null, voiceView: r.kind === 'server' ? ui().voiceView : null });
 }
 
 window.addEventListener('popstate', () => setUI({ route: parseHash() }));

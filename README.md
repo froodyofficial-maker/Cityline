@@ -2,6 +2,8 @@
 
 An open-world crime game with a full story mode, built on [three.js](https://threejs.org) (r160).
 
+> **Also in this repo:** [Cityline chat](chat/README.md), a Discord-style chat site on Supabase. See [chat/SUPABASE_SETUP.md](chat/SUPABASE_SETUP.md) to run it.
+
 > Six years inside. One last night to settle everything.
 
 ## Play

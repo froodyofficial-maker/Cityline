@@ -67,7 +67,7 @@ export function ServerRail() {
       <RailButton
         active={route.kind === 'friends' || route.kind === 'dm'}
         label="Direct Messages"
-        onClick={() => navigate({ kind: 'friends' })}
+        onClick={() => navigate({ kind: 'friends' }, { keepNav: true })}
         className="home"
       >
         <LogoMark size={30} />
@@ -138,7 +138,7 @@ function ServerButton({ id, inFolder }: { id: string; inFolder?: boolean }) {
       unread={unread && !muted}
       badge={mentions}
       className={cn('server', inFolder && 'in-folder', muted && 'muted')}
-      onClick={() => navigate({ kind: 'server', serverId: id, channelId: lastChannel(id) })}
+      onClick={() => navigate({ kind: 'server', serverId: id, channelId: lastChannel(id) }, { keepNav: true })}
       onContextMenu={(e) => openMenu(e, serverMenu(id))}
     >
       <ServerIcon name={server.name} url={server.icon_url} size={48} />

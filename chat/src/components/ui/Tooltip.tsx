@@ -18,6 +18,8 @@ export function Tip({ label, side = 'top', delay = 250, children, disabled }: Pr
   const target = useRef<HTMLElement | null>(null);
 
   const show = useCallback((el: HTMLElement) => {
+    // a tap fires mouseenter too; on touch screens the label would just stick
+    if (window.matchMedia('(hover: none)').matches) return;
     target.current = el;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {

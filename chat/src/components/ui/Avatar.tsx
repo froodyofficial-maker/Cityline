@@ -3,7 +3,6 @@ import type { PresenceStatus } from '../../lib/types';
 import { cn, hashColor, initials } from '../../lib/utils';
 import { useData } from '../../store/data';
 import { presenceStatus } from '../../store/selectors';
-import { useVoice } from '../../store/voice';
 
 interface Props {
   userId?: string | null;
@@ -29,7 +28,6 @@ export const Avatar = memo(function Avatar({
   const profile = useData((s) => (userId ? s.profiles[userId] : undefined));
   const serverAvatar = useData((s) => (userId && serverId ? s.members[serverId]?.[userId]?.avatar_url ?? (userId === s.me ? s.memberships[serverId]?.avatar_url : null) : null));
   const live = useData((s) => (showStatus && userId && !status ? presenceStatus(userId, s) : null));
-  const isSpeaking = useVoice((s) => (userId ? !!s.speaking[userId] : false));
   const src = url !== undefined ? url : serverAvatar || profile?.avatar_url;
   const label = name ?? profile?.display_name ?? profile?.username ?? '?';
   const st = status ?? live ?? 'offline';
@@ -37,7 +35,7 @@ export const Avatar = memo(function Avatar({
   const bg = hashColor(userId || label);
   return (
     <div
-      className={cn('avatar', (speaking ?? isSpeaking) && 'speaking', className)}
+      className={cn('avatar', speaking && 'speaking', className)}
       style={{ '--size': `${size}px`, ...(ring ? { '--ring': ring } : {}), ...style } as CSSProperties}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
