@@ -9,6 +9,7 @@
     "dev": "node tools/serve.mjs 8080",
     "build": "node tools/build.mjs",
     "check": "node tools/check.mjs",
+    "build:marrow": "node tools/build-marrow.mjs",
     "desktop": "npm run build && npm --prefix desktop install && npm --prefix desktop start",
     "desktop:win": "npm run build && npm --prefix desktop install && npm --prefix desktop run dist:win"
   },

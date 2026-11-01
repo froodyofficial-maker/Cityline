@@ -30,6 +30,35 @@ npm run desktop      # run the desktop app (Electron)
 npm run desktop:win  # build desktop/release/EmberCity-<version>-portable.exe and a zip
 ```
 
+## MARROW (horror)
+
+A separate first-person survival horror game lives in `marrow/`. **Content warning:** extreme graphic gore (flayed and dismembered bodies, a violent death every time you're caught), sudden loud sounds, flashing light and screen distortion.
+
+> Halloran Provisions, night shift. Your sister Mara never clocked out.
+
+**Play:** open `dist/marrow.html` (one self-contained file, runs from disk), or `npm start` and go to http://localhost:8080/marrow/. Use headphones, play in the dark, and set brightness on the title screen. Keyboard and mouse only.
+
+**How it plays**
+
+- Something that came up the rendering drain now runs the kill line. It hunts by **sound** and **light**. Running is loud, crouching is quiet, and pointing your torch at it gets you noticed.
+- There's no combat. If it sees you, break line of sight and hide in a locker. If it watches you get in, it rips the door off.
+- If it stops outside your locker to sniff, hold **Space** to hold your breath. Run out of breath and you'll gasp.
+- Find three fuses for the freight lift, power it, and survive until the lift comes down.
+- You die in one hit. Your body stays where it fell, and you wake in the locker room with what you'd collected.
+- The audio is all synthesised live with WebAudio: positional footsteps and breathing (muffled through walls), heartbeat and breath that follow your fear, whispers, the chase score. The visuals are low-res and dithered, with flashlight shadows, procedural textures and gore.
+
+| Key | Action |
+| --- | --- |
+| W A S D / Mouse | Move / look |
+| Shift | Run (it hears you) |
+| C | Crouch |
+| F | Torch |
+| E | Interact, hide, leave a locker |
+| Space (in a locker) | Hold your breath |
+| Tab | Objective |
+
+`npm run build:marrow` rebuilds `dist/marrow.html`. Sources: `marrow/src/` (`level.js` map and rooms, `gore.js` bodies, `monster.js` model and AI, `events.js` scares, director and endings, `audio.js` synth, `post.js` screen effects).
+
 ## Project layout
 
 ```

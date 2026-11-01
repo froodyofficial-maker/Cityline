@@ -9,4 +9,7 @@ let ok=true;
 for(const f of GAME_FILES){try{new vm.Script(await readFile(join(root,'src',f),'utf8'),{filename:'src/'+f})}catch(e){ok=false;console.error('src/'+f+': '+e.message)}}
 let all='';for(const f of GAME_FILES)all+='\n;'+await readFile(join(root,'src',f),'utf8');
 try{new vm.Script(all,{filename:'ember-city-game.js'})}catch(e){ok=false;console.error('combined: '+e.message)}
-console.log(ok?`ok: ${GAME_FILES.length} files`:'syntax errors found');process.exit(ok?0:1);
+// MARROW is ES modules: bundling it is the syntax + import check
+try{const {build}=await import('esbuild');await build({entryPoints:[join(root,'marrow/src/main.js')],bundle:true,write:false,logLevel:'silent',
+ plugins:[{name:'three',setup(b){b.onResolve({filter:/^three$/},()=>({path:join(root,'vendor/three/build/three.module.min.js')}))}}]})}catch(e){ok=false;console.error('marrow: '+e.message)}
+console.log(ok?`ok: ${GAME_FILES.length} files + marrow`:'syntax errors found');process.exit(ok?0:1);
