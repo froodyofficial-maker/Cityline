@@ -17,7 +17,7 @@ export function createPlayer(camera, L) {
   };
   G.player = P;
   // flashlight: a real spot with shadows, mounted slightly right of the eye
-  const spot = new THREE.SpotLight(0xfff1d6, 0, 30, 0.44, 0.6, 1.7);
+  const spot = new THREE.SpotLight(0xfff1d6, 0, 30, 0.46, 0.65, 1.6);
   spot.castShadow = true; spot.shadow.mapSize.set(512, 512); spot.shadow.camera.near = 0.15; spot.shadow.camera.far = 26; spot.shadow.bias = -0.0008;
   spot.position.set(0.18, -0.15, 0.05); camera.add(spot);
   const tgt = new THREE.Object3D(); tgt.position.set(0.05, -0.05, -3); camera.add(tgt); spot.target = tgt;
@@ -125,7 +125,7 @@ export function createPlayer(camera, L) {
       fl *= low ? 0.45 + P.battery * 3 : 1;
     }
     if (P.hidden) fl = 0;
-    spot.intensity = fl * 95; fill.intensity = P.hidden ? 1.5 : fl * 1.2; lens.material.color.setScalar(0.15 + fl * 0.85);
+    spot.intensity = fl * 70; fill.intensity = P.hidden ? 1.5 : fl * 0.8; lens.material.color.setScalar(0.15 + fl * 0.85);
     torch.visible = P.hasFlashlight && !P.hidden;
     const sp2 = Math.hypot(P.vel.x, P.vel.z);
     torch.position.set(0.22 + Math.sin(P.bob) * 0.008 * sp2, -0.22 + Math.abs(Math.cos(P.bob)) * 0.01 * sp2, -0.38);

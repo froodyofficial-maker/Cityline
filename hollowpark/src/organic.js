@@ -58,10 +58,10 @@ function woundTex() {
 let MATS = null;
 export function creatureMats() {
   if (MATS) return MATS;
-  const skin = PB.stdMat(PB.paleSkin(), { ns: 1.0 }); skin.color.setHex(0x8e938c);
+  const skin = PB.stdMat(PB.paleSkin(), { ns: 1.0 }); skin.color.setHex(0x7c817a);
   MATS = {
     skin,
-    wound: new THREE.MeshStandardMaterial({ map: woundTex(), alphaTest: 0.5, roughness: 0.25, side: THREE.DoubleSide }),
+    wound: new THREE.MeshStandardMaterial({ map: woundTex(), alphaTest: 0.5, roughness: 0.35, side: THREE.DoubleSide, color: 0x9a8888 }),
     teeth: new THREE.MeshStandardMaterial({ color: 0xd8ceb0, roughness: 0.35 }),
     gums: new THREE.MeshStandardMaterial({ color: 0x5a0e10, roughness: 0.25 }),
     dark: new THREE.MeshBasicMaterial({ color: 0x050000 }),
@@ -100,22 +100,17 @@ function grinningHead(parent, mats) {
   const jaw = new THREE.Group(); jaw.position.set(0, -0.035, -0.06); head.add(jaw);
   const jg = sculpt(new THREE.SphereGeometry(0.13, 40, 14, 0, Math.PI * 2, mouthTheta, Math.PI * 0.32), true); jg.translate(0, 0.035, 0.06);
   M(jg, headMat, jaw);
-  // teeth: human ones, far too many, all the way round
-  const ry = -0.13 * Math.cos(mouthTheta) * 1.45 * -1, rr = 0.13 * Math.sin(mouthTheta);
-  const tooth = new THREE.BoxGeometry(0.012, 0.024, 0.009);
-  const arc = (grp, y, dir, offZ) => {
-    const N = 36;
-    for (let i = 0; i < N; i++) {
-      const a = -Math.PI * 0.62 + (i / (N - 1)) * Math.PI * 1.24; // ear to ear around the front
-      const x = Math.sin(a) * rr * 0.82 * 0.98, z = Math.cos(a) * rr * 0.98 + offZ;
-      const t = M(tooth, mats.teeth, grp, x, y + dir * 0.006, z); t.rotation.y = a; t.scale.y = 0.8 + R() * 0.5;
-    }
-    const gum = M(new THREE.TorusGeometry(rr * 0.9, 0.011, 6, 30, Math.PI * 1.3), mats.gums, grp, 0, y + dir * 0.018, offZ);
-    gum.rotation.set(Math.PI / 2, 0, -Math.PI * 0.15 + Math.PI); gum.scale.set(0.84, 1, 1);
-  };
-  const mouthY = -0.13 * Math.cos(Math.PI - mouthTheta) * 1.45;
-  arc(head, mouthY + 0.004, -1, 0);
-  arc(jaw, mouthY + 0.035 - 0.01, 1, 0.06);
+  // the smile: a gash that curves up toward the ears, packed with human teeth
+  const mouthY = -0.13 * Math.cos(Math.PI - mouthTheta) * 1.45, Rm = 0.126;
+  const pts = []; for (let i = 0; i <= 28; i++) { const a = -1.85 + 3.7 * i / 28, e = Math.pow(Math.abs(a) / 1.85, 2.2); pts.push(V(Math.sin(a) * Rm * 0.84, mouthY + 0.004 + 0.07 * e, Math.cos(a) * Rm)); }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  M(new THREE.TubeGeometry(curve, 60, 0.02, 8, false), mats.gums, head).scale.set(1, 1, 1);
+  const tooth = new THREE.BoxGeometry(0.014, 0.026, 0.01);
+  for (let i = 0; i < 44; i++) {
+    const t = 0.02 + i / 43 * 0.96, p = curve.getPointAt(t), n = V(p.x, 0, p.z).normalize(), yaw = Math.atan2(n.x, n.z), big = 1 - Math.abs(t - 0.5) * 0.9;
+    const up = M(tooth, mats.teeth, head, p.x + n.x * 0.012, p.y + 0.009, p.z + n.z * 0.012); up.rotation.y = yaw; up.scale.set(1, (0.8 + R() * 0.4) * big + 0.3, 1);
+    const lo = M(tooth, mats.teeth, jaw, p.x + n.x * 0.012 - jaw.position.x, p.y - 0.012 - jaw.position.y, p.z + n.z * 0.012 - jaw.position.z); lo.rotation.y = yaw; lo.scale.set(0.9, (0.7 + R() * 0.4) * big + 0.3, 1);
+  }
   return { head, jaw };
 }
 
