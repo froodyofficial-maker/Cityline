@@ -58,7 +58,7 @@ function woundTex() {
 let MATS = null;
 export function creatureMats() {
   if (MATS) return MATS;
-  const skin = PB.stdMat(PB.paleSkin(), { ns: 0.8 }); skin.color.setHex(0xe8e4e0);
+  const skin = PB.stdMat(PB.paleSkin(), { ns: 1.0 }); skin.color.setHex(0x8e938c);
   MATS = {
     skin,
     wound: new THREE.MeshStandardMaterial({ map: woundTex(), alphaTest: 0.5, roughness: 0.25, side: THREE.DoubleSide }),
@@ -75,11 +75,16 @@ const M = (geo, mat, parent, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(
 function grinningHead(parent, mats) {
   const head = new THREE.Group(); parent.add(head);
   const mouthTheta = Math.PI * 0.6;
+  const headMat = mats.skin.clone(); headMat.vertexColors = true;
   const sculpt = (g, lower) => {
-    const p = g.attributes.position, v = new THREE.Vector3();
+    const p = g.attributes.position, v = new THREE.Vector3(), cols = [];
     for (let i = 0; i < p.count; i++) {
       v.fromBufferAttribute(p, i); const d = v.clone().normalize();
-      let k = 1;
+      let k = 1, c = 1;
+      for (const s of [-1, 1]) c -= Math.exp(-d.distanceToSquared(V(s * 0.36, 0.3, 0.88).normalize()) / 0.02) * 0.85; // dark, skinned-over sockets
+      if (d.z > 0.1 && Math.abs(d.y + 0.31) < 0.09) { c *= 0.35 + Math.abs(d.y + 0.31) * 5; k -= 0.04; }             // where the lips were cut away
+      c -= Math.exp(-d.distanceToSquared(V(0, 0.08, 1)) / 0.003) * 0.6;                                               // nose slits
+      cols.push(c, c * 0.95, c * 0.95);
       for (const s of [-1, 1]) { const e = V(s * 0.36, 0.3, 0.88).normalize(); k -= Math.exp(-d.distanceToSquared(e) / 0.018) * 0.16; } // skinned-over eye sockets
       k -= Math.exp(-d.distanceToSquared(V(0, 0.05, 1)) / 0.01) * 0.05;   // flat noseless face
       if (d.z < -0.2 && d.y > -0.2) k += 0.08 * (-d.z);                  // long skull
@@ -87,13 +92,14 @@ function grinningHead(parent, mats) {
       v.multiplyScalar(k); v.y *= lower ? 1.0 : 1.45; v.x *= 0.82; v.z *= lower ? 1.05 : 1.0;
       p.setXYZ(i, v.x, v.y, v.z);
     }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
     g.computeVertexNormals(); return g;
   };
-  M(sculpt(new THREE.SphereGeometry(0.13, 40, 28, 0, Math.PI * 2, 0, mouthTheta)), mats.skin, head);
+  M(sculpt(new THREE.SphereGeometry(0.13, 40, 28, 0, Math.PI * 2, 0, mouthTheta)), headMat, head);
   M(new THREE.SphereGeometry(0.1, 12, 10), mats.dark, head, 0, -0.03, 0.01).scale.set(0.8, 0.9, 0.9);
   const jaw = new THREE.Group(); jaw.position.set(0, -0.035, -0.06); head.add(jaw);
   const jg = sculpt(new THREE.SphereGeometry(0.13, 40, 14, 0, Math.PI * 2, mouthTheta, Math.PI * 0.32), true); jg.translate(0, 0.035, 0.06);
-  M(jg, mats.skin, jaw);
+  M(jg, headMat, jaw);
   // teeth: human ones, far too many, all the way round
   const ry = -0.13 * Math.cos(mouthTheta) * 1.45 * -1, rr = 0.13 * Math.sin(mouthTheta);
   const tooth = new THREE.BoxGeometry(0.012, 0.024, 0.009);

@@ -64,7 +64,7 @@ export function createPost(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   const ao = new GTAOPass(scene, camera, 2, 2); ao.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.5, thickness: 1.2, scale: 1.2, samples: 12 }); ao.blendIntensity = 0.85;
-  const bloom = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.55, 0.6, 0.82);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.45, 0.55, 0.93);
   const output = new OutputPass();
   const smaa = new SMAAPass(2, 2);
   const final = new ShaderPass(FinalShader); final.uniforms.tBlood.value = screenBloodTex();

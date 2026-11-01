@@ -312,8 +312,8 @@ export function paleSkin() {
     stains(a, n, 16, '120,70,90', 0.35, 10, 50); stains(a, n, 10, '90,100,60', 0.3, 10, 40); stains(a, n, 8, '120,20,20', 0.4, 6, 30);
     const base = h.getImageData(0, 0, n, n).data;
     pixels(h, n, (u, v, x, y) => { const o = (y * n + x) * 4; const w = Math.abs(Math.sin(v * 160 + fbm(u, v, 6, 2) * 8)) * 30; const k = clampB(base[o] * 0.7 + w + R() * 20); return [k, k, k]; });
-    pixels(r, n, (u, v) => { const k = clampB(70 + fbm(u, v, 8, 2) * 90); return [k, k, k]; });
-  }, { rough: 0.35, normal: 3 });
+    pixels(r, n, (u, v) => { const k = clampB(110 + fbm(u, v, 8, 2) * 90); return [k, k, k]; });
+  }, { rough: 0.5, normal: 3 });
 }
 export function muscle() {
   return makePBR(256, (a, h, r, n) => {
