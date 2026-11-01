@@ -440,3 +440,145 @@ export function maskTex() {
   x.globalCompositeOperation = 'source-over';
   return toTex(c);
 }
+
+// =====================================================================
+// St. Aldric's Abbey
+// =====================================================================
+// rough ashlar blocks, damp, with soot above head height
+export function wallStone(bloody = 0, tone = [128, 120, 106]) {
+  const w = 128, h = 160, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#1e1b17'; x.fillRect(0, 0, w, h);
+  for (let row = 0, yy = 0; yy < h; row++) {
+    const bh = 18 + (R() * 8 | 0);
+    for (let xx = -(row % 2) * 20 - R() * 10; xx < w; ) {
+      const bw = 28 + R() * 22, v = 0.8 + R() * 0.35;
+      x.fillStyle = `rgb(${tone[0] * v | 0},${tone[1] * v | 0},${tone[2] * v | 0})`;
+      x.fillRect(xx + 1.5, yy + 1.5, bw - 2, bh - 2);
+      xx += bw;
+    }
+    yy += bh;
+  }
+  addNoise(x, w, h, 26, 4);
+  stains(x, w, h, 26, '30,34,20', 0.4); stains(x, w, h, 10, '15,12,10', 0.5);
+  streaks(x, w, 0, h, 20, '20,22,14', 0.4);
+  const g = x.createLinearGradient(0, 0, 0, 50); g.addColorStop(0, 'rgba(8,6,4,0.7)'); g.addColorStop(1, 'rgba(8,6,4,0)'); x.fillStyle = g; x.fillRect(0, 0, w, 50);
+  bottomGrime(x, w, h, 60, 0.7);
+  if (bloody) bloodyOver(x, w, h, bloody);
+  return toTex(c);
+}
+// limewashed plaster over a stone plinth, flaking
+export function wallPlaster(bloody = 0) {
+  const w = 128, h = 160, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#8f887a'; x.fillRect(0, 0, w, h); addNoise(x, w, h, 14);
+  for (let i = 0; i < 14; i++) { x.fillStyle = `rgba(${70 + R() * 20 | 0},${64 + R() * 15 | 0},${55},0.85)`; x.beginPath(); x.ellipse(R() * w, R() * 110, 2 + R() * 10, 2 + R() * 7, R() * 3, 0, 6.28); x.fill(); }
+  stains(x, w, h, 22, '50,40,22', 0.35); streaks(x, w, 0, 110, 14, '40,32,18', 0.35);
+  // painted border band, a faded red and ochre fret
+  x.fillStyle = 'rgba(90,30,20,0.55)'; x.fillRect(0, 26, w, 6); x.fillStyle = 'rgba(120,90,40,0.45)'; for (let xx = 0; xx < w; xx += 12) x.fillRect(xx, 28, 6, 2);
+  // stone plinth
+  for (let xx = 0; xx < w; xx += 32) { const v = 60 + R() * 18; x.fillStyle = `rgb(${v | 0},${v * 0.95 | 0},${v * 0.85 | 0})`; x.fillRect(xx + 1, 112, 30, h - 112); }
+  x.fillStyle = '#2a2620'; x.fillRect(0, 110, w, 3);
+  addNoise(x, w, h, 10); bottomGrime(x, w, h, 40, 0.7);
+  if (bloody) bloodyOver(x, w, h, bloody);
+  return toTex(c);
+}
+// the catacomb wall: niches packed with skulls and long bones
+export function wallSkulls() {
+  const w = 128, h = 160, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#100d0a'; x.fillRect(0, 0, w, h);
+  for (let yy = 4; yy < h - 8; yy += 15) {
+    if (((yy / 15) | 0) % 3 === 2) { // a course of femurs, ends out
+      for (let xx = 2; xx < w; xx += 6) { const v = 150 + R() * 50; x.fillStyle = `rgb(${v | 0},${v * 0.92 | 0},${v * 0.75 | 0})`; x.beginPath(); x.arc(xx + 2, yy + 6, 2.6, 0, 6.28); x.fill(); x.fillStyle = 'rgba(30,20,10,0.6)'; x.fillRect(xx + 1.5, yy + 5.5, 1, 1); }
+      continue;
+    }
+    for (let xx = (yy % 2) * 6; xx < w; xx += 12) {
+      const v = 140 + R() * 60, sx = xx + 6, sy = yy + 7;
+      x.fillStyle = `rgb(${v | 0},${v * 0.9 | 0},${v * 0.72 | 0})`;
+      x.beginPath(); x.ellipse(sx, sy - 1, 5.2, 5.6, 0, 0, 6.28); x.fill();
+      x.fillRect(sx - 3, sy + 2, 6, 3.5);
+      x.fillStyle = '#080604'; x.beginPath(); x.ellipse(sx - 2, sy, 1.6, 1.9, 0, 0, 6.28); x.fill(); x.beginPath(); x.ellipse(sx + 2, sy, 1.6, 1.9, 0, 0, 6.28); x.fill();
+      x.fillRect(sx - 0.5, sy + 2, 1, 1.5); x.fillRect(sx - 2.5, sy + 4.5, 5, 0.8);
+    }
+  }
+  stains(x, w, h, 20, '10,8,4', 0.6); addNoise(x, w, h, 16);
+  bottomGrime(x, w, h, 40, 0.8);
+  return toTex(c);
+}
+export function floorFlag(bloody = 0) {
+  const w = 128, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#16130f'; x.fillRect(0, 0, w, h);
+  const cells = [[0, 0, 64, 48], [64, 0, 64, 40], [0, 48, 40, 44], [40, 48, 50, 44], [90, 40, 38, 52], [0, 92, 70, 36], [70, 92, 58, 36]];
+  for (const [cx, cy, cw, ch] of cells) { const v = 80 + R() * 22; x.fillStyle = `rgb(${v | 0},${v * 0.94 | 0},${v * 0.84 | 0})`; x.fillRect(cx + 1.5, cy + 1.5, cw - 3, ch - 3); }
+  addNoise(x, w, h, 18); stains(x, w, h, 26, '12,10,6', 0.5); cracks(x, w, h, 3);
+  if (bloody) {
+    for (let i = 0; i < bloody * 4; i++) drawSplat(x, R() * w, R() * h, 4 + R() * 9, 0.9);
+    for (let i = 0; i < bloody * 2; i++) drawSmear(x, R() * w * 0.4, R() * h, w * (0.6 + R() * 0.4), R() * h, 10);
+    if (R() < bloody * 0.5) drawPool(x, R() * w, R() * h, 12 + R() * 14);
+  }
+  return toTex(c);
+}
+export function floorBoards(bloody = 0) {
+  const w = 128, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  for (let xx = 0; xx < w; xx += 16) {
+    const v = 62 + R() * 18; x.fillStyle = `rgb(${v + 18 | 0},${v * 0.74 | 0},${v * 0.48 | 0})`; x.fillRect(xx, 0, 15, h);
+    for (let k = 0; k < 6; k++) { x.fillStyle = 'rgba(20,10,4,0.35)'; x.fillRect(xx + R() * 14, R() * h, 1, 10 + R() * 30); }
+    const cut = R() * h; x.fillStyle = '#120a05'; x.fillRect(xx, cut, 15, 1);
+  }
+  x.fillStyle = '#0d0703'; for (let xx = 15; xx < w; xx += 16) x.fillRect(xx, 0, 1, h);
+  addNoise(x, w, h, 12); stains(x, w, h, 18, '15,8,3', 0.5);
+  if (bloody) { for (let i = 0; i < bloody * 4; i++) drawSplat(x, R() * w, R() * h, 4 + R() * 9, 0.9); if (R() < bloody * 0.5) drawPool(x, R() * w, R() * h, 12 + R() * 14); }
+  return toTex(c);
+}
+export function ceilingBeams() {
+  const w = 128, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#2a2621'; x.fillRect(0, 0, w, h); addNoise(x, w, h, 14);
+  stains(x, w, h, 14, '10,8,6', 0.6);
+  for (const yy of [0, 64]) { x.fillStyle = '#1a110a'; x.fillRect(0, yy, w, 18); x.fillStyle = 'rgba(0,0,0,0.5)'; x.fillRect(0, yy + 17, w, 3); for (let k = 0; k < 8; k++) { x.fillStyle = 'rgba(60,40,20,0.3)'; x.fillRect(R() * w, yy + R() * 16, 10 + R() * 30, 1); } }
+  return toTex(c);
+}
+// a lancet window with lead cames and iron bars, snow and moon behind
+export function windowTex() {
+  const w = 64, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.beginPath(); x.moveTo(6, h); x.lineTo(6, 40); x.quadraticCurveTo(6, 4, 32, 2); x.quadraticCurveTo(58, 4, 58, 40); x.lineTo(58, h); x.closePath(); x.save(); x.clip();
+  const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#9ab4d8'); g.addColorStop(1, '#3a4c6a'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 80; i++) { x.fillStyle = `rgba(230,240,255,${0.3 + R() * 0.6})`; x.fillRect(R() * w, R() * h, 1.5, 1.5); }
+  x.strokeStyle = 'rgba(20,24,30,0.9)'; x.lineWidth = 1.5;
+  for (let yy = 20; yy < h; yy += 14) { x.beginPath(); x.moveTo(0, yy); x.lineTo(w, yy + 4); x.stroke(); x.beginPath(); x.moveTo(0, yy + 4); x.lineTo(w, yy); x.stroke(); }
+  x.fillStyle = '#0c0c0e'; for (const bx of [20, 32, 44]) x.fillRect(bx - 1.5, 0, 3, h); x.fillRect(0, 70, w, 3);
+  // somebody's handprints on the inside of the glass
+  drawHand(x, 24, 92, 9, 0.2); drawHand(x, 42, 80, 8, -0.3);
+  x.restore();
+  return toTex(c);
+}
+export function woodTex(bloody = false) {
+  const w = 64, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#3a2416'; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) { x.strokeStyle = `rgba(${R() < 0.5 ? '20,10,4' : '90,60,36'},${0.2 + R() * 0.3})`; x.beginPath(); const xx = R() * w; x.moveTo(xx, 0); x.bezierCurveTo(xx + (R() - 0.5) * 8, h * 0.3, xx + (R() - 0.5) * 8, h * 0.7, xx + (R() - 0.5) * 6, h); x.stroke(); }
+  x.strokeStyle = 'rgba(10,5,2,0.8)'; x.lineWidth = 2; x.strokeRect(6, 8, w - 12, 50); x.strokeRect(6, 66, w - 12, 54);
+  // carved cross in the upper panel; slats lower down
+  x.fillStyle = 'rgba(8,4,2,0.9)'; x.fillRect(30, 16, 4, 32); x.fillRect(22, 24, 20, 4);
+  for (let i = 0; i < 5; i++) x.fillRect(12, 76 + i * 8, 40, 2);
+  x.fillStyle = '#7a6a40'; x.fillRect(52, 60, 4, 6);
+  stains(x, w, h, 10, '10,5,2', 0.4);
+  if (bloody) { for (let i = 0; i < 9; i++) drawDrips(x, 6 + R() * 52, 30 + R() * 50, 20 + R() * 60, 1 + R()); drawHand(x, 32, 70, 12, 0.2); x.fillStyle = bloodRGBA(0.95); x.fillRect(0, h - 10, w, 10); }
+  return toTex(c);
+}
+// the Saint's robe: black wool, stiff with old blood, hem in rags (alpha)
+export function robeTex() {
+  const w = 64, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#16120f'; x.fillRect(0, 0, w, h); addNoise(x, w, h, 14, 4);
+  for (let i = 0; i < 30; i++) { x.strokeStyle = 'rgba(0,0,0,0.5)'; x.beginPath(); const xx = R() * w; x.moveTo(xx, 0); x.lineTo(xx + (R() - 0.5) * 6, h); x.stroke(); }
+  const g = x.createLinearGradient(0, h * 0.4, 0, h); g.addColorStop(0, 'rgba(70,0,0,0)'); g.addColorStop(1, 'rgba(70,4,2,0.9)'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  x.fillStyle = 'rgba(120,90,40,0.6)'; x.fillRect(0, 6, w, 2); x.fillRect(0, 10, w, 1);
+  x.globalCompositeOperation = 'destination-out';
+  for (let xx = 0; xx < w; xx += 3) { const len = 4 + R() * 22; x.fillRect(xx, h - len, 2 + R() * 2, len); }
+  for (let i = 0; i < 18; i++) { x.beginPath(); x.arc(R() * w, h * 0.5 + R() * h * 0.45, 1 + R() * 2.5, 0, 6.28); x.fill(); }
+  x.globalCompositeOperation = 'source-over';
+  return toTex(c, { repeat: true });
+}
+export function snowTex() {
+  const w = 128, h = 128, c = canvas(w, h), x = c.getContext('2d');
+  x.fillStyle = '#c4ccd6'; x.fillRect(0, 0, w, h); addNoise(x, w, h, 16);
+  stains(x, w, h, 14, '150,160,175', 0.4);
+  for (let i = 0; i < 6; i++) drawSplat(x, R() * w, R() * h, 2 + R() * 3, 0.8);
+  return toTex(c);
+}

@@ -2,6 +2,7 @@
 import { G, clamp } from './state.js';
 
 let ctx = null, master, sfx, conv, dryClose, noiseBuf, brownBuf, shaperCurve;
+let choir = null, wind = null;
 let drone = null, chase = null, buzz = null, heart = { next: 0 }, breath = { next: 0, phase: 0 };
 export const A = { ready: false, holding: false, exertion: 0 };
 
@@ -36,7 +37,7 @@ export function initAudio() {
   sfx = ctx.createGain(); sfx.connect(master); sfx.connect(conv);
   dryClose = ctx.createGain(); dryClose.connect(master);           // intimate sounds: no room
   noiseBuf = makeNoise(2); brownBuf = makeBrown(4); shaperCurve = distCurve(40);
-  startDrone(); startChaseBed(); startBuzz();
+  startDrone(); startChaseBed(); startBuzz(); startChoir(); startWind();
   A.ready = true;
 }
 export const now = () => ctx ? ctx.currentTime : 0;
@@ -122,8 +123,18 @@ export function setBuzz(pos, level) {
 export function updateAudio(dt, chaseOn) {
   if (!ctx) return;
   const t = ctx.currentTime, fear = G.fear;
-  drone.g.gain.setTargetAtTime((G.state === 'play' || G.state === 'note' ? 0.55 : 0.25) * (chaseOn ? 0.5 : 1), t, 0.6);
+  drone.g.gain.setTargetAtTime((G.state === 'play' || G.state === 'note' ? 0.38 : 0.2) * (chaseOn ? 0.5 : 1), t, 0.6);
   drone.lp.frequency.setTargetAtTime(110 + fear * 260, t, 0.5);
+  // the choir drifts between chords and swells in phrases; it goes quiet when you're being chased
+  if (choir) {
+    choir.g.gain.setTargetAtTime(chaseOn ? 0.0 : (G.state === 'play' || G.state === 'title' || G.state === 'note' ? 0.16 + fear * 0.1 : 0.04), t, 1.2);
+    if (t > choir.next) {
+      const ch = CHORDS[(Math.random() * CHORDS.length) | 0];
+      choir.voices.forEach((v, i) => { v.o.frequency.setTargetAtTime(ch[(i >> 1) % 4] * (i & 1 ? 1.004 : 0.996), t, 1.4); v.vg.gain.setTargetAtTime(Math.random() < 0.25 ? 0 : 0.5 + Math.random() * 0.5, t, 1.5); });
+      choir.next = t + 8 + Math.random() * 7;
+    }
+  }
+  if (wind) wind.g.gain.setTargetAtTime(G.state === 'title' ? 0.3 : 0.22, t, 1);
   // chase bed
   chase.g.gain.setTargetAtTime(chaseOn ? 0.55 : 0, t, chaseOn ? 0.15 : 1.4);
   if (chaseOn && t > chase.nextHit) { metalHit(null, 0.25 + Math.random() * 0.2, true); chase.nextHit = t + 0.45 + Math.random() * 0.9; }
@@ -370,3 +381,50 @@ export function speak(text, pitch = 0.1, rate = 0.62) {
   } catch (e) { return false; }
 }
 export function stopSpeech() { try { speechSynthesis.cancel(); } catch (e) { } }
+
+// ---------- the abbey ----------
+const CHORDS = [[73.42, 110, 146.83, 174.61], [58.27, 116.54, 146.83, 174.61], [73.42, 98, 146.83, 196], [73.42, 103.83, 146.83, 207.65], [65.41, 98, 155.56, 196]];
+function startChoir() {
+  // monks somewhere far off: sawtooth voices through 'oh' formants, almost all reverb
+  const g = gain(0); g.connect(conv); const dry = gain(0.2); g.connect(dry); dry.connect(master);
+  const forms = [[330, 0.9], [760, 0.5], [2500, 0.12]];
+  const voices = [];
+  CHORDS[0].forEach(f => { for (let d = 0; d < 2; d++) {
+    const o = osc('sawtooth', f * (d ? 1.004 : 0.996)); const vib = osc('sine', 4.2 + Math.random() * 1.2); const vb = gain(f * 0.007); vib.connect(vb); vb.connect(o.frequency);
+    const vg = gain(0.6); forms.forEach(([ff, a]) => { const b = filt('bandpass', ff, 7); const bg = gain(a); o.connect(b); b.connect(bg); bg.connect(vg); });
+    vg.connect(g); o.start(); vib.start(); voices.push({ o, vg });
+  } });
+  choir = { g, voices, next: 0 };
+}
+function startWind() {
+  const g = gain(0); g.connect(master);
+  const n = src(brownBuf), bp = filt('bandpass', 520, 1.4), ng = gain(1.2); n.connect(bp); bp.connect(ng); ng.connect(g); n.start();
+  const lf = osc('sine', 0.06), lg = gain(320); lf.connect(lg); lg.connect(bp.frequency); lf.start();
+  const gust = osc('sine', 0.11), gg = gain(0.5); gust.connect(gg); gg.connect(ng.gain); gust.start();
+  const wh = src(noiseBuf), wb = filt('bandpass', 1350, 16), wgn = gain(0.25); wh.connect(wb); wb.connect(wgn); wgn.connect(g); wh.start();
+  const wl = osc('sine', 0.09), wlg = gain(260); wl.connect(wlg); wlg.connect(wb.frequency); wl.start();
+  wind = { g };
+}
+// the abbey bell, rung by nobody
+export function bellToll(v = 0.35) {
+  if (!ctx) return; const t = ctx.currentTime, g = gain(0); g.connect(conv); g.connect(master);
+  [[1, 1], [2, 0.6], [2.4, 0.5], [3, 0.35], [4.2, 0.25], [5.4, 0.15]].forEach(([r, a]) => { const o = osc('sine', 62 * r), og = gain(0); o.connect(og); og.connect(g); env(og, t, 0.004, a, 6 / r); stopAt(o, t + 7); });
+  g.gain.value = v;
+}
+// the portcullis winch: a ratchet and a chain, for d seconds
+export function winch(d = 40, v = 0.25) {
+  if (!ctx) return; const t0 = ctx.currentTime;
+  for (let k = 0; k < d / 0.16; k++) { const tt = t0 + k * 0.16 + Math.random() * 0.03; const n = src(), bp = filt('bandpass', 2600 + Math.random() * 1500, 5), g = gain(0); n.connect(bp); bp.connect(g); g.connect(sfx); env(g, tt, 0.001, v * (0.5 + Math.random() * 0.5), 0.05); n.start(tt); n.stop(tt + 0.1); }
+  for (let k = 0; k < d / 4; k++) setTimeout(() => groan(0.2), k * 4000);
+  elevatorRumble(d, v * 0.8);
+}
+// an old valve radio between stations. returns stop()
+export function radioHiss(pos) {
+  if (!ctx) return () => { };
+  const o = out(pos, { ref: 1.2 }), n = src(), bp = filt('bandpass', 1800, 0.7), g = gain(0), whine = osc('sine', 2200), wg = gain(0.012);
+  n.connect(bp); bp.connect(g); whine.connect(wg); wg.connect(g); g.connect(o); n.start(); whine.start();
+  let alive = true;
+  const tick = () => { if (!alive) return; const t = ctx.currentTime; g.gain.setTargetAtTime(Math.random() < 0.35 ? 0.25 : 0.05, t, 0.05); whine.frequency.setTargetAtTime(1500 + Math.random() * 1500, t, 0.2); setTimeout(tick, 150 + Math.random() * 500); };
+  tick();
+  return () => { if (!alive) return; alive = false; g.gain.cancelScheduledValues(ctx.currentTime); g.gain.value = 0; n.stop(); whine.stop(); };
+}

@@ -30,22 +30,24 @@ npm run desktop      # run the desktop app (Electron)
 npm run desktop:win  # build desktop/release/EmberCity-<version>-portable.exe and a zip
 ```
 
-## MARROW (horror)
+## VESPERS (horror)
 
-A separate first-person survival horror game lives in `marrow/`. **Content warning:** extreme graphic gore (flayed and dismembered bodies, a violent death every time you're caught), sudden loud sounds, flashing light and screen distortion.
+A separate first-person survival horror game lives in `vespers/`. **Content warning:** extreme graphic gore (flayed and dismembered bodies, cannibalism, a violent death every time you're caught), sudden loud sounds, flashing light and screen distortion.
 
-> Halloran Provisions, night shift. Your sister Mara never clocked out.
+> St. Aldric's Abbey, high on the Kessel Pass. Your brother Daniel joined as a novice in the autumn. Then the pass closed for winter, and the abbey went silent.
 
-**Play:** open `dist/marrow.html` (one self-contained file, runs from disk), or `npm start` and go to http://localhost:8080/marrow/. Use headphones, play in the dark, and set brightness on the title screen. Keyboard and mouse only.
+**Play:** open `dist/vespers.html` (one self-contained file, runs from disk), or `npm start` and go to http://localhost:8080/vespers/. Use headphones, play in the dark, and set brightness on the title screen. Keyboard and mouse only.
+
+**The abbey:** a candlelit dormitory, a lavatorium, the moonlit cloister, the Hall of Penitents (bodies hung on chains from the vault), the abbot's study, a refectory where the last meal is still on the table, a chapel with fonts full of blood and vestments made of skin, catacombs lined with skulls, and the gatehouse, where a blizzard blows in through the portcullis.
 
 **How it plays**
 
-- Something that came up the rendering drain now runs the kill line. It hunts by **sound** and **light**. Running is loud, crouching is quiet, and pointing your torch at it gets you noticed.
-- There's no combat. If it sees you, break line of sight and hide in a locker. If it watches you get in, it rips the door off.
-- If it stops outside your locker to sniff, hold **Space** to hold your breath. Run out of breath and you'll gasp.
-- Find three fuses for the freight lift, power it, and survive until the lift comes down.
-- You die in one hit. Your body stays where it fell, and you wake in the locker room with what you'd collected.
-- The audio is all synthesised live with WebAudio: positional footsteps and breathing (muffled through walls), heartbeat and breath that follow your fear, whispers, the chase score. The visuals are low-res and dithered, with flashlight shadows, procedural textures and gore.
+- The Saint in the crypt was never dead. It walks the abbey in a blood-stiff habit with a sickle. It hunts by **sound** and **light**: running is loud, crouching is quiet, and pointing your torch at it gets you noticed.
+- There's no combat. Break line of sight and hide in a wardrobe or a standing coffin. If it watches you get in, it tears the door off.
+- If it stops outside to sniff, hold **Space** to hold your breath. Run out of breath and you'll gasp.
+- Find the three keys to the portcullis padlocks, throw the winch, and survive the 40 seconds the gate takes to rise, while the whole abbey hears it.
+- You die in one hit. Your body stays where it fell, and you wake in the dormitory with what you'd collected.
+- The audio is all synthesised live with WebAudio: a distant choir drifting between chords, the blizzard, a bell no one is ringing, positional footsteps and breathing (muffled through walls), heartbeat and breath that follow your fear, whispers, the chase score. The visuals are low-res and dithered, with candle and moonlight, flashlight shadows, procedural textures and gore.
 
 | Key | Action |
 | --- | --- |
@@ -53,11 +55,11 @@ A separate first-person survival horror game lives in `marrow/`. **Content warni
 | Shift | Run (it hears you) |
 | C | Crouch |
 | F | Torch |
-| E | Interact, hide, leave a locker |
-| Space (in a locker) | Hold your breath |
+| E | Interact, hide, step out |
+| Space (while hiding) | Hold your breath |
 | Tab | Objective |
 
-`npm run build:marrow` rebuilds `dist/marrow.html`. Sources: `marrow/src/` (`level.js` map and rooms, `gore.js` bodies, `monster.js` model and AI, `events.js` scares, director and endings, `audio.js` synth, `post.js` screen effects).
+`npm run build:vespers` rebuilds `dist/vespers.html`. Sources: `vespers/src/` (`level.js` map and rooms, `gore.js` bodies, `monster.js` the Saint's model and AI, `events.js` scares, director and ending, `audio.js` synth, `post.js` screen effects).
 
 ## Project layout
 

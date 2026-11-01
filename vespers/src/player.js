@@ -1,4 +1,4 @@
-// You: Jess Calder. Looking for your sister on her last night shift.
+// You: Theo Vance. Up the Kessel Pass in a blizzard, looking for your brother.
 import * as THREE from 'three';
 import { G, T, clamp, damp, toTile } from './state.js';
 import * as AU from './audio.js';
@@ -147,7 +147,7 @@ export function createPlayer(camera, L) {
     // ---- interaction target ----
     P.bestInteract = null;
     if (!P.frozen && G.state === 'play') {
-      if (P.hidden) { UI.prompt('Leave the locker &nbsp; <b>SPACE</b> hold breath'); P.bestInteract = { act: P.exitLocker }; }
+      if (P.hidden) { UI.prompt('Step out &nbsp; <b>SPACE</b> hold breath'); P.bestInteract = { act: P.exitLocker }; }
       else {
         const f = new THREE.Vector3(); camera.getWorldDirection(f);
         let best = null, bs = -1;

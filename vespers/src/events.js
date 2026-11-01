@@ -10,14 +10,14 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const START = { pos: W3(3.3, 5.0), yaw: -Math.PI / 2 }; // facing +x
 
 const NOTES = {
-  maraLocker: ['Taped inside locker 14 · M. CALDER', `Jess,<br><br>If you're reading this you came looking, which means you didn't listen. You never listen.<br><br>The night line isn't cattle anymore. Hollis stopped ordering cattle in March. The trucks come in empty and leave full, and nobody on days asks what's in the boxes.<br><br>He says the quota comes from <i>below</i>.<br><br>I'm going down to the rendering room tonight to get proof. If I'm not back by four, take the freight elevator up and don't stop for anything. It needs power. Hollis pulled the fuses so nobody leaves early.<br><br><b>Don't run.</b> Whatever you hear, don't run.<br><br>— M`],
-  note_log: ['Clipboard · LINE 3 · NIGHT', `UNITS RECEIVED ........ 14<br>UNITS PROCESSED ....... 11<br>UNITS WARM ON ARRIVAL . 14<br>UNITS TALKING ON ARRIVAL 6<br><br>02:10 Line stalled. Unit 9 got off the hook. Recovered. Rehung.<br>02:40 Unit 9 still talking. Removed tongue. Line resumed.<br>03:00 Foreman Hollis absent.<br>03:05 Foreman Hollis present.<br>03:06 Foreman Hollis absent.<br><br><span class="scrawl">it is wearing hollis</span>`],
-  note_journal: ['Foreman\'s journal · W. HOLLIS', `<b>Oct 3.</b> Rendering drain backed up again. Something in the pipe. I heard it breathing.<br><b>Oct 9.</b> It came up. It didn't kill me. It watched me work. I think it wants to learn.<br><b>Oct 12.</b> I showed it the line. God forgive me, it's good. It doesn't waste anything. Not one ounce.<br><b>Oct 18.</b> We ran out of cattle. I gave it the day shift. It thanked me in my mother's voice.<br><b>Oct 27.</b> The quota keeps going up. It hears <i>everything</i>: running, crying, breathing. Stay in the dark and keep quiet and it walks right past you. Hide where the workers keep their coats and <b>hold your breath</b>.<br><b>Oct 30.</b> It asked if it could try me on.<br><br>I pulled the three fuses for the freight lift so nobody can leave before quota. One in cold storage. One on the line. One in rendering. The rendering room key is on this desk.<br><br><span class="scrawl">burn it burn it all</span>`],
-  note_run: ['A work order, soaked through', `<span class="scrawl big">DON'T RUN. IT HEARS RUNNING.<br><br>IT CAN'T SEE YOU IN THE DARK UNLESS YOU SHINE THAT LIGHT AT IT.<br><br>IF IT COMES GET IN A LOCKER. NEVER LET IT WATCH YOU GET IN.<br><br>IF IT STOPS OUTSIDE<br>DON'T BREATHE<br>DON'T BREATHE<br>DON'T BREATHE</span>`],
-  note_mara: ['A badge in the bones', `<div class="badge">HALLORAN PROVISIONS<br><b>M. CALDER</b><br>NIGHT SHIFT · LINE 3</div><br>Scratched into the back with a fingernail:<br><br><span class="scrawl">its teaching me to be useful<br>jess dont come down here<br>it likes the way you</span><br><br>The rest is gouged out.`],
+  maraLocker: ['Pinned inside a wardrobe · BR. DANIEL VANCE, NOVICE', `Theo,<br><br>If you're reading this you came up the pass after me, which means you didn't listen. You never listen.<br><br>The brothers don't pray to God here. They pray to the Saint in the crypt. Abbot Benedikt says it's incorrupt, that it hasn't rotted in six hundred years. It hasn't rotted because it isn't dead, Theo. <i>It eats.</i><br><br>Every winter the pass closes and travellers come to the gate, and the abbot lets them in out of the snow.<br><br>Tonight I'm going down to the chapel to get proof. If I'm not back by Lauds, get out through the gatehouse and don't stop for anything. The portcullis is chained with three padlocks. The abbot gave the keys to three brothers, so that no one leaves during the Fast.<br><br><b>Don't run.</b> Whatever you hear, don't run.<br><br>— D`],
+  note_log: ['The guest ledger, open on a lectern', `GUESTS RECEIVED AT THE GATE ...... 14<br>GUESTS SERVED .................... 11<br>GUESTS STILL WARM AT VESPERS ..... 14<br>GUESTS STILL SPEAKING ............. 6<br><br>02:10 Guest 9 left his bed. Found in the cloister. Returned.<br>02:40 Guest 9 still speaking. Br. Cyril took his tongue. Silence kept.<br>03:00 Abbot Benedikt absent from Matins.<br>03:05 Abbot Benedikt present.<br>03:06 Abbot Benedikt absent.<br><br><span class="scrawl">it is wearing the abbot</span>`],
+  note_journal: ['Journal of Benedikt, Abbot of St. Aldric\'s', `<b>Nov 2.</b> The reliquary in the crypt was open this morning. The Saint's hands were not where they had been.<br><b>Nov 5.</b> It walked at Compline. It did not harm me. It watched us sing. I believe it wished to learn.<br><b>Nov 9.</b> I brought it the first traveller from the gate. God forgive me, it wastes nothing. Not one ounce.<br><b>Nov 14.</b> The pass closed. No more travellers. I gave it Brother Simeon. It thanked me in my mother's voice.<br><b>Nov 21.</b> It is always hungry now. It hears <i>everything</i>: running, weeping, breathing. In the dark, if you keep still and quiet, it walks right past. Hide where the brothers keep their habits and <b>hold your breath</b>.<br><b>Nov 30.</b> It asked if it could try me on.<br><br>The three keys to the gate went to Brothers Cyril, Matthias and Paul: one keeps vigil with the penitents, one serves the refectory, one tends the chapel. The chapel key is on this desk.<br><br><span class="scrawl">ring the bell ring the bell no one is coming</span>`],
+  note_run: ['A page torn from a psalter, written over in blood', `<span class="scrawl big">DON'T RUN. IT HEARS RUNNING.<br><br>IT CAN'T SEE YOU IN THE DARK UNLESS YOU SHINE THAT LIGHT AT IT.<br><br>IF IT COMES GET IN A WARDROBE. NEVER LET IT WATCH YOU GET IN.<br><br>IF IT STOPS OUTSIDE<br>DON'T BREATHE<br>DON'T BREATHE<br>DON'T BREATHE</span>`],
+  note_mara: ['A novice\'s rosary, in the bones', `Olive-wood beads on a cord, sticky. A little wooden cross with <b>D.V.</b> cut into the back.<br><br>Wrapped around it, a holy card. On the back, in pencil, pressed so hard it tore:<br><br><span class="scrawl">its teaching me to pray to it<br>theo dont come down here<br>it likes the way you sound</span><br><br>The rest is torn away.`],
 };
 const DEATHS = {
-  caught: [['YOU WERE PROCESSED.', 'Unit 15. Received warm.'], ['IT WEARS YOU NOW.', 'Your skin fits it well.'], ['QUOTA MET.', 'Nothing wasted. Not one ounce.']],
+  caught: [['YOU WERE RECEIVED.', 'Guest 15. Still warm at Vespers.'], ['IT WEARS YOU NOW.', 'Your face fits it well.'], ['THE FAST IS BROKEN.', 'Nothing wasted. Not one ounce.']],
   ran: [['YOU RAN.', 'It hears running. Walk. Crouch. Hide.']],
   seen: [['IT WATCHED YOU HIDE.', 'Never let it see you get in.']],
   breath: [['IT HEARD YOU BREATHE.', 'When it stops outside, hold SPACE. Don\'t breathe.']],
@@ -49,9 +49,9 @@ export function createEvents(L, M, P) {
   L.onPanelPrompt = () => {
     if (G.elevatorArrived) return null;
     if (F.called) return null;
-    if (G.fusesPlaced) return 'Pull the lever';
-    if (G.fuses >= 3) return 'Insert the fuses';
-    return `Freight lift panel. Three fuse sockets, empty (${G.fuses}/3 found)`;
+    if (G.fusesPlaced) return 'Throw the winch';
+    if (G.fuses >= 3) return 'Unlock the padlocks';
+    return `The portcullis winch, chained with three padlocks (${G.fuses}/3 keys)`;
   };
   L.onItem = (id, it) => {
     if (id === 'flashlight') {
@@ -60,10 +60,11 @@ export function createEvents(L, M, P) {
       return;
     }
     if (id.startsWith('bat')) { L.removeItem(it); P.battery = Math.min(1, P.battery + 0.45); AU.pickup(); UI.subs('Batteries. The torch steadies.', 2.5); return; }
-    if (id === 'key') { L.removeItem(it); G.hasKey = true; AU.pickup(); UI.subs('A brass key on a tag: RENDERING.', 3); return; }
+    if (id === 'key') { L.removeItem(it); G.hasKey = true; AU.pickup(); UI.subs('A brass key on a ribbon: CAPELLA.', 3); return; }
     if (id.startsWith('fuse')) {
       L.removeItem(it); G.fuses++; AU.pickup(); AU.metalHit(null, 0.05, true, 900);
-      UI.objective(G.fuses >= 3 ? 'You have all three fuses. Get to the freight lift.' : `Find the fuses for the freight lift (${G.fuses}/3).`);
+      UI.subs(['Brother Cyril\'s key. Still on its cord. Still warm.', 'Brother Matthias\'s key, greasy with fat.', 'Brother Paul\'s key, found among the relics.'][G.fuses - 1] || '', 3.5);
+      UI.objective(G.fuses >= 3 ? 'You have all three gate keys. Get to the gatehouse.' : `Find the three gate keys (${G.fuses}/3).`);
       if (id === 'fuse1') coldDrop();
       if (id === 'fuse2') behindYou();
       return;
@@ -83,8 +84,8 @@ export function createEvents(L, M, P) {
   };
   E.closeNote = () => {
     UI.hide('note'); G.state = 'play'; const id = E.noteId; E.noteId = null;
-    if (id === 'maraLocker' && !F.readMara) { F.readMara = true; UI.objective('Find Mara. Get the freight lift working.'); }
-    if (id === 'note_journal' && !F.readJournal) { F.readJournal = true; UI.objective(`Find the three fuses: cold storage, the line, rendering (${G.fuses}/3).`); }
+    if (id === 'maraLocker' && !F.readMara) { F.readMara = true; UI.objective('Find Daniel. Get out through the gatehouse.'); }
+    if (id === 'note_journal' && !F.readJournal) { F.readJournal = true; UI.objective(`Find the three gate keys: the penitents' hall, the refectory, the chapel (${G.fuses}/3).`); }
     if (id === 'note_mara' && !F.readBadge) { F.readBadge = true; maraReveal(); }
   };
 
@@ -157,22 +158,22 @@ export function createEvents(L, M, P) {
   }
   function maraReveal() {
     AU.swell(0.6, 5);
-    after(1.5, () => UI.subs('On the rack of skins, the third one has a swallow tattooed on the shoulder.', 5));
-    after(6.8, () => { UI.subs('Mara had a swallow tattooed on her shoulder.', 4.5); AU.whisper(0.25, -1, 2.5); });
-    after(11.5, () => { UI.objective('Get out. The freight lift. Now.'); if (M.active) M.hear(P.pos.clone(), 999); else activateMonster(W3(36, 13.5), 'patrol'); });
+    after(1.5, () => UI.subs('Behind the altar hang the vestments. They are skins. The third has a birthmark on the shoulder, shaped like a hand.', 5.5));
+    after(7.2, () => { UI.subs('Daniel had a birthmark on his shoulder, shaped like a hand.', 4.5); AU.whisper(0.25, -1, 2.5); AU.bellToll(0.5); });
+    after(11.5, () => { UI.objective('Get out. The gatehouse. Now.'); if (M.active) M.hear(P.pos.clone(), 999); else activateMonster(W3(36, 13.5), 'patrol'); });
   }
   function phoneCall() {
     F.phone = 'ringing';
-    const stop = AU.phoneRing(L.specials.phone.position);
-    const it = { pos: L.specials.phone.position.clone(), r: 2.2, prompt: () => 'Answer the phone', act: () => answer() };
+    const stop = AU.radioHiss(L.specials.phone.position);
+    const it = { pos: L.specials.phone.position.clone(), r: 2.2, prompt: () => 'Turn the dial on the radio', act: () => answer() };
     L.interact.push(it);
     E.stopPhone = () => { stop(); const i = L.interact.indexOf(it); if (i >= 0) L.interact.splice(i, 1); };
     function answer() {
       E.stopPhone(); F.phone = 'answered'; AU.click(0.25); AU.staticNoise(14, 0.06);
-      const lines = [[0.8, 'Jess?'], [2.6, "Jess. It's so cold down here."], [5.6, "I'm in the rendering room. It's warm in here."], [9.0, 'Please come down.'], [11.4, "It's teaching me to be useful."]];
-      const spoke = AU.speak("Jess?... Jess. It's so cold down here... I'm in the rendering room. It's warm in here... Please, come down... It's teaching me to be useful.", 0.15, 0.6);
+      const lines = [[0.8, 'Theo?'], [2.6, "Theo. It's so cold up here."], [5.6, "I'm in the chapel. It's warm in the chapel."], [9.0, 'Please come.'], [11.4, "It's teaching me to pray."]];
+      const spoke = AU.speak("Theo?... Theo. It's so cold up here... I'm in the chapel. It's warm in the chapel... Please, come... It's teaching me to pray.", 0.6, 0.6);
       lines.forEach(([t, s]) => after(t, () => UI.subs('"' + s + '"', 3.2, 'voice')));
-      after(14.5, () => { AU.stopSpeech(); AU.monsterBreath(V(G.camera.position.x, 1.6, G.camera.position.z), false, 0.35); UI.subs('Breathing on the line. Wet. Then a laugh in your sister\'s voice that keeps going after the line goes dead.', 5); });
+      after(14.5, () => { AU.stopSpeech(); AU.monsterBreath(V(G.camera.position.x, 1.6, G.camera.position.z), false, 0.35); UI.subs('Breathing through the static. Wet. Then a laugh in your brother\'s voice that keeps going after the signal dies.', 5); });
       after(17, () => {
         const d = L.doorAt(31, 8); if (d) { d.target = 0; d.angle = 0; AU.doorSlam(d.pos, 1); G.shake = 0.4; }
         if (M.active) M.hear(W3(31.5, 9.5), 999);
@@ -228,8 +229,8 @@ export function createEvents(L, M, P) {
     if (G.elevatorArrived || F.called) return;
     if (G.fusesPlaced) {
       F.called = true; AU.metalHit(L.specials.panelInteract.pos, 0.5, false, 180); L.specials.lever.rotation.z = 0.9;
-      AU.elevatorRumble(42, 0.35); UI.objective('The lift is coming down. Survive until it gets here.');
-      UI.subs('Somewhere far above, machinery wakes up screaming.', 4);
+      AU.winch(42, 0.3); AU.bellToll(0.6); UI.objective('The portcullis is rising. Survive until it opens.');
+      UI.subs('The winch takes the weight. Chain screams over the drum. Every stone in the abbey hears it.', 4.5);
       const red = L.specials.lobbyRed; red.flicker = 0.9;
       // the whole building just heard that
       after(3, () => { if (!M.active) activateMonster(W3(13, 10.5)); M.hear(W3(39.5, 5), 999); M.awareness = 0.8; AU.monsterScream(V(M.pos.x, 2, M.pos.z), 0.7, true); });
@@ -238,11 +239,11 @@ export function createEvents(L, M, P) {
     }
     if (G.fuses >= 3) {
       G.fusesPlaced = true; for (let i = 0; i < 3; i++) after(i * 0.4, () => { L.specials['socket' + i].material = new THREE.MeshBasicMaterial({ color: 0xffa020 }); AU.metalHit(L.specials.panelInteract.pos, 0.2, false, 600 + i * 80); });
-      AU.click(0.3); UI.subs('Three fuses. The panel hums. Somewhere a relay clacks.', 3.5);
+      AU.click(0.3); UI.subs('Three keys. Three padlocks drop away. The chain is free.', 3.5);
       return;
     }
     AU.thud(L.specials.panelInteract.pos, 0.15);
-    if (!F.panelSeen) { F.panelSeen = true; UI.objective(`Find the three fuses for the freight lift (${G.fuses}/3).`); }
+    if (!F.panelSeen) { F.panelSeen = true; UI.objective(`Find the three keys to the portcullis padlocks (${G.fuses}/3).`); }
   }
 
   // ---------------- death ----------------
@@ -305,36 +306,37 @@ export function createEvents(L, M, P) {
     const far = L.waypoints.filter(p => p.distanceTo(P.pos) > 30); M.spawn(pick(far.length ? far : L.waypoints), 'idle'); M.timer = 12;
     G.camera.up.set(0, 1, 0);
     G.blood = 0.25; G.black = 1; G.fear = 0.35; G.distort = 0; G.state = 'play'; E.wakeT = 0;
-    UI.subs(pick(['You wake on the locker room floor again. Your hands are wet.', 'The locker room. Again. Something red under your nails.', 'You wake up. You remember it eating. You remember all of it.']), 5);
+    UI.subs(pick(['You wake on the dormitory floor again. Your hands are wet.', 'The dormitory. Again. The choir is still singing. Something red under your nails.', 'You wake up. You remember it eating. You remember all of it.']), 5);
     if (E.carDescend && !G.elevatorArrived) { E.carDescend.t = Math.max(E.carDescend.t, E.carDescend.dur - 10); }
   };
 
   // ---------------- ending ----------------
   function startEnding() {
-    G.state = 'ending'; E.endT = 0; P.frozen = true; P.flashOn = P.hasFlashlight;
-    E.endStart = P.pos.clone(); M.despawn();
-    AU.metalHit(null, 0.6, false, 150);
+    G.state = 'ending'; E.endT = 0; P.frozen = true;
+    E.endStart = P.pos.clone(); E.endYaw = P.yaw; M.despawn();
+    AU.footstep('run'); G.fear = 1;
   }
   E.updateEnding = (dt) => {
-    E.endT += dt; const t = E.endT, car = L.specials.car, gate = L.specials.gate;
-    gate.position.y = Math.max(0, gate.position.y - dt * 3);
-    if (t > 1.2) { car.position.y += dt * Math.min(1, (t - 1.2) * 0.6) * 1.2; if (!E.rising) { E.rising = true; AU.elevatorRumble(10, 0.5); } }
-    L.specials.carLight.pos.set(car.position.x, car.position.y + 2.9, car.position.z);
-    // you turn to face the gate
-    const gp = V(W3(40, 3).x, 1.3 + car.position.y, W3(40, 3).z);
-    const cam = G.camera; cam.position.set(E.endStart.x, car.position.y + 1.6, Math.min(E.endStart.z, W3(0, 1.8).z));
-    const want = gp.clone(); want.y = cam.position.y - Math.min(4, Math.max(0, (t - 2) * 0.8));
+    E.endT += dt; const t = E.endT, gate = L.specials.gate, cam = G.camera;
+    // you stumble out into the snow, then turn around
+    const out = clamp(t / 1.4, 0, 1);
+    cam.position.set(E.endStart.x, 1.55 - out * 0.25 + Math.sin(t * 9) * 0.02 * (1 - out), THREE.MathUtils.lerp(E.endStart.z, W3(0, 1.25).z, out));
+    if (t > 0.6 && !E.dropped) { E.dropped = true; AU.metalHit(W3(40, 3, 2), 1, false, 110); AU.thud(W3(40, 3, 1), 1); G.shake = 0.7; }
+    if (E.dropped) gate.position.y = Math.max(0, gate.position.y - dt * 9);
+    const want = t < 1.5 ? V(cam.position.x, cam.position.y, cam.position.z - 5) : V(W3(40, 0).x, 1.3, W3(0, 3.6).z);
     const m = new THREE.Matrix4().lookAt(cam.position, want, V(0, 1, 0)); const q = new THREE.Quaternion().setFromRotationMatrix(m);
-    cam.quaternion.slerp(q, Math.min(1, dt * 3));
-    if (t > 2.0 && !E.mRun) { E.mRun = true; ph.root.visible = true; ph.root.position.copy(W3(39.5, 7.2)); phA.speed = 4.5; AU.monsterScream(W3(39.5, 6, 2), 1); }
+    cam.quaternion.slerp(q, Math.min(1, dt * (t < 1.5 ? 6 : 2.2)));
+    if (t > 2.0 && !E.mRun) { E.mRun = true; ph.root.visible = true; ph.root.position.copy(W3(39.8, 7.2)); phA.speed = 4.5; AU.monsterScream(W3(39.8, 6, 2), 1); }
     if (E.mRun && !E.mHit) {
-      ph.root.position.z = Math.max(W3(0, 3.35).z, ph.root.position.z - dt * 5); ph.root.rotation.y = Math.PI; phA.speed = 4.5; phA.jawOpen = 1.2; phA.reach = 1; animateModel(ph, phA, dt);
-      if (ph.root.position.z <= W3(0, 3.35).z + 0.01) { E.mHit = true; AU.metalHit(W3(40, 3, 1.5), 1, false, 120); AU.thud(W3(40, 3, 1.5), 1); AU.stinger(0.7); G.shake = 0.8; G.flash = 0.3; G.flashCol.set(0.4, 0, 0); }
+      ph.root.position.z = Math.max(W3(0, 3.4).z, ph.root.position.z - dt * 5); ph.root.rotation.y = Math.PI; phA.speed = 4.5; phA.jawOpen = 1.2; phA.reach = 1; animateModel(ph, phA, dt);
+      if (ph.root.position.z <= W3(0, 3.4).z + 0.01) { E.mHit = true; AU.metalHit(W3(40, 3, 1.5), 1, false, 120); AU.thud(W3(40, 3, 1.5), 1); AU.stinger(0.7); G.shake = 0.8; G.flash = 0.3; G.flashCol.set(0.4, 0, 0); }
     }
-    if (E.mHit) { phA.speed = 0; phA.reach = 1; phA.raise = Math.sin(t * 6) > 0 ? 1 : 0.2; phA.jawOpen = 1.3; phA.lookPitch = -0.6; phA.snappy = true; animateModel(ph, phA, dt); if (Math.random() < dt * 4) AU.metalHit(W3(40, 3, 1.5), 0.6, false, 120 + Math.random() * 60); }
-    if (t > 3.5) L.specials.carLight.flicker = 0.9;
-    if (t > 6.2) G.black = clamp((t - 6.2) / 1.5, 0, 1);
-    if (t > 8.5 && G.state === 'ending') {
+    if (E.mHit && t < 6) { phA.speed = 0; phA.reach = 1; phA.raise = Math.sin(t * 6) > 0 ? 1 : 0.2; phA.jawOpen = 1.3; phA.snappy = true; animateModel(ph, phA, dt); if (Math.random() < dt * 4) AU.metalHit(W3(40, 3, 1.5), 0.6, false, 120 + Math.random() * 60); }
+    if (t >= 6 && !E.still) { E.still = true; phA.raise = 0; phA.reach = 0.2; phA.jawOpen = 0.3; phA.tilt = 1.0; AU.bellToll(0.6); } // it just stands and watches you go
+    if (E.still) animateModel(ph, phA, dt);
+    // the white takes everything
+    if (t > 6.5) { G.flashCol.set(0.82, 0.85, 0.9); G.flash = clamp((t - 6.5) / 2.2, 0, 1); }
+    if (t > 9.5 && G.state === 'ending') {
       G.state = 'end'; ph.root.visible = false; document.exitPointerLock?.();
       const mins = Math.floor(G.playTime / 60), secs = Math.floor(G.playTime % 60);
       document.getElementById('endStats').textContent = `Time ${mins}:${String(secs).padStart(2, '0')}  ·  Deaths ${G.deaths}`;
@@ -416,15 +418,12 @@ export function createEvents(L, M, P) {
     // the lift coming down
     if (E.carDescend && !G.elevatorArrived) {
       const cd = E.carDescend; cd.t += dt;
-      const car = L.specials.car; car.position.y = Math.max(0, 12 - (cd.t / cd.dur) * 12);
-      L.specials.carLight.pos.set(car.position.x, car.position.y + 2.9, car.position.z);
+      L.specials.gate.position.y = Math.min(2.2, (cd.t / cd.dur) * 2.2);  // too low to crawl under until it's done
       if (cd.t >= cd.dur) {
-        G.elevatorArrived = true; car.position.y = 0; L.specials.carLight.forced = null; L.specials.carLight.flicker = 0.15;
-        AU.bell(); AU.thud(W3(40, 1.5), 0.8); UI.objective('The lift is here. GET IN.');
-        let gt = 0; G.updaters.push(function open(dt2) { gt += dt2; L.specials.gate.position.y = Math.min(2.7, gt * 1.6); if (gt > 0.4) L.gateOpen = true; return gt > 2; });
-        AU.metalHit(W3(40, 2.5), 0.6, false, 200);
+        G.elevatorArrived = true; L.gateOpen = true; L.specials.gate.position.y = 2.9;
+        AU.bellToll(0.7); AU.thud(W3(40, 2.5), 0.8); AU.metalHit(W3(40, 2.5), 0.6, false, 200); UI.objective('The gate is open. RUN.');
+        UI.subs('Snow blows in under the spikes.', 3);
       }
-      if (cd.t > cd.dur - 6 && L.specials.carLight.forced === 0) L.specials.carLight.forced = null;
     }
     if (G.elevatorArrived && L.roomAt(P.pos.x, P.pos.z) === 'car' && G.state === 'play') startEnding();
 
@@ -437,7 +436,8 @@ export function createEvents(L, M, P) {
         if (r < 0.18) AU.distantScream(0.12 + Math.random() * 0.12);
         else if (r < 0.34) AU.groan(0.22);
         else if (r < 0.48) AU.clang(V(P.pos.x + rr(-25, 25), 2, P.pos.z + rr(-25, 25)), 0.4, { muffle: true });
-        else if (r < 0.58) AU.footstepsAbove();
+        else if (r < 0.52) AU.footstepsAbove();
+        else if (r < 0.58) AU.bellToll(0.25 + Math.random() * 0.2);
         else if (r < 0.7) AU.chain(V(P.pos.x + rr(-10, 10), 2.5, P.pos.z + rr(-10, 10)), 0.25);
         else if (r < 0.8 && G.fear > 0.25) AU.whisper(0.16);
         else if (r < 0.9) burstNearbyLight();
@@ -456,9 +456,10 @@ export function createEvents(L, M, P) {
     }
   };
   function burstNearbyLight() {
-    const c = L.fixtures.filter(f => !f.dead && f.forced === null && f.type === 'fluoro' && f.pos.distanceTo(G.camera.position) < 14 && f.pos.distanceTo(G.camera.position) > 4);
+    // something breathes out, close to a flame, and it goes out
+    const c = L.fixtures.filter(f => !f.dead && f.forced === null && (f.type === 'candle' || f.type === 'lantern') && f !== L.specials.killFlicker && f.pos.distanceTo(G.camera.position) < 14 && f.pos.distanceTo(G.camera.position) > 4);
     if (!c.length) return; const f = pick(c);
-    f.dead = true; AU.lightBurst(f.pos); L.burst(f.pos, 25, 2);
+    f.dead = true; AU.sniff(f.pos, 0.5);
   }
   function spawnPhantomAhead() {
     const f = camFwd(); f.y = 0; f.normalize();
@@ -480,7 +481,7 @@ export function createEvents(L, M, P) {
       t += dt; G.black = Math.max(0, 1 - t / 3.5);
       P.pitch = THREE.MathUtils.lerp(1.2, -0.1, clamp((t - 1.5) / 2.5, 0, 1)); P.roll = THREE.MathUtils.lerp(0.9, 0, clamp((t - 1.5) / 2.2, 0, 1));
       P.eye = THREE.MathUtils.lerp(0.3, 1.62, clamp((t - 2) / 2, 0, 1));
-      if (t > 4) { P.frozen = false; P.roll = 0; UI.subs('Mara? ...Mara!', 3); after(3.5, () => UI.objective('Find your sister.')); return true; }
+      if (t > 4) { P.frozen = false; P.roll = 0; UI.subs('Daniel? ...Daniel!', 3); after(3.5, () => UI.objective('Find your brother.')); return true; }
     });
   };
   return E;

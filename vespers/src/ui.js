@@ -32,7 +32,7 @@ export const UI = {
     $('stam').style.opacity = p.stamina < 0.98 ? 0.6 : 0; $('stamFill').style.width = (p.stamina * 100) + '%';
     $('breath').style.opacity = p.hidden ? 0.85 : 0; $('breathFill').style.width = (p.breath * 100) + '%';
     $('breathFill').style.background = p.breath < 0.3 ? '#8a1a10' : '#9aa8b0';
-    $('inv').innerHTML = (G.fuses || G.fusesPlaced ? `<span>FUSES ${G.fusesPlaced ? 3 : G.fuses}/3</span>` : '') + (G.hasKey ? '<span>KEY</span>' : '');
+    $('inv').innerHTML = (G.fuses || G.fusesPlaced ? `<span>GATE KEYS ${G.fusesPlaced ? 3 : G.fuses}/3</span>` : '') + (G.hasKey ? '<span>CHAPEL KEY</span>' : '');
   },
   // a face for a frame
   _face: null,

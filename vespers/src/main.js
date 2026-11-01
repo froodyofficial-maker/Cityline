@@ -10,7 +10,7 @@ import * as AU from './audio.js';
 import { UI } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
-const store = { get(k, d) { try { const v = localStorage.getItem('marrow.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('marrow.' + k, JSON.stringify(v)); } catch (e) { } } };
+const store = { get(k, d) { try { const v = localStorage.getItem('vespers.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('vespers.' + k, JSON.stringify(v)); } catch (e) { } } };
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
 renderer.setPixelRatio(1);
@@ -18,7 +18,7 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 $('view').appendChild(renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000); scene.fog = new THREE.FogExp2(0x000000, 0.052);
 const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 70); scene.add(camera);
-scene.add(new THREE.AmbientLight(0x2a3238, 1.7));
+scene.add(new THREE.AmbientLight(0x2a3238, 2.4));
 scene.add(new THREE.HemisphereLight(0x1a2228, 0x140806, 1.0));
 G.scene = scene; G.camera = camera; G.renderer = renderer;
 
@@ -113,4 +113,4 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 $('loading')?.remove();
-window.__marrow = { G, L, P, M, E, animateModel };
+window.__vespers = { G, L, P, M, E, animateModel };

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MARROW</title>
+<title>VESPERS</title>
 <style>
   :root { --red: #8a0e0a; --bone: #c9c0a8; --dim: #6d675c; }
   * { box-sizing: border-box; }
@@ -85,14 +85,14 @@
 <div id="view"></div>
 
 <div id="title" class="screen">
-  <h1>MARROW</h1>
-  <div class="sub">Halloran Provisions · Night Shift</div>
+  <h1>VESPERS</h1>
+  <div class="sub">St. Aldric's Abbey · Kessel Pass · the winter Fast</div>
   <div class="warn">
     <b>CONTENT WARNING</b><br>
-    Extreme graphic gore: mutilated and flayed human bodies, dismemberment, and a violent death every time you're caught. Sudden loud sounds, flashing light and screen distortion.
+    Extreme graphic gore: mutilated and flayed human bodies, dismemberment, cannibalism, and a violent death every time you're caught. Sudden loud sounds, flashing light and screen distortion.
     <br><br>Play in the dark, with headphones. The sound is how you'll know where it is.
   </div>
-  <button class="btn" id="start">CLOCK IN</button>
+  <button class="btn" id="start">ENTER</button>
   <div class="row">
     <label>Brightness <input type="range" min="0.6" max="1.6" step="0.02" value="1" data-set="bright"></label>
     <span>Turn it up until the skull is <i>barely</i> visible → <canvas id="calib" width="90" height="64"></canvas></span>
@@ -103,7 +103,7 @@
   </div>
   <div class="controls">
     <kbd>W A S D</kbd> move · <kbd>Mouse</kbd> look · <kbd>Shift</kbd> run (it hears you) · <kbd>C</kbd> crouch · <kbd>F</kbd> torch · <kbd>E</kbd> interact / hide<br>
-    in a locker: hold <kbd>Space</kbd> to hold your breath · <kbd>Tab</kbd> objective · <kbd>Esc</kbd> pause
+    hiding: hold <kbd>Space</kbd> to hold your breath · <kbd>Tab</kbd> objective · <kbd>Esc</kbd> pause
   </div>
 </div>
 
@@ -130,7 +130,7 @@
   </div>
   <div class="row"><span>Pixels <span class="seg"><button data-scale="4">Crunchy</button><button data-scale="3">Grim</button><button data-scale="2">Sharp</button></span></span></div>
   <div class="controls">
-    <kbd>W A S D</kbd> move · <kbd>Shift</kbd> run · <kbd>C</kbd> crouch · <kbd>F</kbd> torch · <kbd>E</kbd> interact / hide · hold <kbd>Space</kbd> in a locker: don't breathe
+    <kbd>W A S D</kbd> move · <kbd>Shift</kbd> run · <kbd>C</kbd> crouch · <kbd>F</kbd> torch · <kbd>E</kbd> interact / hide · hold <kbd>Space</kbd> while hiding: don't breathe
   </div>
 </div>
 
@@ -142,13 +142,13 @@
 
 <div id="end" class="screen hidden">
   <div class="body">
-    5:52 a.m. The freight doors open onto the loading yard. Grey light. Rain. The trucks are already lining up at the gate.<br><br>
-    You tell the police everything. They search Halloran Provisions for nine hours and find a clean, empty plant, a locked rendering room, and a perfect safety record.<br><br>
-    They never find Mara.<br><br>
-    Three days later an envelope arrives at your apartment. Inside is a laminated badge with your photo on it.
-    <div class="last">HALLORAN PROVISIONS · J. CALDER · NIGHT SHIFT<br>START DATE: TOMORROW</div>
+    You walk all night. The snow fills your footprints behind you as fast as you make them. Somewhere above, the bell keeps ringing, though there is no one left to ring it.<br><br>
+    The mountain rescue team reaches St. Aldric's two days later. They find a quiet, snowbound abbey, eleven elderly monks at prayer, and a guest book with your name already written in it.<br><br>
+    They never find Daniel.<br><br>
+    A week later a parcel arrives at your flat. Inside, folded neatly, is a black novice's habit in your size, and a card.
+    <div class="last">WE KEPT YOUR BED.<br>VESPERS IS AT SIX.</div>
   </div>
-  <h2>MARROW</h2>
+  <h2>VESPERS</h2>
   <div id="endStats"></div>
 </div>
 

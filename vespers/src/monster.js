@@ -21,13 +21,9 @@ export function buildMonsterModel() {
     for (let i = 0; i < 3; i++) GO.mesh(new THREE.ConeGeometry(0.012, 0.08, 4), m.bone, knee, -0.025 + i * 0.025, -0.67, 0.2).rotation.x = Math.PI / 2;
     return { hip, knee, foot };
   });
-  // apron of stitched skin hanging from the waist
-  {
-    const ag = new THREE.PlaneGeometry(0.34, 0.7, 4, 6); const p = ag.attributes.position;
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i); p.setZ(i, -Math.abs(x) * 0.25 + Math.sin(y * 7 + x * 5) * 0.02); if (y < -0.35) p.setX(i, x + Math.sin(x * 40) * 0.02); }
-    ag.computeVertexNormals();
-    const ap = GO.mesh(ag, m.skinStitched, hips, 0, -0.3, 0.13); ap.material = m.skinStitched.clone(); ap.material.side = THREE.DoubleSide; ap.material.color.setHex(0x8a6a60);
-  }
+  // the habit: black wool gone stiff with blood, split up the front, hem worn to rags
+  const robe = new THREE.MeshLambertMaterial({ map: TX.robeTex(), alphaTest: 0.5, side: THREE.DoubleSide });
+  { const sg = new THREE.CylinderGeometry(0.2, 0.52, 1.38, 14, 4, true, 0.45, Math.PI * 2 - 0.9); sg.scale(1, 1, 0.8); const sk = GO.mesh(sg, robe, hips, 0, -0.66, -0.02); sk.castShadow = true; }
   const spine = new THREE.Group(); hips.add(spine); spine.rotation.x = 0.35;
   const tg = new THREE.CylinderGeometry(0.21, 0.1, 0.9, 10); tg.translate(0, 0.45, 0); tg.scale(1, 1, 0.6);
   GO.ball(spine, V(0, 0.02, 0), 0.1, mus, 1.3, 0.7, 0.9);
@@ -36,10 +32,18 @@ export function buildMonsterModel() {
   for (let i = 0; i < 10; i++) GO.ball(spine, V(0, 0.05 + i * 0.09, -0.1 - (i > 5 ? 0.03 : 0)), 0.03, m.bone);
   for (const s of [-1, 1]) { const sp = GO.mesh(new THREE.ConeGeometry(0.035, 0.32, 4), m.bone, spine, s * 0.13, 0.86, -0.12); sp.rotation.set(-0.9, 0, -s * 0.5); }
   GO.intestinesHang(spine, V(0.04, 0.12, 0.1), 0.5);
+  { // mantle over the shoulders and back, open at the chest so the ribs show
+    const mg = new THREE.CylinderGeometry(0.27, 0.3, 0.95, 12, 3, true, 1.05, Math.PI * 2 - 2.1); mg.scale(1, 1, 0.75);
+    GO.mesh(mg, robe, spine, 0, 0.45, -0.02);
+  }
   // neck + head
   const neck = new THREE.Group(); neck.position.set(0, 0.9, 0.04); spine.add(neck);
   GO.limb(neck, V(0, 0, 0), V(0, 0.2, 0.08), 0.05, 0.04, mus);
   const head = new THREE.Group(); head.position.set(0, 0.22, 0.1); head.scale.setScalar(1.35); neck.add(head);
+  { // the hood: the face sits back inside it, in the dark
+    const hg = new THREE.SphereGeometry(0.27, 12, 8, Math.PI / 2 + 0.75, Math.PI * 2 - 1.5, 0, Math.PI * 0.72);
+    const hd = GO.mesh(hg, robe, neck, 0, 0.32, 0.07); hd.scale.set(0.85, 1.3, 1.05);
+  }
   GO.ball(head, V(0, 0.06, -0.02), 0.13, mus, 0.8, 1.3, 1.1, 10);
   // the face it wears: somebody's, stretched over the front
   const maskG = new THREE.SphereGeometry(0.135, 12, 8, Math.PI * 0.1, Math.PI * 0.8, Math.PI * 0.1, Math.PI * 0.58);
@@ -55,7 +59,7 @@ export function buildMonsterModel() {
     const t = GO.mesh(new THREE.ConeGeometry(0.007, 0.07 + (i % 2) * 0.02, 3), m.teeth, head, -0.04 + i * 0.01, -0.03, 0.125 - Math.abs(i - 4) * 0.008); t.rotation.x = Math.PI;
   }
   GO.ball(jaw, V(0, 0.0, 0.06), 0.05, m.black, 1, 0.6, 1.4);
-  // arms: too long. left ends in fingers like knives, right holds the hook
+  // arms: too long. left ends in fingers like knives, right holds the sickle
   const arms = [-1, 1].map(s => {
     const sh = new THREE.Group(); sh.position.set(s * 0.25, 0.76, 0); spine.add(sh);
     GO.ball(sh, V(0, 0, 0), 0.07, mus);
@@ -69,10 +73,11 @@ export function buildMonsterModel() {
       for (let i = 0; i < 4; i++) { const f = GO.mesh(new THREE.ConeGeometry(0.012, 0.34, 4), m.bone, hand, -0.03 + i * 0.02, -0.18, 0.04); f.rotation.x = Math.PI + 0.3; f.rotation.z = (i - 1.5) * 0.12; }
     } else {
       GO.ball(hand, V(0, 0, 0), 0.04, mus, 1, 1.2, 0.6);
-      GO.mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.18, 6), m.metal, hand, 0, -0.05, 0.03).rotation.x = Math.PI / 2;
-      const hk = GO.mesh(new THREE.TorusGeometry(0.11, 0.014, 4, 10, Math.PI * 1.3), m.steel, hand, 0, -0.04, 0.2); hk.rotation.set(0, Math.PI / 2, -0.3);
-      GO.mesh(new THREE.ConeGeometry(0.014, 0.06, 4), m.steel, hand, 0, 0.06, 0.29).rotation.x = -0.5;
-      GO.mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.04, 5), m.blood, hand, 0, -0.1, 0.2);
+      // a harvest sickle, rusted black, the edge bright where it's been used
+      GO.mesh(new THREE.CylinderGeometry(0.022, 0.02, 0.22, 6), GO.goreMats().cloth, hand, 0, -0.05, 0.03).rotation.x = Math.PI / 2;
+      const sk = GO.mesh(new THREE.TorusGeometry(0.18, 0.016, 3, 14, Math.PI * 1.15), m.metal, hand, 0, 0.0, 0.32); sk.rotation.set(0, Math.PI / 2, -0.2); sk.scale.set(1, 1, 0.4);
+      GO.mesh(new THREE.ConeGeometry(0.016, 0.1, 4), m.steel, hand, 0, 0.13, 0.45).rotation.x = -1.2;
+      GO.mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 5), m.blood, hand, 0, -0.12, 0.3);
     }
     return { sh, el, hand };
   });

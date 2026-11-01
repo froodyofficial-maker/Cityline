@@ -134,14 +134,20 @@ export function buildLevel(scene) {
       brick: () => TX.wallBrick(R() < 0.4 ? 0.5 : 0), metal: () => { const t = TX.wallMetal(); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; },
       quarry: () => TX.floorQuarry(R() < 0.3 ? 0.4 : 0), quarryBloody: () => TX.floorQuarry(0.7 + R() * 0.8), concreteF: () => TX.floorConcrete(R() < 0.25 ? 0.4 : 0),
       concreteFBloody: () => TX.floorConcrete(0.8 + R()), drain: () => TX.floorConcrete(0.6, true), lino: () => TX.floorLino(), ceiling: () => TX.ceilingTex(),
+      stone: () => TX.wallStone(R() < 0.25 ? 0.35 : 0), stoneBloody: () => TX.wallStone(0.6 + R() * 0.6, [90, 80, 72]), plaster: () => TX.wallPlaster(R() < 0.3 ? 0.35 : 0),
+      plasterBloody: () => TX.wallPlaster(0.7 + R() * 0.6), skulls: () => TX.wallSkulls(), flag: () => TX.floorFlag(R() < 0.3 ? 0.4 : 0), flagBloody: () => TX.floorFlag(0.7 + R() * 0.8),
+      boards: () => TX.floorBoards(R() < 0.3 ? 0.5 : 0), beams: () => TX.ceilingBeams(), vault: () => TX.wallStone(0, [78, 72, 64]), snow: () => TX.snowTex(),
     }[name];
-    const n = (name === 'metal' || name === 'lino' || name === 'drain') ? 1 : 3;
+    const n = (name === 'metal' || name === 'lino' || name === 'drain' || name === 'snow') ? 1 : 3;
     styleCache[name] = Array.from({ length: n }, () => lam(mk()));
     return styleCache[name];
   };
-  const wallStyle = { locker: 'tile', shower: 'tileBloody', hall: 'concrete', corridor: 'tileDirty', cold: 'tile', office: 'office', lobby: 'concrete', kill: 'tileBloody', render: 'concreteBloody', tunnel: 'brick', car: 'metal', gate: 'concrete', door: 'concrete' };
-  const floorStyle = { locker: 'quarry', shower: 'quarryBloody', hall: 'concreteF', corridor: 'quarry', cold: 'concreteF', office: 'lino', lobby: 'concreteF', kill: 'quarryBloody', render: 'concreteFBloody', tunnel: 'concreteF', gate: 'concreteF', door: 'concreteF' };
-  const drains = new Set(['13,4', '17,16', '22,19', '26,23', '15,23', '5,13', '35,21', '39,18', '21,4', '18,6']);
+  // internal room ids -> St. Aldric's: locker = dormitory, shower = lavatorium, corridor = cloister, cold = hall of penitents,
+  // office = abbot's study, lobby = gatehouse, kill = refectory, render = chapel, tunnel = catacombs, car = outside (the pass)
+  const wallStyle = { locker: 'plaster', shower: 'stoneBloody', hall: 'stone', corridor: 'stone', cold: 'stone', office: 'office', lobby: 'stone', kill: 'plasterBloody', render: 'stoneBloody', tunnel: 'skulls', car: 'stone', gate: 'stone', door: 'stone' };
+  const floorStyle = { locker: 'boards', shower: 'flagBloody', hall: 'flag', corridor: 'flag', cold: 'flag', office: 'boards', lobby: 'flag', kill: 'flagBloody', render: 'flagBloody', tunnel: 'flag', gate: 'flag', door: 'flag', car: 'snow' };
+  const ceilStyle = { locker: 'beams', office: 'beams', kill: 'beams' };
+  const drains = new Set();
   const accs = new Map();
   const acc = (mat) => { if (!accs.has(mat)) accs.set(mat, new Acc()); return accs.get(mat); };
   const hash = (x, y, k = 0) => { let h = (x * 374761393 + y * 668265263 + k * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
@@ -150,27 +156,26 @@ export function buildLevel(scene) {
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
     const c = cells[y][x]; if (c === '#') continue;
     const rid = room[y][x], x0 = x * T, x1 = x0 + T, z0 = y * T, z1 = z0 + T;
-    const wy0 = rid === 'car' ? -9 : 0, wy1 = rid === 'car' ? 14 : WALL_H, vr = rid === 'car' ? (wy1 - wy0) / 3.4 : 1;
+    const wy0 = 0, wy1 = rid === 'car' ? WALL_H + 3 : WALL_H, vr = 1;
     const ws = style(wallStyle[rid] || 'concrete');
     const wm = (k) => ws[Math.floor(hash(x, y, k) * ws.length)];
     if (cells[y - 1]?.[x] === '#') acc(wm(1)).quad([x0, wy0, z0], [x1, wy0, z0], [x1, wy1, z0], [x0, wy1, z0], [0, 0, 1], 0, 0, 1, vr);
     if (cells[y + 1]?.[x] === '#') acc(wm(2)).quad([x1, wy0, z1], [x0, wy0, z1], [x0, wy1, z1], [x1, wy1, z1], [0, 0, -1], 0, 0, 1, vr);
     if (cells[y][x - 1] === '#') acc(wm(3)).quad([x0, wy0, z1], [x0, wy0, z0], [x0, wy1, z0], [x0, wy1, z1], [1, 0, 0], 0, 0, 1, vr);
     if (cells[y][x + 1] === '#') acc(wm(4)).quad([x1, wy0, z0], [x1, wy0, z1], [x1, wy1, z1], [x1, wy1, z0], [-1, 0, 0], 0, 0, 1, vr);
-    if (rid === 'car') continue; // shaft: the floor is the elevator platform, no ceiling
     const fsName = drains.has(x + ',' + y) ? 'drain' : (floorStyle[rid] || 'concreteF'), fs = style(fsName);
     acc(fs[Math.floor(hash(x, y, 5) * fs.length)]).quad([x0, 0, z1], [x1, 0, z1], [x1, 0, z0], [x0, 0, z0], [0, 1, 0]);
-    if (rid === 'gate') continue;
-    const cs = style('ceiling');
+    if (rid === 'gate' || rid === 'car') continue; // open to the sky
+    const cs = style(ceilStyle[rid] || 'vault');
     acc(cs[Math.floor(hash(x, y, 6) * cs.length)]).quad([x0, WALL_H, z0], [x1, WALL_H, z0], [x1, WALL_H, z1], [x0, WALL_H, z1], [0, -1, 0]);
   }
   for (const [mat, a] of accs) { const m = new THREE.Mesh(a.geo(), mat); m.receiveShadow = true; m.castShadow = true; m.matrixAutoUpdate = false; root.add(m); }
 
   // ---------- prop helpers ----------
   const mats = GO.goreMats();
-  const wood = lam(TX.metalTex(0.1), { color: 0x6a4a30 });
+  const wood = lam(TX.floorBoards(0), { color: 0xb08a68 });
   const darkMetal = lam(TX.metalTex(0.8), { color: 0x555555 });
-  const lockerMat = lam(TX.lockerTex(false)), lockerBloodyMat = lam(TX.lockerTex(true)), lockerInside = lam(null, { color: 0x0a0a0a });
+  const lockerMat = lam(TX.woodTex(false)), lockerBloodyMat = lam(TX.woodTex(true)), coffinMat = lam(TX.woodTex(false), { color: 0x8a7060 }), lockerInside = lam(null, { color: 0x0a0a0a });
   const paperMat = lam(TX.paperTex(), { side: THREE.DoubleSide });
   const box = (w, h, d, mat, x, y, z, opts = {}) => {
     const m = GO.mesh(new THREE.BoxGeometry(w, h, d), mat, opts.parent || root, x, y, z);
@@ -284,7 +289,7 @@ export function buildLevel(scene) {
   for (const [tx, ty, type, startOpen] of doorDefs) {
     const alongX = L.cell(tx - 1, ty) !== '#' && L.cell(tx + 1, ty) !== '#'; // passage runs along x
     const cx = (tx + 0.5) * T, cz = (ty + 0.5) * T, jw = 0.55, open = T - jw * 2, dh = 2.3;
-    const jm = style('concrete')[0];
+    const jm = style('stone')[0];
     if (alongX) {
       box(T, WALL_H, jw, jm, cx, WALL_H / 2, ty * T + jw / 2, { col: true, nav: false });
       box(T, WALL_H, jw, jm, cx, WALL_H / 2, (ty + 1) * T - jw / 2, { col: true, nav: false });
@@ -294,11 +299,12 @@ export function buildLevel(scene) {
     }
     box(T, WALL_H - dh, T, jm, cx, dh + (WALL_H - dh) / 2, cz);
     const pivot = new THREE.Group();
-    const doorMat = type === 'n' ? darkMetal : lam(TX.metalTex(0.9), { color: 0x6a3a2a });
+    const doorMat = type === 'n' ? lam(TX.woodTex(R() < 0.3)) : lam(TX.woodTex(false), { color: 0x9a7a6a });
     if (alongX) { pivot.position.set(cx, 0, ty * T + jw); } else { pivot.position.set(tx * T + jw, 0, cz); }
     const panel = GO.mesh(new THREE.BoxGeometry(alongX ? 0.07 : open, dh, alongX ? open : 0.07), doorMat, pivot, alongX ? 0 : open / 2, dh / 2, alongX ? open / 2 : 0);
     // a small wired window at head height and a push plate
-    GO.mesh(new THREE.BoxGeometry(alongX ? 0.08 : 0.3, 0.3, alongX ? 0.3 : 0.08), mats.black, pivot, alongX ? 0 : open * 0.5, 1.6, alongX ? open * 0.5 : 0);
+    GO.mesh(new THREE.BoxGeometry(alongX ? 0.09 : 0.08, 0.08, alongX ? 0.08 : 0.09), darkMetal, pivot, alongX ? 0 : open * 0.85, 1.05, alongX ? open * 0.85 : 0); // iron ring handle
+    for (const hy of [0.4, 1.9]) GO.mesh(new THREE.BoxGeometry(alongX ? 0.09 : open * 0.6, 0.06, alongX ? open * 0.6 : 0.09), darkMetal, pivot, alongX ? 0 : open * 0.3, hy, alongX ? open * 0.3 : 0); // strap hinges
     if (type === 'n' && R() < 0.6) { const hp = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), dmat('hand')); hp.position.set(alongX ? 0.04 : open * 0.7, 1.2, alongX ? open * 0.7 : 0.04); hp.rotation.y = alongX ? Math.PI / 2 : 0; pivot.add(hp); }
     root.add(pivot);
     const col = alongX ? L.addCollider(cx - 0.1, cx + 0.1, ty * T + jw, (ty + 1) * T - jw, false) : L.addCollider(tx * T + jw, (tx + 1) * T - jw, cz - 0.1, cz + 0.1, false);
@@ -349,7 +355,7 @@ export function buildLevel(scene) {
   L.addLocker = (tx, ty, side, off, opts = {}) => {
     const f = wallFrame(tx, ty, side, off), w = 0.78, h = 2.0, dep = 0.55;
     const g = new THREE.Group(); g.position.copy(f.p).addScaledVector(f.nrm, dep / 2); g.rotation.y = f.yaw; root.add(g);
-    const mat = opts.bloody ? lockerBloodyMat : lockerMat;
+    const mat = opts.bloody ? lockerBloodyMat : opts.kind === 'coffin' ? coffinMat : lockerMat;
     // shell: back, sides, top, bottom (open front)
     GO.mesh(new THREE.BoxGeometry(w, h, 0.03), mat, g, 0, h / 2, -dep / 2 + 0.015);
     GO.mesh(new THREE.BoxGeometry(0.03, h, dep), mat, g, -w / 2 + 0.015, h / 2, 0);
@@ -368,7 +374,7 @@ export function buildLevel(scene) {
       doorTarget: 0, doorAngle: 0, used: false,
     };
     L.lockers.push(lk);
-    if (lk.hide || lk.special) L.interact.push({ pos: world.clone().setY(1.2), r: 1.7, locker: lk, prompt: () => lk.special ? (lk.used ? null : 'Open') : 'Hide', act: () => lk.special ? L.onItem?.(lk.special, lk) : G.player.enterLocker(lk) });
+    if (lk.hide || lk.special) L.interact.push({ pos: world.clone().setY(1.2), r: 1.7, locker: lk, prompt: () => lk.special ? (lk.used ? null : 'Open the wardrobe') : opts.kind === 'coffin' ? 'Hide in the standing coffin' : 'Hide in the wardrobe', act: () => lk.special ? L.onItem?.(lk.special, lk) : G.player.enterLocker(lk) });
     return lk;
   };
   L.updaters.push((dt) => { for (const l of L.lockers) { l.doorAngle += (l.doorTarget - l.doorAngle) * Math.min(1, dt * 9); l.door.rotation.y = -l.doorAngle; } });
@@ -377,6 +383,7 @@ export function buildLevel(scene) {
   const FIX = {
     fluoro: { color: 0xd8ffe6, int: 26, dist: 13 }, red: { color: 0xff2410, int: 20, dist: 12 }, cold: { color: 0x7fa6ff, int: 22, dist: 13 },
     lamp: { color: 0xffa050, int: 9, dist: 7 }, bulb: { color: 0xffc880, int: 12, dist: 9 }, redbulb: { color: 0xff3018, int: 11, dist: 9 }, car: { color: 0xfff0d0, int: 22, dist: 9 },
+    candle: { color: 0xffa040, int: 18, dist: 10 }, lantern: { color: 0xffb060, int: 30, dist: 13 }, moon: { color: 0x7f9fe0, int: 26, dist: 12 }, sanct: { color: 0xff2810, int: 22, dist: 11 },
   };
   L.fixture = (tx, ty, type, flicker = 0, opts = {}) => {
     const d = FIX[type], pos = W3(tx, ty, opts.y ?? WALL_H - 0.12);
@@ -384,11 +391,27 @@ export function buildLevel(scene) {
     let m;
     if (type === 'fluoro') { m = GO.mesh(new THREE.BoxGeometry(1.3, 0.06, 0.14), mat, root, pos.x, pos.y, pos.z); if (opts.ry) m.rotation.y = opts.ry; box(1.4, 0.04, 0.22, darkMetal, pos.x, pos.y + 0.06, pos.z, { ry: opts.ry }); }
     else if (type === 'red') { m = GO.mesh(new THREE.BoxGeometry(0.25, 0.15, 0.25), mat, root, pos.x, pos.y, pos.z); }
+    else if (type === 'candle') { // a cluster of tallow candles; pos is the flame
+      m = GO.mesh(new THREE.ConeGeometry(0.018, 0.06, 4), mat, root, pos.x, pos.y, pos.z);
+      for (let i = 0; i < 4; i++) { const hh = 0.12 + R() * 0.25, ox = i ? (R() - 0.5) * 0.25 : 0, oz = i ? (R() - 0.5) * 0.25 : 0; cyl(0.025, 0.03, hh, candleMat, pos.x + ox, pos.y - 0.03 - hh / 2 + (i ? -0.05 : 0), pos.z + oz, 6); if (i) GO.mesh(new THREE.ConeGeometry(0.014, 0.045, 4), mat, root, pos.x + ox, pos.y - 0.04, pos.z + oz).castShadow = false; }
+    }
+    else if (type === 'lantern') { m = GO.mesh(new THREE.BoxGeometry(0.16, 0.2, 0.16), mat, root, pos.x, pos.y - 0.45, pos.z); box(0.22, 0.04, 0.22, darkMetal, pos.x, pos.y - 0.33, pos.z); box(0.2, 0.03, 0.2, darkMetal, pos.x, pos.y - 0.56, pos.z); cyl(0.006, 0.006, 0.35, darkMetal, pos.x, pos.y - 0.15, pos.z, 3); pos.y -= 0.45; }
+    else if (type === 'moon') { m = GO.mesh(new THREE.SphereGeometry(0.01, 3, 2), mat, root, pos.x, pos.y, pos.z); m.visible = false; }
+    else if (type === 'sanct') { m = GO.mesh(new THREE.CylinderGeometry(0.09, 0.05, 0.14, 8), mat, root, pos.x, pos.y - 0.7, pos.z); for (let i = 0; i < 3; i++) cyl(0.004, 0.004, 0.7, darkMetal, pos.x + Math.cos(i * 2.1) * 0.07, pos.y - 0.33, pos.z + Math.sin(i * 2.1) * 0.07, 3); pos.y -= 0.7; }
     else { m = GO.mesh(new THREE.SphereGeometry(0.07, 6, 5), mat, root, pos.x, pos.y - 0.25, pos.z); cyl(0.005, 0.005, 0.25, mats.black, pos.x, pos.y - 0.1, pos.z, 3); pos.y -= 0.3; }
     m.castShadow = false;
     const fx = { pos, type, def: d, flicker, dead: !!opts.dead, forced: null, on: true, t: R() * 3, cur: 1, mesh: m, mat, base: new THREE.Color(d.color), room: L.roomAt(pos.x, pos.z), int: opts.int ?? d.int };
     L.fixtures.push(fx); return fx;
   };
+  const candleMat = lam(null, { color: 0xd8cca8 });
+  // a lancet window: moonlight and snow, with a cold light just inside
+  L.window = (tx, ty, side, off = 0) => {
+    const f = wallFrame(tx, ty, side, off);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.9), winMat); m.position.copy(f.p).addScaledVector(f.nrm, 0.015); m.position.y = 2.05; m.rotation.y = f.yaw; root.add(m);
+    box(1.05, 0.12, 0.3, style('stone')[0], m.position.x - f.nrm.x * 0.0, 1.05, m.position.z, { ry: f.yaw }); // sill
+    const p = f.p.clone().addScaledVector(f.nrm, 1.1); return L.fixture(p.x / T, p.z / T, 'moon', 0, { y: 2.3 });
+  };
+  const winMat = new THREE.MeshBasicMaterial({ map: TX.windowTex(), transparent: true, alphaTest: 0.3, fog: true });
   // the pool of real lights, handed to the nearest visible fixtures
   const POOL = 6, lights = [];
   for (let i = 0; i < POOL; i++) { const l = new THREE.PointLight(0xffffff, 0, 10, 2); l.castShadow = false; root.add(l); lights.push(l); }
@@ -401,8 +424,10 @@ export function buildLevel(scene) {
         f.t -= dt;
         if (f.t <= 0) { f.on = !f.on; f.t = f.on ? rr(0.1, 5) * (1.05 - f.flicker) + 0.05 : rr(0.02, 0.18) * (f.flicker > 0.6 ? 3 : 1); }
       } else f.on = true;
-      const target = f.on ? (f.type === 'fluoro' ? 0.93 + Math.random() * 0.07 : 1) : 0;
-      f.cur = f.type === 'bulb' || f.type === 'lamp' || f.type === 'redbulb' ? f.cur + (target - f.cur) * Math.min(1, dt * 25) : target;
+      const flame = f.type === 'candle' || f.type === 'lantern' || f.type === 'sanct';
+      if (flame) f.ph = (f.ph || R() * 9) + dt * (5 + Math.random() * 4);
+      const target = f.on ? (f.type === 'fluoro' ? 0.93 + Math.random() * 0.07 : flame ? 0.82 + Math.sin(f.ph) * 0.06 + Math.sin(f.ph * 2.7) * 0.05 + Math.random() * 0.06 : 1) : 0;
+      f.cur = f.type === 'bulb' || f.type === 'lamp' || f.type === 'redbulb' || flame ? f.cur + (target - f.cur) * Math.min(1, dt * 25) : target;
       f.mat.color.copy(f.base).multiplyScalar(0.1 + f.cur * 1.4);
     }
     assignT -= dt;
@@ -428,13 +453,18 @@ export function buildLevel(scene) {
   const batMat = new THREE.MeshLambertMaterial({ color: 0x2a6a2a, emissive: 0x0a2a0a });
   L.addItem = (id, kind, x, y, z, prompt) => {
     const g = new THREE.Group(); g.position.set(x, y, z); root.add(g);
-    if (kind === 'fuse') { GO.mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 8), fuseMat, g).rotation.z = Math.PI / 2; for (const s of [-1, 1]) GO.mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.04, 8), mats.steel, g, s * 0.09, 0, 0).rotation.z = Math.PI / 2; const gl = new THREE.PointLight(0xff9a20, 0.6, 1.6, 2); gl.position.y = 0.1; g.add(gl); g.userData.glow = gl; }
+    if (kind === 'fuse') { // a big iron gate key on a loop of red cord
+      const im = new THREE.MeshPhongMaterial({ color: 0x8a8070, shininess: 60, emissive: 0x201408 });
+      GO.mesh(new THREE.TorusGeometry(0.045, 0.012, 4, 10), im, g, -0.12, 0.015, 0).rotation.x = Math.PI / 2;
+      GO.mesh(new THREE.BoxGeometry(0.2, 0.018, 0.02), im, g, 0.03, 0.015, 0); GO.mesh(new THREE.BoxGeometry(0.03, 0.018, 0.06), im, g, 0.12, 0.015, 0.03); GO.mesh(new THREE.BoxGeometry(0.02, 0.018, 0.04), im, g, 0.085, 0.015, 0.025);
+      GO.mesh(new THREE.TorusGeometry(0.07, 0.006, 3, 10), new THREE.MeshLambertMaterial({ color: 0x6a0a08 }), g, -0.16, 0.006, 0).rotation.x = Math.PI / 2;
+      const gl = new THREE.PointLight(0xffa040, 0.6, 1.6, 2); gl.position.y = 0.15; g.add(gl); g.userData.glow = gl; }
     else if (kind === 'key') { GO.mesh(new THREE.TorusGeometry(0.03, 0.008, 4, 10), keyMat, g, -0.05, 0.01, 0).rotation.x = Math.PI / 2; GO.mesh(new THREE.BoxGeometry(0.1, 0.008, 0.015), keyMat, g, 0.03, 0.01, 0); }
     else if (kind === 'battery') { GO.mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.1, 8), batMat, g).rotation.z = Math.PI / 2; GO.mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.02, 6), mats.steel, g, 0.06, 0, 0).rotation.z = Math.PI / 2; }
     else if (kind === 'flashlight') { GO.mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.24, 8), lam(null, { color: 0x1a1a1a }), g).rotation.z = Math.PI / 2; GO.mesh(new THREE.CircleGeometry(0.032, 8), new THREE.MeshBasicMaterial({ color: 0xfff2c0 }), g, 0.121, 0, 0).rotation.y = Math.PI / 2; g.position.y += 0.03; }
     else if (kind === 'note') { const p = GO.mesh(new THREE.PlaneGeometry(0.22, 0.28), paperMat, g); p.rotation.x = -Math.PI / 2; p.rotation.z = R() * 0.6 - 0.3; }
     else if (kind === 'wallnote') { GO.mesh(new THREE.PlaneGeometry(0.24, 0.32), paperMat, g); }
-    const it = { id, kind, group: g, pos: g.position.clone(), r: 1.9, on: true, prompt: () => prompt || ({ flashlight: 'Take flashlight', fuse: 'Take fuse', key: 'Take key', battery: 'Take battery', note: 'Read', wallnote: 'Read' })[kind], act: () => L.onItem?.(id, it) };
+    const it = { id, kind, group: g, pos: g.position.clone(), r: 1.9, on: true, prompt: () => prompt || ({ flashlight: 'Take flashlight', fuse: 'Take the iron key', key: 'Take the brass key', battery: 'Take battery', note: 'Read', wallnote: 'Read' })[kind], act: () => L.onItem?.(id, it) };
     L.interact.push(it); L.items[id] = it; return it;
   };
   L.removeItem = (it) => { it.on = false; it.group.visible = false; const i = L.interact.indexOf(it); if (i >= 0) L.interact.splice(i, 1); };
@@ -445,46 +475,65 @@ export function buildLevel(scene) {
 }
 
 // ======================================================================
-// Rooms
+// St. Aldric's Abbey, Kessel Pass. Rooms.
 // ======================================================================
 function furnish(L, H) {
   const { box, cyl, trail, pool, splat, mats, wood, darkMetal, lam } = H;
   const root = L.root, w = (t) => t * T;
-  const steel = mats.steel;
+  const iron = darkMetal, stone = H.style('stone')[0];
+  const linen = lam(TX.sheetTex()), wax = lam(null, { color: 0xd8cca8 });
+  const candles = (x, z, y = 0, n = 5, spread = 0.5) => { // unlit dressing candles (cheap), many of them
+    for (let i = 0; i < n; i++) { const hh = 0.1 + R() * 0.3; cyl(0.025, 0.03, hh, wax, x + (R() - 0.5) * spread, y + hh / 2, z + (R() - 0.5) * spread, 5); }
+  };
+  const bench = (x, z, len, alongX = true) => { box(alongX ? len : 0.35, 0.06, alongX ? 0.35 : len, wood, x, 0.45, z, { col: true, nav: false }); for (const s of [-1, 1]) box(alongX ? 0.06 : 0.3, 0.45, alongX ? 0.3 : 0.06, wood, x + (alongX ? s * len * 0.42 : 0), 0.22, z + (alongX ? 0 : s * len * 0.42)); };
+  const longTable = (x, z, lx, lz, h = 0.82) => { box(lx, 0.08, lz, wood, x, h, z, { col: true }); for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(0.08, h, 0.08, wood, x + sx * (lx / 2 - 0.1), h / 2, z + sz * (lz / 2 - 0.1)); };
+  const cross = (tx, ty, side, off, y = 2.2, s = 1, inverted = false) => { const f = H.wallFrame(tx, ty, side, off); const g = new THREE.Group(); g.position.copy(f.p).addScaledVector(f.nrm, 0.04); g.position.y = y; g.rotation.y = f.yaw; root.add(g); GO.mesh(new THREE.BoxGeometry(0.06 * s, 0.6 * s, 0.04), wood, g); GO.mesh(new THREE.BoxGeometry(0.36 * s, 0.06 * s, 0.04), wood, g, 0, (inverted ? -0.12 : 0.12) * s, 0); };
+  const bed = (x, z, ry, opts = {}) => {
+    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; root.add(g);
+    GO.mesh(new THREE.BoxGeometry(0.9, 0.3, 2.0), wood, g, 0, 0.3, 0); GO.mesh(new THREE.BoxGeometry(0.86, 0.12, 1.94), opts.bloody ? lam(TX.sheetTex()) : lam(null, { color: 0x6e685a }), g, 0, 0.51, 0);
+    GO.mesh(new THREE.BoxGeometry(0.9, 0.7, 0.06), wood, g, 0, 0.5, -1.0);
+    if (opts.shroud) { // something under the blanket, the wrong shape, one hand out
+      GO.mesh(new THREE.BoxGeometry(0.6, 0.2, 1.4), mats.sheet, g, 0, 0.66, 0.15); GO.mesh(new THREE.SphereGeometry(0.15, 6, 5), mats.sheet, g, 0, 0.66, -0.7);
+      const arm = new THREE.Group(); arm.position.set(0.42, 0.6, -0.1); g.add(arm); GO.limb(arm, V(0, 0, 0), V(0.05, -0.38, 0.05), 0.04, 0.035, mats.skinGrey); GO.ball(arm, V(0.06, -0.43, 0.06), 0.04, mats.skinGrey, 0.8, 1.4, 0.5);
+    }
+    if (opts.body) { const c = GO.tableCorpse({ open: true, missing: ['rArmLower'] }); c.position.y = -0.38; g.add(c); }
+    GO.bake(g); L.addCollider(x - (Math.abs(Math.sin(ry)) > 0.5 ? 1 : 0.45), x + (Math.abs(Math.sin(ry)) > 0.5 ? 1 : 0.45), z - (Math.abs(Math.sin(ry)) > 0.5 ? 0.45 : 1), z + (Math.abs(Math.sin(ry)) > 0.5 ? 0.45 : 1));
+    return g;
+  };
 
-  // ===== LOCKER ROOM =====
-  L.fixture(5.5, 4.5, 'fluoro', 0.25);
-  for (let x = 2; x <= 7; x++) for (const off of [-0.45, 0.45]) {
-    const special = x === 5 && off < 0 ? 'maraLocker' : x === 7 && off > 0 ? 'corpseLocker' : null;
-    const hide = (x === 3 && off > 0) || (x === 6 && off < 0) || (x === 2 && off < 0);
-    L.addLocker(x, 2, 'n', off, { hide, special, bloody: special === 'corpseLocker' });
+  // ===== DORMITORY (start) =====
+  L.fixture(5.5, 5.3, 'candle', 0, { y: 0.92 }); box(0.6, 0.05, 0.6, wood, w(5.5), 0.82, w(5.3), { col: true, nav: false }); box(0.06, 0.82, 0.06, wood, w(5.5), 0.41, w(5.3));
+  L.window(2, 4, 'w', 0);
+  for (let x = 2; x <= 7; x++) {
+    const special = x === 5 ? 'maraLocker' : x === 7 ? 'corpseLocker' : null;
+    L.addLocker(x, 2, 'n', 0, { hide: x === 3 || x === 6 || x === 2, special, bloody: special === 'corpseLocker' });
   }
-  for (let x = 6; x <= 8; x++) for (const off of [-0.45, 0.45]) L.addLocker(x, 8, 's', off, { hide: x === 8 && off < 0 });
-  box(2.4, 0.08, 0.42, wood, w(4.6), 0.45, w(5.4), { col: true, nav: false }); box(0.08, 0.45, 0.35, darkMetal, w(4.6) - 1, 0.22, w(5.4)); box(0.08, 0.45, 0.35, darkMetal, w(4.6) + 1, 0.22, w(5.4));
-  box(2.4, 0.08, 0.42, wood, w(7.6), 0.45, w(5.4), { col: true, nav: false }); box(0.08, 0.45, 0.35, darkMetal, w(7.6) - 1, 0.22, w(5.4)); box(0.08, 0.45, 0.35, darkMetal, w(7.6) + 1, 0.22, w(5.4));
+  bed(w(6.5), w(8.1), 0, { shroud: true, bloody: true }); bed(w(8.4), w(8.1), 0, { body: true, bloody: true }); bed(w(2.6), w(8.1), 0);
+  pool(w(8.4), w(7.6), 1.4); L.dripEmitter((() => { const e = new THREE.Object3D(); e.position.set(w(8.4) + 0.45, 0.55, w(8.1)); root.add(e); return e; })(), 2.2);
+  cross(5, 8, 's', 0, 2.3); cross(7, 2, 'n', 0, 2.6, 1, true);
   L.addItem('flashlight', 'flashlight', w(3.9), 0.02, w(5.9));
-  L.addItem('bat1', 'battery', w(7.9), 0.52, w(5.4));
-  // blood seeping from the bottom of one locker, dragged to the door
-  pool(w(7.6), w(3.3), 1.3); trail(w(7.7), w(3.6), w(9.8), w(3.5)); L.decalFloor(w(8.6), w(4.4), 0.8, 0.8, 'splat');
+  L.addItem('bat1', 'battery', w(5.5) + 0.15, 0.86, w(5.3) + 0.1);
+  pool(w(7.5), w(3.3), 1.3); trail(w(7.6), w(3.6), w(9.8), w(3.5)); L.decalFloor(w(8.6), w(4.4), 0.8, 0.8, 'splat');
   L.decalWall(9, 4, 'e', 0, 1.3, 1.0, 1.0, 'hands'); L.decalWall(9, 3, 'e', 0.6, 1.0, 0.6, 1.2, 'drips');
-  // a mirror over a sink, smashed
-  box(0.7, 0.2, 0.5, lam(null, { color: 0x9a9a90 }), w(2) + 0.3, 0.85, w(6.5), { col: true, nav: false });
-  const mir = box(0.02, 0.8, 0.6, lam(null, { color: 0x202428 }), w(2) + 0.02, 1.6, w(6.5)); mir.castShadow = false;
-  L.decalWall(2, 6, 'w', 0, 1.6, 0.7, 0.7, 'splat');
 
-  // ===== SHOWERS =====
-  L.fixture(4.5, 13, 'bulb', 0.6);
-  for (const tz of [12, 13, 14]) {
-    cyl(0.02, 0.02, 1.0, steel, w(2) + 0.15, 2.3, w(tz + 0.5), 5);
-    const head = cyl(0.08, 0.04, 0.06, steel, w(2) + 0.3, 1.95, w(tz + 0.5), 8);
-    if (tz === 13) { const e = new THREE.Object3D(); e.position.set(w(2) + 0.32, 1.9, w(13.5)); root.add(e); L.dripEmitter(e, 26); }
+  // ===== LAVATORIUM =====
+  L.fixture(4.5, 12.7, 'lantern', 0.35);
+  box(0.6, 0.7, 4.6, stone, w(2) + 0.32, 0.35, w(13.5), { col: true, nav: false }); // stone trough
+  { const s2 = GO.mesh(new THREE.PlaneGeometry(0.5, 4.5), mats.bloodLiquid, root, w(2) + 0.32, 0.68, w(13.5)); s2.rotation.x = -Math.PI / 2; }
+  cyl(0.03, 0.03, 1.2, iron, w(2) + 0.12, 1.3, w(13.5), 5); box(0.35, 0.04, 0.04, iron, w(2) + 0.25, 1.85, w(13.5));
+  { const e = new THREE.Object3D(); e.position.set(w(2) + 0.42, 1.82, w(13.5)); root.add(e); L.dripEmitter(e, 26); }
+  { // a bath full of blood with someone still in it
+    const bx = w(5.6), bz = w(14.2);
+    box(1.8, 0.6, 0.8, stone, bx, 0.3, bz, { col: true }); const surf = GO.mesh(new THREE.PlaneGeometry(1.65, 0.65), mats.bloodLiquid, root, bx, 0.58, bz); surf.rotation.x = -Math.PI / 2;
+    GO.bake(GO.severedHead(root, bx - 0.6, 0.52, bz, Math.PI / 2, 'grey'));
+    for (const s of [-0.1, 0.1]) GO.ball(root, V(bx + 0.25, 0.62, bz + s), 0.07, mats.skinGrey, 1, 0.6, 1); // knees
+    const arm = new THREE.Group(); arm.position.set(bx - 0.25, 0.6, bz + 0.4); root.add(arm); GO.limb(arm, V(0, 0, 0), V(0, -0.4, 0.12), 0.04, 0.035, mats.skinGrey); GO.ball(arm, V(0, -0.45, 0.14), 0.04, mats.skinGrey, 0.8, 1.4, 0.5);
+    const e = new THREE.Object3D(); e.position.set(0, -0.48, 0.14); arm.add(e); L.dripEmitter(e, 3); pool(bx - 0.2, bz + 0.6, 1.2);
   }
-  {
-    const c = GO.slumpedCorpse({ gutsOut: 0.5 }); c.position.set(w(2) + 0.4, 0, w(13.5)); c.rotation.y = Math.PI / 2; root.add(c); GO.bake(c);
-    pool(w(2) + 0.9, w(13.5), 2.2); pool(w(4.5), w(13.5), 1.6); trail(w(2.5), w(13.6), w(4.5), w(13.5));
-    L.writing(7, 13, 'e', 0, 1.9, 'IT WEARS THEIR SKIN', 2.45, 0.8);
-    L.decalWall(2, 13, 'w', 0.3, 1.2, 1.2, 1.4, 'drips');
-  }
+  { const c = GO.slumpedCorpse({ gutsOut: 0.5 }); c.position.set(w(2) + 0.95, 0, w(12.2)); c.rotation.y = Math.PI / 2; root.add(c); GO.bake(c); pool(w(2) + 1.2, w(12.2), 1.8); }
+  trail(w(2.6), w(13.6), w(4.5), w(13.5));
+  L.writing(7, 13, 'e', 0, 1.9, 'IT WEARS THEIR FACES', 2.45, 0.8);
+  L.decalWall(2, 13, 'w', 0.3, 1.2, 1.2, 1.4, 'drips');
   L.addLocker(6, 11, 'n', 0, { hide: true });
   L.addItem('bat2', 'battery', w(6.6), 0.05, w(15.2));
   L.waypoints.push(W3(4.5, 13.5));
@@ -492,232 +541,251 @@ function furnish(L, H) {
   // ===== HALLS =====
   L.decalWall(11, 3, 'n', 0, 1.4, 0.9, 0.9, 'hand'); splat(w(12), w(3.5));
   trail(w(11.5), w(6.2), w(11.5), w(9.8));
+  L.fixture(11.5, 7.5, 'candle', 0, { y: 0.3 });
 
-  // ===== CORRIDOR =====
-  L.fixture(13.5, 10.5, 'fluoro', 0.15, { ry: Math.PI / 2 });
-  L.specials.sightLight = L.fixture(19.5, 10.5, 'fluoro', 0, { dead: true, ry: Math.PI / 2 });
-  L.fixture(25, 10.5, 'fluoro', 0.8, { ry: Math.PI / 2 });
-  L.fixture(30.5, 10.5, 'fluoro', 0.1, { ry: Math.PI / 2 });
-  L.fixture(35.5, 10.5, 'fluoro', 0, { dead: true, ry: Math.PI / 2 });
-  L.fixture(40.5, 10.8, 'red', 0);
-  L.addLocker(14, 10, 'n', 0, { hide: true });
+  // ===== CLOISTER =====
+  L.fixture(13.5, 10.2, 'lantern', 0.1);
+  L.specials.sightLight = L.fixture(19.5, 10.6, 'lantern', 0, { dead: true });
+  L.fixture(25, 10.8, 'lantern', 0.7); L.fixture(33.5, 10.6, 'lantern', 0, { dead: true });
+  L.fixture(40.5, 10.8, 'candle', 0, { y: 0.3 });
+  for (const wx of [15.5, 23, 27, 35]) L.window(Math.floor(wx), 10, 'n', (wx % 1) - 0.5);
+  for (let x = 12.5; x < 41; x += 2.5) { if ([16.5, 25.5, 36.5].some(d => Math.abs(d - x) < 1.1)) continue; cyl(0.24, 0.28, WALL_H, stone, w(x), WALL_H / 2, w(12) - 0.3, 8, { col: true, nav: false }); }
+  L.addLocker(14, 10, 'n', 0.3, { hide: true });
   L.addLocker(28, 11, 's', 0.4, { hide: true }); L.addLocker(28, 11, 's', -0.4);
   trail(w(12), w(10.7), w(16.4), w(11.9)); trail(w(20.5), w(9.2), w(22), w(10.8)); trail(w(22), w(10.8), w(25.5), w(11.9));
   pool(w(16.4), w(11.6), 1.1);
   L.decalWall(18, 11, 's', 0.2, 1.3, 1, 1, 'hands'); L.decalWall(23, 10, 'n', -0.5, 1.1, 0.7, 0.7, 'hand'); L.decalWall(33, 10, 'n', 0, 1.2, 0.9, 1.4, 'drips');
-  L.writing(27, 10, 'n', 0.2, 1.9, "DON'T RUN", 2.45, 0.85);
-  // a gurney with a sheet over something that isn't the right shape
-  {
-    const gx = w(22.5), gz = w(11.4);
-    box(2.0, 0.06, 0.7, steel, gx, 0.85, gz, { col: true, nav: false });
-    for (const sx of [-0.9, 0.9]) for (const sz of [-0.3, 0.3]) cyl(0.015, 0.015, 0.85, steel, gx + sx, 0.42, gz + sz, 4);
-    const sheet = GO.mesh(new THREE.BoxGeometry(1.7, 0.16, 0.62), mats.sheet, root, gx, 0.96, gz);
-    GO.mesh(new THREE.SphereGeometry(0.14, 6, 5), mats.sheet, root, gx - 0.75, 1.0, gz);
-    const arm = new THREE.Group(); arm.position.set(gx - 0.1, 0.9, gz + 0.33); root.add(arm);
+  L.writing(30, 10, 'n', 0.1, 1.9, "DON'T RUN", 2.45, 0.85);
+  { // a funeral bier, a shroud over something that isn't the right shape
+    const gx = w(22.5), gz = w(11.2);
+    box(2.0, 0.08, 0.75, wood, gx, 0.75, gz, { col: true, nav: false });
+    for (const sx of [-0.9, 0.9]) for (const sz of [-0.3, 0.3]) box(0.06, 0.75, 0.06, wood, gx + sx, 0.37, gz + sz);
+    GO.mesh(new THREE.BoxGeometry(1.7, 0.16, 0.62), mats.sheet, root, gx, 0.86, gz); GO.mesh(new THREE.SphereGeometry(0.14, 6, 5), mats.sheet, root, gx - 0.75, 0.9, gz);
+    const arm = new THREE.Group(); arm.position.set(gx - 0.1, 0.8, gz + 0.33); root.add(arm);
     GO.limb(arm, V(0, 0, 0), V(0.05, -0.35, 0.05), 0.04, 0.035, mats.skinGrey); GO.ball(arm, V(0.06, -0.4, 0.06), 0.04, mats.skinGrey, 0.8, 1.4, 0.5);
-    pool(gx - 0.1, gz + 0.4, 1.0);
-    const e = new THREE.Object3D(); e.position.set(0.06, -0.45, 0.06); arm.add(e); L.dripEmitter(e, 1.2);
+    pool(gx - 0.1, gz + 0.4, 1.0); const e = new THREE.Object3D(); e.position.set(0.06, -0.45, 0.06); arm.add(e); L.dripEmitter(e, 1.2);
+    candles(gx + 1.2, gz, 0, 4, 0.3); candles(gx - 1.2, gz, 0, 4, 0.3);
   }
-  L.addItem('note_log', 'wallnote', w(18.5), 1.5, w(12) - 0.02, 'Read clipboard').group.rotation.y = Math.PI;
-  for (let i = 0; i < 3; i++) cyl(0.3, 0.3, 0.9, lam(TX.metalTex(0.9), { color: 0x4a5a3a }), w(41.5) - i * 0.65, 0.45, w(11.7), 10, { col: true, nav: false });
+  { const lec = box(0.5, 1.1, 0.4, wood, w(18.5), 0.55, w(11.6), { col: true, nav: false }); }
+  L.addItem('note_log', 'note', w(18.5), 1.12, w(11.6), 'Read the ledger');
+  // coffins stacked at the east end
+  for (let i = 0; i < 3; i++) { const c = box(0.65, 0.45, 2.0, lam(TX.woodTex(false), { color: 0x7a6050 }), w(41.4) - (i % 2) * 0.7, 0.23 + Math.floor(i / 2) * 0.46, w(10.9), { col: i < 2, nav: false }); c.rotation.y = 0.05 * i; }
   L.addItem('bat3', 'battery', w(33.5), 0.05, w(10.3));
   [W3(13, 10.5), W3(22, 10.5), W3(30, 10.5), W3(38, 10.8)].forEach(p => L.waypoints.push(p));
 
-  // ===== COLD STORAGE =====
-  L.fixture(17.5, 3, 'cold', 0.05); L.fixture(24.5, 5, 'cold', 0.5);
-  for (const rz of [2.3, 4.3, 6.3]) box(w(12), 0.08, 0.08, darkMetal, w(21), WALL_H - 0.2, w(rz));
+  // ===== HALL OF PENITENTS: they hang from the vault on chains, candles burning under them =====
+  L.window(17, 1, 'n', 0); L.window(24, 1, 'n', 0);
+  L.fixture(17.6, 4.3, 'candle', 0.02, { y: 0.35 }); L.fixture(23.6, 6.3, 'candle', 0.05, { y: 0.35 }); L.fixture(21.6, 2.3, 'candle', 0.3, { y: 0.35 });
+  for (const rz of [2.3, 4.3, 6.3]) box(w(12), 0.12, 0.12, wood, w(21), WALL_H - 0.12, w(rz));
   const kinds = ['back', 'back', 'ankles', 'back', 'torso', 'ankles'];
   let n = 0;
   for (const rz of [2.3, 4.3, 6.3]) for (let x = 15.6; x < 26.5; x += 2.0) {
-    if (rz === 6.3 && Math.abs(x - 20.6) < 0.8) continue; // keep the door lane open
+    if (rz === 6.3 && Math.abs(x - 20.6) < 0.8) continue;
     const kind = kinds[(n++ * 7 + 3) % kinds.length];
     const miss = R() < 0.4 ? [GO_pick(['lArm', 'rArm', 'lArmLower', 'rLegLower', 'lLeg'])] : [];
     const isWatcher = Math.abs(x - 23.6) < 0.1 && rz === 4.3;
-    const hg = L.hang(w(x) + (R() - 0.5) * 0.4, w(rz) + (R() - 0.5) * 0.2, isWatcher ? 'back' : kind, { missing: miss, openChest: R() < 0.35, gutsOut: kind === 'back' && R() < 0.3 ? 0.7 : 0, noBake: isWatcher });
+    const hx = w(x) + (R() - 0.5) * 0.4, hz = w(rz) + (R() - 0.5) * 0.2;
+    const hg = L.hang(hx, hz, isWatcher ? 'back' : kind, { missing: miss, openChest: R() < 0.35, gutsOut: kind === 'back' && R() < 0.3 ? 0.7 : 0, noBake: isWatcher });
     if (isWatcher) L.specials.watcher = hg;
     if (Math.abs(x - 25.6) < 0.1 && rz === 2.3) L.specials.dropper = hg;
+    candles(hx, hz, 0, 3, 0.6);
   }
-  for (let i = 0; i < 4; i++) box(0.9, 0.7, 0.9, wood, w(27.4), 0.35, w(3.5 + i * 1.0), { col: true, nav: false });
-  box(0.9, 0.7, 0.9, wood, w(26.6), 0.35, w(1.4), { col: true, nav: false });
-  L.addItem('fuse1', 'fuse', w(26.6), 0.78, w(1.4));
+  for (let i = 0; i < 4; i++) bench(w(27.3), w(3.4 + i * 1.05), 1.5, false);
+  box(0.9, 0.9, 0.7, stone, w(26.6), 0.45, w(1.4), { col: true, nav: false }); candles(w(26.6), w(1.4), 0.9, 4, 0.5);
+  L.addItem('fuse1', 'fuse', w(26.6) - 0.1, 0.92, w(1.4) + 0.15);
   L.decalWall(14, 5, 'w', 0, 1.5, 1.2, 1.3, 'hands'); L.decalWall(27, 2, 'e', 0, 1.1, 1, 1.4, 'drips');
+  L.writing(14, 3, 'w', 0, 2.0, 'FORGIVE US', 2.45, 0.85);
   L.waypoints.push(W3(20.5, 5.3), W3(16, 3.3));
 
-  // ===== OFFICE =====
+  // ===== ABBOT'S STUDY =====
   L.fixture(32.5, 5.3, 'lamp', 0.05, { y: 1.15 });
   box(1.8, 0.06, 0.8, wood, w(32.5), 0.78, w(5.3), { col: true });
   box(1.7, 0.75, 0.05, wood, w(32.5), 0.4, w(5.3) + 0.38);
-  cyl(0.02, 0.08, 0.35, darkMetal, w(32.5) + 0.6, 0.98, w(5.3) - 0.2, 6);
-  box(0.5, 0.05, 0.5, darkMetal, w(32.5), 0.48, w(4.7)); box(0.5, 0.6, 0.05, darkMetal, w(32.5), 0.8, w(4.7) - 0.25);
+  cyl(0.02, 0.08, 0.35, iron, w(32.5) + 0.6, 0.98, w(5.3) - 0.2, 6);
+  box(0.5, 0.05, 0.5, wood, w(32.5), 0.48, w(4.7)); box(0.5, 0.9, 0.05, wood, w(32.5), 0.9, w(4.7) - 0.25);
   { const c = GO.seatedCorpse(); c.position.set(w(32.5), 0, w(4.7) - 0.1); root.add(c); GO.bake(c); pool(w(32.5), w(4.7), 1.6); const e = new THREE.Object3D(); e.position.set(0, 0.95, -0.25); c.add(e); L.dripEmitter(e, 2); }
   L.addItem('key', 'key', w(32.5) - 0.5, 0.82, w(5.3) + 0.1);
-  L.addItem('note_journal', 'note', w(32.5) - 0.1, 0.82, w(5.3) + 0.15, 'Read journal');
-  { const ph = box(0.22, 0.08, 0.18, lam(null, { color: 0x111111 }), w(32.5) + 0.3, 0.85, w(5.3) + 0.1); L.specials.phone = ph; }
-  for (let i = 0; i < 2; i++) box(0.5, 1.3, 0.6, darkMetal, w(29) + 0.3, 0.65, w(5 + i * 0.8), { col: true, nav: false });
+  L.addItem('note_journal', 'note', w(32.5) - 0.1, 0.82, w(5.3) + 0.15, 'Read the journal');
+  { // the abbey's old valve radio
+    const rg = new THREE.Group(); rg.position.set(w(32.5) + 0.35, 0.81, w(5.3) + 0.05); root.add(rg);
+    GO.mesh(new THREE.BoxGeometry(0.36, 0.24, 0.2), wood, rg, 0, 0.12, 0); GO.mesh(new THREE.CircleGeometry(0.06, 10), lam(null, { color: 0x2a2018 }), rg, -0.07, 0.13, 0.101);
+    GO.mesh(new THREE.BoxGeometry(0.1, 0.05, 0.01), new THREE.MeshBasicMaterial({ color: 0x8a6a20 }), rg, 0.08, 0.16, 0.101);
+    L.specials.phone = rg;
+  }
+  // shelves of books
+  for (let i = 0; i < 2; i++) {
+    const g = new THREE.Group(); g.position.set(w(29) + 0.25, 0, w(5 + i * 1.2)); root.add(g);
+    GO.mesh(new THREE.BoxGeometry(0.45, 2.2, 1.1), wood, g, 0, 1.1, 0);
+    for (let sh = 0; sh < 4; sh++) for (let b = 0; b < 9; b++) { const hh = 0.22 + R() * 0.12; GO.mesh(new THREE.BoxGeometry(0.3, hh, 0.07 + R() * 0.04), lam(null, { color: new THREE.Color().setHSL(R() * 0.1, 0.4, 0.12 + R() * 0.12) }), g, 0.1, 0.3 + sh * 0.5 + hh / 2, -0.45 + b * 0.105); }
+    GO.bake(g); L.addCollider(w(29), w(29) + 0.5, w(5 + i * 1.2) - 0.55, w(5 + i * 1.2) + 0.55, false);
+  }
   L.decalFloor(w(30.2), w(6.2), 1.2, 1.2, 'splat');
   const tally = new THREE.MeshLambertMaterial({ map: TX.tallyTex(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
   L.decalWall(32, 4, 'n', 0, 1.8, 2.4, 1.2, null, tally); L.decalWall(30, 4, 'n', 0, 1.6, 2.4, 1.2, null, tally);
+  cross(33, 4, 'n', 0.6, 2.7, 1.2, true);
   L.addLocker(34, 6, 'e', 0, { hide: true });
   L.waypoints.push(W3(31, 6.5));
 
-  // ===== LOBBY / FREIGHT ELEVATOR =====
-  L.specials.lobbyRed = L.fixture(39.5, 5, 'red', 0.1);
-  {
-    const panel = box(0.2, 1.0, 0.9, darkMetal, w(43) - 0.1, 1.3, w(5.5));
-    for (let i = 0; i < 3; i++) { const s = GO.mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.1, 8), mats.black, root, w(43) - 0.22, 1.5 - i * 0.22, w(5.5)); s.rotation.z = Math.PI / 2; L.specials['socket' + i] = s; }
-    const lever = GO.mesh(new THREE.BoxGeometry(0.06, 0.35, 0.06), mats.steel, root, w(43) - 0.25, 1.0, w(5.5) + 0.3); L.specials.lever = lever;
-    L.specials.panelInteract = { pos: V(w(43) - 0.3, 1.3, w(5.5)), r: 1.8, prompt: () => L.onPanelPrompt?.(), act: () => L.onItem?.('panel') };
+  // ===== GATEHOUSE =====
+  L.specials.lobbyRed = L.fixture(39.5, 5, 'lantern', 0.1);
+  { // the portcullis winch, chained shut with three padlocks
+    box(0.5, 1.2, 1.4, wood, w(43) - 0.25, 0.6, w(5.5), { col: true, nav: false });
+    cyl(0.18, 0.18, 1.3, iron, w(43) - 0.3, 1.35, w(5.5), 10).rotation.x = Math.PI / 2;
+    for (let i = 0; i < 3; i++) { const s = GO.mesh(new THREE.BoxGeometry(0.1, 0.12, 0.08), mats.black, root, w(43) - 0.55, 1.5 - i * 0.25, w(5.5) - 0.3); L.specials['socket' + i] = s; GO.mesh(new THREE.TorusGeometry(0.035, 0.008, 3, 8), iron, root, w(43) - 0.55, 1.58 - i * 0.25, w(5.5) - 0.3); }
+    const lever = GO.mesh(new THREE.BoxGeometry(0.06, 0.06, 0.6), mats.steel, root, w(43) - 0.3, 1.35, w(5.5) + 0.85); L.specials.lever = lever;
+    L.specials.panelInteract = { pos: V(w(43) - 0.5, 1.3, w(5.5)), r: 1.9, prompt: () => L.onPanelPrompt?.(), act: () => L.onItem?.('panel') };
     L.interact.push(L.specials.panelInteract);
+    for (let i = 0; i < 2; i++) cyl(0.012, 0.012, 2.2, iron, w(43) - 0.3 - i * 0.15, 2.3, w(5.5) - 0.5 - i * 0.2, 3);
   }
-  // elevator gate (bars) and the car, which waits far above
-  {
+  { // the portcullis: oak and iron, spiked at the foot. beyond it, snow.
     const gate = new THREE.Group(); root.add(gate);
-    for (let i = 0; i <= 20; i++) GO.mesh(new THREE.BoxGeometry(0.03, 2.6, 0.03), darkMetal, gate, w(39) + i * 0.25, 1.3, w(3) - 0.08);
-    for (const y of [0.1, 1.3, 2.5]) GO.mesh(new THREE.BoxGeometry(5, 0.05, 0.05), darkMetal, gate, w(40), y, w(3) - 0.08);
+    for (let i = 0; i <= 12; i++) { GO.mesh(new THREE.BoxGeometry(0.08, 2.8, 0.08), iron, gate, w(39) + 0.1 + i * 0.4, 1.4, w(3) - 0.1); GO.mesh(new THREE.ConeGeometry(0.05, 0.18, 4), iron, gate, w(39) + 0.1 + i * 0.4, -0.05, w(3) - 0.1).rotation.x = Math.PI; }
+    for (const y of [0.3, 1.2, 2.1]) GO.mesh(new THREE.BoxGeometry(5, 0.1, 0.1), iron, gate, w(40), y, w(3) - 0.1);
     L.specials.gate = gate;
-    box(5, 0.7, 0.3, darkMetal, w(40), 3.05, w(3) - 0.15);
-    box(5, 10.6, 0.3, H.style('metal')[0], w(40), WALL_H + 5.3, w(3) - 0.15); // shaft wall above the gate
-    const car = new THREE.Group(); car.position.set(w(40), 12, w(1.5)); root.add(car);
-    GO.mesh(new THREE.BoxGeometry(5, 0.25, 2.5), lam(TX.metalTex(0.6)), car, 0, -0.125, 0);
-    GO.mesh(new THREE.BoxGeometry(5, 0.1, 2.5), darkMetal, car, 0, 3.2, 0);
-    for (const sx of [-2.45, 2.45]) GO.mesh(new THREE.BoxGeometry(0.06, 3.2, 2.5), darkMetal, car, sx, 1.6, 0);
-    GO.mesh(new THREE.BoxGeometry(5, 3.2, 0.06), darkMetal, car, 0, 1.6, -1.22);
-    const fx = L.fixture(40, 1.5, 'car', 0.3, { y: 15 }); fx.forced = 0; L.specials.carLight = fx;
-    car.add(fx.mesh); fx.mesh.position.set(0, 3.0, 0);
-    L.specials.car = car;
+    box(5, 0.7, 0.4, stone, w(40), 3.05, w(3) - 0.15);
+    box(5, 4, 0.4, stone, w(40), WALL_H + 2, w(3) - 0.15);
+    const car = new THREE.Group(); root.add(car); L.specials.car = car; // (kept for the ending code: nothing rides it)
+    const fx = L.fixture(40, 1.5, 'moon', 0, { y: 3 }); L.specials.carLight = fx;
+    // snow falling outside and blowing through the bars
+    const N = 260, sp = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { sp[i * 3] = w(39) + R() * 5; sp[i * 3 + 1] = R() * 6; sp[i * 3 + 2] = w(1) + R() * 4.5; }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+    const snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xdfe6f0, size: 0.04 })); snow.frustumCulled = false; root.add(snow);
+    L.updaters.push((dt) => { for (let i = 0; i < N; i++) { sp[i * 3 + 1] -= dt * (0.6 + (i % 5) * 0.15); sp[i * 3 + 2] += dt * 0.5; sp[i * 3] += Math.sin(G.time + i) * dt * 0.3; if (sp[i * 3 + 1] < 0 || sp[i * 3 + 2] > w(4.4)) { sp[i * 3 + 1] = 5 + R(); sp[i * 3 + 2] = w(1) + R() * 2; } } sg.attributes.position.needsUpdate = true; });
   }
-  L.writing(37, 5, 'w', 0, 1.9, "IT'S STILL WORKING", 2.45, 0.8);
+  L.writing(37, 5, 'w', 0, 1.9, 'NO ONE LEAVES THE FAST', 2.45, 0.8);
   { const c = GO.slumpedCorpse({ missing: ['rArmLower'], openChest: true }); c.position.set(w(42) + 0.6, 0, w(3) + 0.5); c.rotation.y = -Math.PI / 2 - 0.4; root.add(c); GO.bake(c); pool(w(42), w(3.5), 1.6); }
+  { const c = GO.slumpedCorpse({ face: 'flayed' }); c.position.set(w(39) + 0.4, 0, w(3) + 0.45); c.rotation.y = 0.3; root.add(c); GO.bake(c); pool(w(39.4), w(3.4), 1.4); L.decalWall(39, 3, 'n', 0, 1.0, 1.6, 1.0, 'hands'); }
   for (let i = 0; i < 2; i++) box(0.9, 0.9, 0.9, wood, w(37.5), 0.45, w(6.5 + i * 0.4) - i * 0.3, { col: true, nav: false });
   L.waypoints.push(W3(39.5, 5.5));
 
-  // ===== KILL FLOOR =====
-  L.fixture(15, 16, 'fluoro', 0.1); L.fixture(22, 16, 'red', 0); L.specials.killFlicker = L.fixture(17, 22, 'fluoro', 0.6); L.fixture(26, 20.5, 'fluoro', 0.3); L.fixture(21, 22.5, 'fluoro', 0, { dead: true });
-  box(w(15), 0.1, 0.1, darkMetal, w(20.5), WALL_H - 0.2, w(15.5));
+  // ===== REFECTORY: the brothers' last meal, laid out on the long table =====
+  L.fixture(16, 18.5, 'candle', 0.02, { y: 1.05 }); L.fixture(22.5, 18.5, 'candle', 0.05, { y: 1.05 }); L.specials.killFlicker = L.fixture(17, 22, 'lantern', 0.5);
+  L.fixture(26, 20.5, 'lantern', 0.2); L.fixture(21, 15.5, 'lantern', 0, { dead: true }); L.window(28, 17, 'e', 0); L.window(12, 16, 'w', 0);
+  box(w(15), 0.14, 0.14, wood, w(20.5), WALL_H - 0.14, w(15.5));
   for (let x = 13.5; x <= 27.5; x += 2) {
     if (Math.abs(x - 16.5) < 0.6 || Math.abs(x - 25.5) < 0.6) continue;
     L.hang(w(x), w(15.5), R() < 0.65 ? 'torso' : 'back', { ry: Math.PI / 2 + (R() - 0.5) * 0.4, openChest: true, gutsOut: 0.8, drip: 1.5 + R() * 2, chain: 0.4 });
   }
-  // conveyor carrying pieces of people down the line
   {
     const x0 = w(13.2), x1 = w(24.8), cz = w(18.5), len = x1 - x0;
-    box(len, 0.12, 1.0, darkMetal, (x0 + x1) / 2, 0.85, cz, { col: true });
-    const beltT = TX.beltTex(); beltT.repeat.set(len / 1.2, 1);
-    const belt = GO.mesh(new THREE.PlaneGeometry(len, 0.9), lam(beltT), root, (x0 + x1) / 2, 0.915, cz); belt.rotation.x = -Math.PI / 2;
-    for (let x = x0 + 0.5; x < x1; x += 2) for (const sz of [-0.45, 0.45]) box(0.08, 0.85, 0.08, darkMetal, x, 0.42, cz + sz);
-    const items = [];
+    longTable((x0 + x1) / 2, cz, len, 1.1, 0.85);
+    { const cloth = GO.mesh(new THREE.BoxGeometry(len - 0.4, 0.01, 1.0), lam(TX.sheetTex()), root, (x0 + x1) / 2, 0.895, cz); cloth.receiveShadow = true; }
+    bench((x0 + x1) / 2, cz - 0.95, len - 1); bench((x0 + x1) / 2, cz + 0.95, len - 1);
+    const plat = lam(TX.metalTex(0.2), { color: 0x9a9080 });
     for (let i = 0; i < 9; i++) {
-      const g = new THREE.Group(); root.add(g); const k = i % 4;
-      if (k === 0) { GO.mesh(new THREE.BoxGeometry(0.4, 0.18, 0.3), mats.meat, g, 0, 0.09, 0); GO.mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 4), mats.bone, g, 0, 0.12, 0).rotation.z = 1.4; }
+      const g = new THREE.Group(); root.add(g); const k = i % 4, gx = x0 + 0.9 + i * (len - 1.8) / 8;
+      GO.mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.03, 12), plat, g, 0, 0.015, 0);
+      if (k === 0) { GO.mesh(new THREE.BoxGeometry(0.4, 0.18, 0.3), mats.meat, g, 0, 0.11, 0); GO.mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 4), mats.bone, g, 0, 0.14, 0).rotation.z = 1.4; }
       else if (k === 1) GO.severedLimb(g, 0, 0, R() * 3, R() < 0.5);
-      else if (k === 2) GO.severedHead(g, 0, 0, 0, R() * 6);
-      else { GO.mesh(new THREE.SphereGeometry(0.16, 7, 5), mats.meat, g, 0, 0.08, 0).scale.set(1.4, 0.6, 1); GO.intestines(g, V(0, 0.12, 0), 0.12, 10, 0.025); }
-      GO.bake(g); g.userData.u = i / 9; g.position.set(0, 0.92, cz); items.push(g);
+      else if (k === 2) GO.severedHead(g, 0, 0.02, 0, R() * 6);
+      else { GO.mesh(new THREE.SphereGeometry(0.16, 7, 5), mats.meat, g, 0, 0.1, 0).scale.set(1.4, 0.6, 1); GO.intestines(g, V(0, 0.14, 0), 0.12, 10, 0.025); }
+      const gob = GO.mesh(new THREE.CylinderGeometry(0.04, 0.025, 0.12, 6), plat, g, 0.4, 0.06, 0.25); GO.mesh(new THREE.CircleGeometry(0.035, 6), mats.bloodLiquid, g, 0.4, 0.121, 0.25).rotation.x = -Math.PI / 2;
+      g.position.set(gx, 0.9, cz + (R() - 0.5) * 0.2); GO.bake(g);
+      candles(gx + 0.6, cz + 0.3, 0.9, 2, 0.15);
     }
-    let sawT = 0;
-    L.updaters.push((dt) => {
-      beltT.offset.x -= dt * 0.3 / 1.2;
-      for (const g of items) { g.userData.u = (g.userData.u + dt * 0.3 / len) % 1; g.position.x = x0 + 0.3 + g.userData.u * (len - 0.6); }
-      sawT -= dt; if (sawT < 0) { sawT = rr(4, 9); if (G.camera.position.distanceTo(V(w(24.5), 1, w(21.5))) < 18) { AU.squelch(V(x1, 1, cz), 0.25); AU.boneCrack(V(x1, 1, cz), 0.2); } }
-    });
+    for (let i = 0; i < 10; i++) L.decalFloor(x0 + R() * len, cz + (R() - 0.5) * 2.2, 0.7, 0.7, 'splat');
     L.specials.conveyorEnd = V(x1, 1, cz);
   }
-  // steel tables with the opened dead
   const tables = [[14.6, 21.3, 0.1, {}], [18, 21.4, -0.15, { missing: ['lArmLower'] }], [21.2, 20.8, 0.3, { missing: ['rLeg'], face: 'flayed' }]];
   for (const [tx, tz, ry, o] of tables) {
     const g = new THREE.Group(); g.position.set(w(tx), 0, w(tz)); g.rotation.y = ry; root.add(g);
-    GO.mesh(new THREE.BoxGeometry(0.9, 0.06, 2.1), steel, g, 0, 0.9, 0);
-    for (const sx of [-0.4, 0.4]) for (const sz of [-0.95, 0.95]) GO.mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.9, 5), steel, g, sx, 0.45, sz);
-    const c = GO.tableCorpse(o); c.position.y = -0.0; g.add(c);
-    for (let i = 0; i < 3; i++) { const tool = GO.mesh(new THREE.BoxGeometry(0.02, 0.01, 0.25), steel, g, -0.3 + i * 0.1, 0.94, 0.85); tool.rotation.y = R(); }
+    GO.mesh(new THREE.BoxGeometry(0.9, 0.08, 2.1), wood, g, 0, 0.9, 0);
+    for (const sx of [-0.4, 0.4]) for (const sz of [-0.95, 0.95]) GO.mesh(new THREE.BoxGeometry(0.07, 0.9, 0.07), wood, g, sx, 0.45, sz);
+    const c = GO.tableCorpse(o); g.add(c);
+    pool(w(tx), w(tz), 2.0); pool(w(tx) + 0.5, w(tz) - 0.3, 1.2);
+    for (let i = 0; i < 3; i++) { const tool = GO.mesh(new THREE.BoxGeometry(0.02, 0.01, 0.25), mats.steel, g, -0.3 + i * 0.1, 0.95, 0.85); tool.rotation.y = R(); }
     GO.bake(g);
     L.addCollider(w(tx) - 0.6, w(tx) + 0.6, w(tz) - 1.1, w(tz) + 1.1);
-    pool(w(tx), w(tz), 2.0); pool(w(tx) + 0.5, w(tz) - 0.3, 1.2);
     const e = new THREE.Object3D(); e.position.set(0.45, 0.88, -0.2); g.add(e); L.dripEmitter(e, 3);
     const e2 = new THREE.Object3D(); e2.position.set(0.45, 0.5, -0.15); g.add(e2); L.dripEmitter(e2, 1.5);
   }
-  // bandsaw
-  {
+  { // the butcher's block, cleaver still in it
     const bx = w(24.5), bz = w(21.7);
-    box(0.9, 1.8, 0.7, lam(TX.metalTex(0.6), { color: 0x6a7a80 }), bx, 0.9, bz, { col: true });
-    box(1.4, 0.06, 1.1, steel, bx + 0.6, 0.95, bz);
-    cyl(0.01, 0.01, 0.6, mats.steel, bx + 0.45, 1.25, bz, 4);
-    GO.severedLimb(root, bx + 0.7, bz + 0.1, 0.4, true).position.y = 1.0;
+    box(1.0, 0.85, 1.0, lam(TX.floorBoards(1.5)), bx, 0.42, bz, { col: true });
+    const cl = box(0.04, 0.22, 0.32, mats.steel, bx + 0.1, 0.95, bz); cl.rotation.z = 0.3; box(0.04, 0.04, 0.25, wood, bx + 0.1, 1.08, bz + 0.25);
+    GO.severedLimb(root, bx - 0.15, bz - 0.1, 0.4, true).position.y = 0.87;
     pool(bx + 0.6, bz, 1.8); L.decalWall(24, 23, 's', 0, 1.0, 1.4, 1.4, 'drips');
   }
-  // buckets, piles, heads
-  const bucket = (x, z, gore = true) => { const b = cyl(0.2, 0.17, 0.4, darkMetal, x, 0.2, z, 9, { col: true, nav: false }); if (gore) { GO.mesh(new THREE.CircleGeometry(0.18, 9), mats.bloodLiquid, root, x, 0.38, z).rotation.x = -Math.PI / 2; GO.intestines(root, V(x, 0.42, z), 0.1, 8, 0.03); } splat(x, z, 1); };
-  bucket(w(15.6), w(22.6)); bucket(w(19.2), w(22.4)); bucket(w(22.4), w(19.8)); bucket(w(26.7), w(17)); bucket(w(13.1), w(16.8));
-  GO.bake(GO.entrailsPile(root, w(17.4), w(19.6), 1.3)); GO.bake(GO.entrailsPile(root, w(23.3), w(23.3), 1)); GO.bake(GO.entrailsPile(root, w(27.2), w(21.3), 1.1));
+  const pail = (x, z) => { cyl(0.2, 0.17, 0.4, wood, x, 0.2, z, 9, { col: true, nav: false }); GO.mesh(new THREE.CircleGeometry(0.18, 9), mats.bloodLiquid, root, x, 0.38, z).rotation.x = -Math.PI / 2; GO.intestines(root, V(x, 0.42, z), 0.1, 8, 0.03); splat(x, z, 1); };
+  pail(w(15.6), w(22.6)); pail(w(19.2), w(22.4)); pail(w(22.4), w(19.8)); pail(w(26.7), w(17)); pail(w(13.1), w(16.8));
+  GO.bake(GO.entrailsPile(root, w(17.4), w(19.9), 1.3)); GO.bake(GO.entrailsPile(root, w(23.3), w(23.3), 1)); GO.bake(GO.entrailsPile(root, w(27.2), w(21.3), 1.1));
   {
-    box(1.8, 0.06, 0.8, steel, w(26.6), 0.9, w(23.8), { col: true }); for (const sx of [-0.8, 0.8]) for (const sz of [-0.3, 0.3]) cyl(0.02, 0.02, 0.9, steel, w(26.6) + sx, 0.45, w(23.8) + sz, 4);
-    for (let i = 0; i < 4; i++) GO.bake(GO.severedHead(root, w(26.6) - 0.6 + i * 0.4, 0.93, w(23.8), Math.PI + (R() - 0.5) * 0.6, i === 2 ? 'flayed' : 'grey'));
+    longTable(w(26.6), w(23.8), 1.8, 0.8, 0.9);
+    for (let i = 0; i < 4; i++) GO.bake(GO.severedHead(root, w(26.6) - 0.6 + i * 0.4, 0.94, w(23.8), Math.PI + (R() - 0.5) * 0.6, i === 2 ? 'flayed' : 'grey'));
     pool(w(26.6), w(23.6), 1.6);
   }
   for (let i = 0; i < 16; i++) pool(w(13 + R() * 15), w(14.5 + R() * 10), 0.8 + R() * 1.8);
-  L.decalWall(12, 17, 'w', 0, 1.4, 1.2, 1.2, 'hands'); L.decalWall(28, 19, 'e', 0, 1.6, 1.3, 1.3, 'drips'); L.decalWall(20, 14, 'n', 0.5, 1.2, 1.3, 1.6, 'drips');
-  L.writing(13, 14, 'n', 0, 2.1, 'QUOTA  QUOTA  QUOTA', 2.45, 0.7);
+  L.decalWall(12, 18, 'w', 0, 1.4, 1.2, 1.2, 'hands'); L.decalWall(28, 19, 'e', 0, 1.6, 1.3, 1.3, 'drips'); L.decalWall(20, 14, 'n', 0.5, 1.2, 1.3, 1.6, 'drips');
+  L.writing(13, 14, 'n', 0, 2.1, 'HE IS STILL HUNGRY', 2.45, 0.75);
   box(0.6, 0.6, 0.6, wood, w(12.6), 0.3, w(24.5) - 0.1, { col: true, nav: false });
-  L.addItem('fuse2', 'fuse', w(12.6), 0.65, w(24.5) - 0.1);
-  box(1.2, 0.06, 0.6, steel, w(17.6), 0.9, w(14.4), { col: true, nav: false });
+  L.addItem('fuse2', 'fuse', w(12.6), 0.62, w(24.5) - 0.1);
+  box(1.2, 0.06, 0.6, wood, w(17.6), 0.9, w(14.4), { col: true, nav: false });
   L.addItem('note_run', 'note', w(17.6), 0.94, w(14.4), 'Read');
   L.addLocker(28, 23, 'e', -0.3, { hide: true }); L.addLocker(12, 20, 'w', 0, { hide: true });
   L.addItem('bat4', 'battery', w(27.6), 0.05, w(14.6));
   L.waypoints.push(W3(16.5, 16.5), W3(24, 16.5), W3(20, 23.5), W3(13, 21), W3(27, 19));
 
-  // ===== RENDERING ROOM =====
-  L.fixture(35, 17.5, 'red', 0.15); L.fixture(39.5, 22, 'red', 0.4); L.fixture(33.5, 23.5, 'redbulb', 0.3, { y: 2.6 });
-  const vat = (x, z, idx) => {
-    cyl(1.0, 1.0, 1.2, lam(TX.metalTex(1), { color: 0x7a6a60 }), x, 0.6, z, 14, { col: true });
-    const surf = GO.mesh(new THREE.CircleGeometry(0.96, 14), mats.bloodLiquid, root, x, 1.12, z); surf.rotation.x = -Math.PI / 2;
+  // ===== CHAPEL =====
+  L.fixture(38.6, 20.6, 'sanct', 0.05); L.fixture(35, 17.5, 'candle', 0.05, { y: 1.35 }); L.fixture(40.6, 19.4, 'candle', 0.05, { y: 1.3 }); L.fixture(33.5, 23.5, 'candle', 0.3, { y: 0.35 });
+  L.window(41, 16, 'e', 0); L.window(32, 18, 'w', 0);
+  const font = (x, z, idx) => { // stone fonts, brim-full
+    cyl(0.95, 0.7, 1.15, stone, x, 0.58, z, 12, { col: true });
+    const surf = GO.mesh(new THREE.CircleGeometry(0.88, 14), mats.bloodLiquid, root, x, 1.12, z); surf.rotation.x = -Math.PI / 2;
     const floaters = [];
     for (let i = 0; i < 4; i++) {
       const g = new THREE.Group(); root.add(g);
       if (i === 0) GO.skull(g, 0, 0, 0, R() * 6); else if (i === 1) { GO.mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 5), mats.bone, g).rotation.z = Math.PI / 2; } else if (i === 2) GO.mesh(new THREE.SphereGeometry(0.1, 6, 5), mats.meat, g).scale.set(1.5, 0.5, 1); else GO.severedLimb(g, 0, 0, 0, false).position.y = -0.04;
-      GO.bake(g); g.userData = { a: R() * 6.28, r: 0.2 + R() * 0.55, s: (R() - 0.5) * 0.3 }; floaters.push(g);
+      GO.bake(g); g.userData = { a: R() * 6.28, r: 0.2 + R() * 0.45, s: (R() - 0.5) * 0.3 }; floaters.push(g);
     }
     let bt = R() * 2;
     L.updaters.push((dt) => {
       for (const g of floaters) { g.userData.a += dt * g.userData.s; g.position.set(x + Math.cos(g.userData.a) * g.userData.r, 1.13 + Math.sin(G.time * 1.3 + g.userData.r * 9) * 0.02, z + Math.sin(g.userData.a) * g.userData.r); g.rotation.y += dt * g.userData.s; }
       bt -= dt; if (bt < 0) { bt = rr(0.3, 1.6); if (G.camera.position.distanceTo(V(x, 1, z)) < 10) AU.bubble(V(x, 1.1, z), 0.12); }
     });
-    // steam pipes
-    cyl(0.06, 0.06, WALL_H - 1.2, darkMetal, x + 0.85, 1.2 + (WALL_H - 1.2) / 2, z, 6);
-    splat(x + 1.1, z, 1.2); pool(x - 1.0, z + 0.6, 1.4);
+    candles(x + 1.0, z + 0.4, 0, 5, 0.35); splat(x + 1.1, z, 1.2); pool(x - 1.0, z + 0.6, 1.4);
     const v = { x, z, idx, surf }; L.vats.push(v); return v;
   };
-  vat(w(34.3), w(18.8), 0); vat(w(37.6), w(18.8), 1); vat(w(34.3), w(22), 2);
-  // the pelts: people, kept like coats
-  box(0.06, 2.6, 0.06, darkMetal, w(41.6), 1.3, w(18.6)); box(0.06, 2.6, 0.06, darkMetal, w(41.6), 1.3, w(22.6)); box(0.06, 0.06, 4.0 * 2.5 / 2.5 * 1.6, darkMetal, w(41.6), 2.55, w(20.6));
+  font(w(34.3), w(18.8), 0); font(w(37.6), w(18.8), 1); font(w(34.3), w(22), 2);
+  { // the altar, with someone laid open on it
+    const ax = w(40.2), az = w(20.6);
+    box(1.0, 1.0, 2.2, stone, ax, 0.5, az, { col: true }); GO.mesh(new THREE.BoxGeometry(1.1, 0.02, 2.3), linen, root, ax, 1.01, az);
+    const g = new THREE.Group(); g.position.set(ax, 0.06, az); root.add(g); g.add(GO.tableCorpse({ open: true, face: 'flayed', missing: ['lArm'] })); GO.bake(g);
+    candles(ax, az - 1.3, 1.0, 2, 0.2); candles(ax, az + 1.3, 1.0, 2, 0.2); pool(ax - 0.7, az, 2.2);
+    const e = new THREE.Object3D(); e.position.set(ax - 0.5, 0.98, az + 0.3); root.add(e); L.dripEmitter(e, 3);
+  }
+  // behind the altar: the vestments. they are skins.
+  box(0.08, 2.7, 0.08, iron, w(41.7), 1.35, w(18.6)); box(0.08, 2.7, 0.08, iron, w(41.7), 1.35, w(22.6)); box(0.08, 0.08, 4.1, iron, w(41.7), 2.62, w(20.6));
   for (let i = 0; i < 5; i++) {
-    const p = GO.mesh(new THREE.PlaneGeometry(0.75, 1.5), mats.pelt, root, w(41.6) - 0.05, 1.75, w(18.9) + i * 0.95);
+    const p = GO.mesh(new THREE.PlaneGeometry(0.75, 1.5), mats.pelt, root, w(41.7) - 0.05, 1.8, w(18.9) + i * 0.95);
     p.rotation.y = -Math.PI / 2 + (R() - 0.5) * 0.2; p.rotation.z = (R() - 0.5) * 0.06;
     const e = new THREE.Object3D(); e.position.set(0, -0.7, 0); p.add(e); L.dripEmitter(e, 0.8);
-    pool(w(41.4), w(18.9) + i * 0.95, 0.9);
+    pool(w(41.5), w(18.9) + i * 0.95, 0.9);
   }
-  GO.bake(GO.bonePile(root, w(39.2), w(23.8), 22)); GO.bake(GO.bonePile(root, w(32.8), w(16), 14)); GO.bake(GO.bonePile(root, w(40.5), w(16.8), 8));
-  box(1.0, 0.8, 0.6, wood, w(40.8), 0.4, w(15.6), { col: true, nav: false });
-  L.addItem('fuse3', 'fuse', w(40.8), 0.85, w(15.6));
-  L.addItem('note_mara', 'note', w(33.2), 0.05, w(23.9), 'Pick up the badge');
+  for (const pz of [23.15, 24.0]) bench(w(37.4), w(pz), 2.6);
+  cross(41, 21, 'e', 0, 2.9, 1.6, true);
+  GO.bake(GO.bonePile(root, w(40.6), w(23.9), 18)); GO.bake(GO.bonePile(root, w(32.8), w(16), 14)); GO.bake(GO.bonePile(root, w(40.5), w(16.8), 8));
+  box(1.0, 0.8, 0.6, lam(TX.woodTex(false), { color: 0xb09060 }), w(40.8), 0.4, w(15.6), { col: true, nav: false }); // reliquary chest
+  L.addItem('fuse3', 'fuse', w(40.8), 0.82, w(15.6));
+  L.addItem('note_mara', 'note', w(33.2), 0.05, w(23.9), 'Pick up the rosary');
   L.addLocker(32, 20, 'w', 0, { hide: true });
-  L.decalWall(32, 17, 'w', 0, 1.5, 1.4, 1.4, 'drips'); L.decalWall(41, 24, 's', 0, 1.3, 1.2, 1.2, 'hands');
+  L.decalWall(32, 17, 'w', 0.5, 1.5, 1.4, 1.4, 'drips'); L.decalWall(41, 24, 's', 0, 1.3, 1.2, 1.2, 'hands');
   L.waypoints.push(W3(36, 20.5), W3(39.5, 17));
   L.specials.renderWaypoints = [L.waypoints.length - 2, L.waypoints.length - 1];
 
-  // ===== TUNNEL =====
-  L.fixture(4.5, 22, 'redbulb', 0.4, { y: 2.8 }); L.fixture(12, 27.5, 'redbulb', 0.2, { y: 2.8 }); L.fixture(28, 27.5, 'redbulb', 0.5, { y: 2.8 }); L.fixture(36, 27.5, 'redbulb', 0, { y: 2.8, dead: true });
-  for (const z of [0.4, 0.75]) box(w(34), 0.12, 0.12, darkMetal, w(21.5), WALL_H - 0.25, w(27) + z);
-  box(0.12, 0.12, w(10), darkMetal, w(4) + 0.4, WALL_H - 0.25, w(22));
-  for (let x = 6; x < 38; x += 3.3) { const e = new THREE.Object3D(); e.position.set(w(x) + R() * 2, WALL_H - 0.33, w(27) + 0.5); root.add(e); L.dripEmitter(e, 0.6 + R()); }
+  // ===== CATACOMBS =====
+  L.fixture(4.5, 22, 'candle', 0.1, { y: 1.2 }); L.fixture(12, 27.6, 'candle', 0.1, { y: 1.2 }); L.fixture(28, 27.6, 'candle', 0.25, { y: 1.2 }); L.fixture(36, 27.6, 'candle', 0, { y: 1.2, dead: true });
+  for (const [x, z] of [[4.3, 22], [12, 27.3], [28, 27.3], [36, 27.3]]) box(0.4, 0.06, 0.25, stone, w(x), 1.02, w(z));
+  for (let x = 6; x < 38; x += 3.3) { const e = new THREE.Object3D(); e.position.set(w(x) + R() * 2, WALL_H - 0.05, w(27) + 0.5 + R()); root.add(e); L.dripEmitter(e, 0.4 + R() * 0.6); }
+  for (let x = 7; x < 37; x += 4.7) GO.bake(GO.bonePile(root, w(x), w(27.85), 6));
   trail(w(4.5), w(17.5), w(4.5), w(26.5), 0.6); trail(w(5), w(27.5), w(19.5), w(27.5), 0.6);
-  GO.entrailsPile(root, w(15.2), w(27.6), 0.9); pool(w(15), w(27.5), 1.3);
+  GO.bake(GO.entrailsPile(root, w(15.2), w(27.6), 0.9)); pool(w(15), w(27.5), 1.3);
   L.writing(24, 27, 'n', 0, 1.9, 'IT HEARS YOU', 2.45, 0.85);
-  L.addLocker(31, 27, 's', 0, { hide: true });
+  L.addLocker(31, 27, 's', 0, { hide: true, kind: 'coffin' }); L.addLocker(4, 19, 'w', 0, { hide: true, kind: 'coffin' });
   L.addItem('bat5', 'battery', w(9.3), 0.05, w(27.7));
   {
     const cr = GO.crawler(); cr.group.position.set(w(19), 0, w(27.5)); cr.group.rotation.y = -Math.PI / 2; root.add(cr.group);
-    L.specials.crawler = cr;
-    pool(w(19.3), w(27.5), 1.1);
+    L.specials.crawler = cr; pool(w(19.3), w(27.5), 1.1);
   }
   L.waypoints.push(W3(4.5, 21), W3(12, 27.5), W3(28, 27.5));
 }
