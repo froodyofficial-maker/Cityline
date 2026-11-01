@@ -650,7 +650,7 @@ function furnish(L, H) {
     const N = 260, sp = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) { sp[i * 3] = w(39) + R() * 5; sp[i * 3 + 1] = R() * 6; sp[i * 3 + 2] = w(1) + R() * 4.5; }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-    const snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xdfe6f0, size: 0.04 })); snow.frustumCulled = false; root.add(snow);
+    const snow = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xdfe6f0, size: 0.014 })); snow.frustumCulled = false; root.add(snow);
     L.updaters.push((dt) => { for (let i = 0; i < N; i++) { sp[i * 3 + 1] -= dt * (0.6 + (i % 5) * 0.15); sp[i * 3 + 2] += dt * 0.5; sp[i * 3] += Math.sin(G.time + i) * dt * 0.3; if (sp[i * 3 + 1] < 0 || sp[i * 3 + 2] > w(4.4)) { sp[i * 3 + 1] = 5 + R(); sp[i * 3 + 2] = w(1) + R() * 2; } } sg.attributes.position.needsUpdate = true; });
   }
   L.writing(37, 5, 'w', 0, 1.9, 'NO ONE LEAVES THE FAST', 2.45, 0.8);
