@@ -106,7 +106,7 @@ export function createEvents(L, M, P) {
     after(3.25, hidePhantom);
     after(3.3, () => { light.forced = 1; }); after(3.42, () => { light.forced = 0; }); after(3.55, () => { light.forced = 1; });
     after(3.7, () => { light.forced = null; for (let i = 0; i < 6; i++) setTimeout(() => AU.monsterStep(V(spot.x + 3 + i, 0, spot.z), true, 0.9), i * 160); });
-    after(4.5, () => { F.sighting = 'done'; G.fear = Math.max(G.fear, 0.6); UI.objective(F.readDad ? `Find the car keys, the gas and the battery (${G.fuses}/3).` : 'Find Dad.'); });
+    after(4.5, () => { F.sighting = 'done'; G.fear = Math.max(G.fear, 0.6); if (!F.readDad) UI.objective('Find Dad.'); else if (partsLeft().length) UI.objective(`Find ${partsLeft().map(k => partName[k]).join(' and ')} for the car (${G.fuses}/3).`); });
     after(140, () => activateMonster(W3(40.5, 22), 'patrol'));
   }
   function activateMonster(p, state = 'patrol') { if (M.active || G.state === 'ending' || G.state === 'end') return; M.spawn(p, state === 'patrol' ? 'idle' : state); }
