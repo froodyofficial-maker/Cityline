@@ -14,6 +14,8 @@ window.LOADOUT_ART = (() => {
     AOC: ['#17181d', '#ff2a2a'], Samsung: ['#e4e6ed', '#2f7bff'], MSI: ['#131418', '#ff2020'],
     Sony: ['#f2f3f7', '#3b74ff'], Microsoft: ['#1d1e24', '#2fd04a'], '8BitDo': ['#e8e8ee', '#ff4d4d'],
     GameSir: ['#17181d', '#7cff4f'], Nintendo: ['#1c1d22', '#e60012'],
+    Glorious: ['#25252c', '#f2b632'], 'Attack Shark': ['#ececf1', '#ff7a1a'], Redgear: ['#15151a', '#ff2a3a'],
+    'Ant Esports': ['#16161b', '#19c2ff'], Pulsar: ['#e9e9ef', '#ff3d6e'],
   };
   let uid = 0;
   const light = hex => parseInt(hex.slice(1, 3), 16) + parseInt(hex.slice(3, 5), 16) + parseInt(hex.slice(5, 7), 16) > 500;
@@ -134,7 +136,26 @@ window.LOADOUT_ART = (() => {
       ${p.paddles ? `<path d="M62 112 l8 8 M178 112 l-8 8" stroke="${a}" stroke-width="3.5" stroke-linecap="round" filter="url(#glow${id})"/>` : ''}`;
   }
 
-  const DRAW = { mouse, keyboard, headset, monitor, controller };
+  // A mouse pad drawn to its real aspect ratio, with a small mouse on it (a desk mat also gets a keyboard).
+  function mousepad(p, b, a, id) {
+    const ratio = p.h / p.w;
+    const w = p.w >= 900 ? 214 : Math.min(172, 150 / ratio), h = Math.max(46, w * ratio);
+    const x = 120 - w / 2, y = 78 - h / 2;
+    const dark = light(b) ? '#cfd3df' : '#2a2d38';
+    const mouseAt = (cx, cy) => `<ellipse cx="${cx}" cy="${cy}" rx="9" ry="13" fill="${dark}" stroke="${a}" stroke-opacity=".6"/><rect x="${cx - 1.4}" y="${cy - 9}" width="2.8" height="7" rx="1.4" fill="${a}"/>`;
+    const desk = p.w >= 900;
+    const board = desk ? `<rect x="${x + w * .08}" y="${y + h * .22}" width="${w * .5}" height="${h * .42}" rx="5" fill="${dark}" opacity=".85"/>
+      ${Array.from({ length: 3 }, (_, r) => `<rect x="${x + w * .1}" y="${y + h * .27 + r * h * .1}" width="${w * .46}" height="${h * .06}" rx="2" fill="${a}" opacity=".35"/>`).join('')}` : '';
+    const rgb = /RGB/.test(p.name) ? `<rect x="${x - 2}" y="${y - 2}" width="${w + 4}" height="${h + 4}" rx="12" fill="none" stroke="${a}" stroke-width="3" filter="url(#glow${id})"/>` : '';
+    return `<rect x="${x + 4}" y="${y + 9}" width="${w}" height="${h}" rx="9" fill="#000" opacity=".28" filter="url(#blur${id})"/>
+      ${rgb}
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="url(#g${id})" stroke="${a}" stroke-opacity=".5" stroke-width="1.2"/>
+      <rect x="${x + 5}" y="${y + 5}" width="${w - 10}" height="${h - 10}" rx="6" fill="none" stroke="${a}" stroke-opacity=".55" stroke-dasharray="3 3"/>
+      ${board}${mouseAt(x + w * (desk ? .72 : .58), y + h * .52)}
+      <text x="120" y="${Math.min(y + h + 16, 146)}" text-anchor="middle" font-size="9" fill="${light(b) ? '#555' : '#fff'}" opacity=".7" font-family="sans-serif">${p.w} × ${p.h} mm</text>`;
+  }
+
+  const DRAW = { mouse, keyboard, headset, monitor, controller, mousepad };
   art.hasPhoto = p => !!(p.img || (window.LOADOUT_IMAGES || {})[p.id]);
 
   function art(p) {

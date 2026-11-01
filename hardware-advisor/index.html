@@ -27,6 +27,7 @@
     <div class="glass prepcard">
       <h2>Games played</h2>
       <div class="lines" id="prepGames"></div>
+      <button type="button" class="addline" id="addLine"><span aria-hidden="true">+</span> Add another game</button>
     </div>
     <div class="glass prepcard">
       <h2><label for="prepHand">Hand length (in cm)</label></h2>
@@ -35,7 +36,7 @@
     </div>
     <div class="glass prepcard">
       <h2>Product</h2>
-      <div id="prepProducts" class="checks"></div>
+      <div id="prepProducts" class="checks" role="group" aria-label="Products to include"></div>
     </div>
   </form>
   <p class="prep-error" id="prepError" role="alert"></p>
@@ -48,6 +49,9 @@
   <h1>Loading dashboard</h1>
   <div class="spinner" role="progressbar" aria-label="Loading"></div>
 </section>
+
+<!-- 5. Product page -->
+<section id="product" class="product" hidden><div id="productBody" class="pwrap"></div></section>
 
 <!-- 4. Dashboard -->
 <div id="dashboard" class="dash" hidden>
@@ -94,7 +98,7 @@
     <details class="sgroup more" id="morePrefs">
       <summary>More preferences</summary>
       <div class="mgroup"><h4>Platforms</h4><div id="platforms" class="chips"></div></div>
-      <div class="mgroup"><h4>Show product types</h4><div id="cats" class="chips"></div></div>
+      <fieldset class="mgroup"><legend>Show product types</legend><div id="cats" class="checks"></div></fieldset>
       <div class="mgroup"><h4><label for="grip">Mouse grip</label></h4><select id="grip" class="sel"></select></div>
       <div class="mgroup"><h4><label for="desk">Desk space</label></h4><select id="desk" class="sel"></select></div>
       <div class="mgroup"><h4><label for="conn">Connection</label></h4><select id="conn" class="sel"></select></div>
@@ -138,6 +142,7 @@
         <div><b>Lesser-known picks</b><p>Smaller brands are ranked on fit alone and tagged, so a great mouse nobody has heard of isn't buried.</p></div>
         <div><b>Prices</b><p>Typical US prices, checked October 2026, shown next to the official list price and converted to your currency. Always check a live price before you buy.</p></div>
         <div><b>No single best</b><p>A lower match can still be the right call for you. The percentage only reflects what you told us.</p></div>
+        <div><b>How we rate</b><p>Speed, aim and comfort ratings are our own judgement from spec sheets and published reviews, not lab tests, so treat them as a guide.</p></div>
       </div>
     </section>
   </main>
