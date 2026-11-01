@@ -61,7 +61,7 @@ export function creatureMats() {
   const skin = PB.stdMat(PB.paleSkin(), { ns: 1.0 }); skin.color.setHex(0x7c817a);
   MATS = {
     skin,
-    wound: new THREE.MeshStandardMaterial({ map: woundTex(), alphaTest: 0.5, roughness: 0.35, side: THREE.DoubleSide, color: 0x9a8888 }),
+    wound: new THREE.MeshStandardMaterial({ map: woundTex(), alphaTest: 0.5, roughness: 0.35, side: THREE.DoubleSide, color: 0x6a5656 }),
     teeth: new THREE.MeshStandardMaterial({ color: 0xd8ceb0, roughness: 0.35 }),
     gums: new THREE.MeshStandardMaterial({ color: 0x5a0e10, roughness: 0.25 }),
     dark: new THREE.MeshBasicMaterial({ color: 0x050000 }),
@@ -98,7 +98,7 @@ function grinningHead(parent, mats) {
   M(sculpt(new THREE.SphereGeometry(0.13, 40, 28, 0, Math.PI * 2, 0, mouthTheta)), headMat, head);
   M(new THREE.SphereGeometry(0.1, 12, 10), mats.dark, head, 0, -0.03, 0.01).scale.set(0.8, 0.9, 0.9);
   const jaw = new THREE.Group(); jaw.position.set(0, -0.035, -0.06); head.add(jaw);
-  const jg = sculpt(new THREE.SphereGeometry(0.13, 40, 14, 0, Math.PI * 2, mouthTheta, Math.PI * 0.32), true); jg.translate(0, 0.035, 0.06);
+  const jg = sculpt(new THREE.SphereGeometry(0.13, 40, 14, 0, Math.PI * 2, mouthTheta, Math.PI * 0.26), true); jg.scale(1, 0.75, 1); jg.translate(0, 0.035, 0.06);
   M(jg, headMat, jaw);
   // the smile: a gash that curves up toward the ears, packed with human teeth
   const mouthY = -0.13 * Math.cos(Math.PI - mouthTheta) * 1.45, Rm = 0.126;
@@ -151,7 +151,7 @@ export function buildCreature() {
   const hj = grinningHead(neck, mats); const head = hj.head; head.position.set(0, 0.36, 0.15); head.scale.setScalar(1.25);
   const arms = [-1, 1].map(s => {
     const sh = new THREE.Group(); sh.position.set(s * 0.21, 0.8, -0.02); spine.add(sh);
-    M(new THREE.SphereGeometry(0.058, 14, 10), sk, sh);
+    M(new THREE.SphereGeometry(0.045, 14, 10), sk, sh).scale.set(1.1, 0.8, 1);
     M(organicTube([V(0, 0.02, 0), V(0, -0.42, 0.02), V(0, -0.84, 0)], [0.05, 0.046, 0.032, 0.03], { noise: 0.07 }), sk, sh);
     const el = new THREE.Group(); el.position.set(0, -0.84, 0); sh.add(el);
     M(new THREE.SphereGeometry(0.036, 12, 8), sk, el, 0, 0, -0.012);

@@ -27,12 +27,12 @@ export function animateModel(md, a, dt) {
   // head: looks where it wants, tilts too far, snaps
   a.twitchT -= dt;
   if (a.twitchT < 0) { a.twitchT = rr(0.6, 4); a.twitch.set(rr(-0.5, 0.5), rr(-0.8, 0.8), rr(-0.9, 0.9)); if (Math.random() < 0.5) a.twitch.multiplyScalar(0.3); }
-  const tx = (a.lookPitch || 0) + a.twitch.x * 0.6, ty = (a.lookYaw || 0) + a.twitch.y * 0.5, tz = a.twitch.z * 0.7 + (a.tilt || 0);
+  const tx = (a.lookPitch || 0) + 0.45 + a.twitch.x * 0.6, ty = (a.lookYaw || 0) + a.twitch.y * 0.5, tz = a.twitch.z * 0.7 + (a.tilt || 0);
   const k = a.snappy ? 30 : 9;
   md.head.rotation.x += (tx - md.head.rotation.x) * Math.min(1, dt * k);
   md.head.rotation.y += (ty - md.head.rotation.y) * Math.min(1, dt * k);
   md.head.rotation.z += (tz - md.head.rotation.z) * Math.min(1, dt * k);
-  md.neck.rotation.x = -0.55 + (a.neckFwd || 0);
+  md.neck.rotation.x = -0.3 + (a.neckFwd || 0);
   const jawT = (a.jawOpen ?? 0.06) + Math.max(0, Math.sin(G.time * 13)) * 0.03;
   md.jaw.rotation.x += (jawT - md.jaw.rotation.x) * Math.min(1, dt * 12);
   // glitch: one limb jerks to an impossible angle for a few frames
