@@ -9,7 +9,7 @@ let ok=true;
 for(const f of GAME_FILES){try{new vm.Script(await readFile(join(root,'src',f),'utf8'),{filename:'src/'+f})}catch(e){ok=false;console.error('src/'+f+': '+e.message)}}
 let all='';for(const f of GAME_FILES)all+='\n;'+await readFile(join(root,'src',f),'utf8');
 try{new vm.Script(all,{filename:'ember-city-game.js'})}catch(e){ok=false;console.error('combined: '+e.message)}
-// VESPERS is ES modules: bundling it is the syntax + import check
-try{const {build}=await import('esbuild');await build({entryPoints:[join(root,'vespers/src/main.js')],bundle:true,write:false,logLevel:'silent',
- plugins:[{name:'three',setup(b){b.onResolve({filter:/^three$/},()=>({path:join(root,'vendor/three/build/three.module.min.js')}))}}]})}catch(e){ok=false;console.error('vespers: '+e.message)}
-console.log(ok?`ok: ${GAME_FILES.length} files + vespers`:'syntax errors found');process.exit(ok?0:1);
+// HOLLOW PARK is ES modules: bundling it is the syntax + import check
+try{const {build}=await import('esbuild');await build({entryPoints:[join(root,'hollowpark/src/main.js')],bundle:true,write:false,logLevel:'silent',
+ plugins:[{name:'three',setup(b){b.onResolve({filter:/^three$/},()=>({path:join(root,'vendor/three/build/three.module.min.js')}));b.onResolve({filter:/^three\/addons\//},a=>({path:join(root,'vendor/three/examples/jsm',a.path.slice('three/addons/'.length))}))}}]})}catch(e){ok=false;console.error('hollowpark: '+e.message)}
+console.log(ok?`ok: ${GAME_FILES.length} files + hollowpark`:'syntax errors found');process.exit(ok?0:1);

@@ -2,7 +2,7 @@
 import { G, clamp } from './state.js';
 
 let ctx = null, master, sfx, conv, dryClose, noiseBuf, brownBuf, shaperCurve;
-let choir = null, wind = null;
+let choir = null, wind = null, crickets = null;
 let drone = null, chase = null, buzz = null, heart = { next: 0 }, breath = { next: 0, phase: 0 };
 export const A = { ready: false, holding: false, exertion: 0 };
 
@@ -37,10 +37,11 @@ export function initAudio() {
   sfx = ctx.createGain(); sfx.connect(master); sfx.connect(conv);
   dryClose = ctx.createGain(); dryClose.connect(master);           // intimate sounds: no room
   noiseBuf = makeNoise(2); brownBuf = makeBrown(4); shaperCurve = distCurve(40);
-  startDrone(); startChaseBed(); startBuzz(); startChoir(); startWind();
+  startDrone(); startChaseBed(); startBuzz(); startWind(); startCrickets();
   A.ready = true;
 }
 export const now = () => ctx ? ctx.currentTime : 0;
+export function setVolume(v) { if (master) master.gain.value = 0.95 * v; }
 export function suspend() { ctx?.suspend(); }
 export function resume() { ctx?.resume(); }
 export function setMasterMuted(m) { if (ctx) master.gain.setTargetAtTime(m ? 0 : 0.95, ctx.currentTime, 0.1); }
@@ -125,7 +126,13 @@ export function updateAudio(dt, chaseOn) {
   const t = ctx.currentTime, fear = G.fear;
   drone.g.gain.setTargetAtTime((G.state === 'play' || G.state === 'note' ? 0.38 : 0.2) * (chaseOn ? 0.5 : 1), t, 0.6);
   drone.lp.frequency.setTargetAtTime(110 + fear * 260, t, 0.5);
-  // the choir drifts between chords and swells in phrases; it goes quiet when you're being chased
+  // crickets: they go quiet when it's close. listen for the silence.
+  if (crickets) {
+    const M = G.monster, near = M?.active ? M.distToPlayer : 99, outside = G.level && !G.level.isIndoorAt(G.camera.position.x, G.camera.position.z);
+    const want = (G.state === 'title' ? 0.5 : near < 20 || chaseOn ? 0 : 0.5) * (outside ? 1 : 0.3);
+    crickets.g.gain.setTargetAtTime(want, t, want < crickets.last ? 0.35 : 3); crickets.last = want;
+    if (t > crickets.next) { for (let i = 0; i < 3; i++) chirp(); crickets.next = t + 0.08 + Math.random() * 0.25; }
+  }
   if (choir) {
     choir.g.gain.setTargetAtTime(chaseOn ? 0.0 : (G.state === 'play' || G.state === 'title' || G.state === 'note' ? 0.16 + fear * 0.1 : 0.04), t, 1.2);
     if (t > choir.next) {
@@ -134,7 +141,7 @@ export function updateAudio(dt, chaseOn) {
       choir.next = t + 8 + Math.random() * 7;
     }
   }
-  if (wind) wind.g.gain.setTargetAtTime(G.state === 'title' ? 0.3 : 0.22, t, 1);
+  if (wind) wind.g.gain.setTargetAtTime((G.level && G.level.isIndoorAt(G.camera.position.x, G.camera.position.z) ? 0.05 : 0.12) + (G.state === 'title' ? 0.05 : 0), t, 1);
   // chase bed
   chase.g.gain.setTargetAtTime(chaseOn ? 0.55 : 0, t, chaseOn ? 0.15 : 1.4);
   if (chaseOn && t > chase.nextHit) { metalHit(null, 0.25 + Math.random() * 0.2, true); chase.nextHit = t + 0.45 + Math.random() * 0.9; }
@@ -428,3 +435,47 @@ export function radioHiss(pos) {
   tick();
   return () => { if (!alive) return; alive = false; g.gain.cancelScheduledValues(ctx.currentTime); g.gain.value = 0; n.stop(); whine.stop(); };
 }
+
+// ---------- Hollow Park ----------
+function startCrickets() { const g = gain(0); g.connect(master); g.connect(conv); crickets = { g, next: 0, last: 0 }; }
+function chirp() {
+  const t = ctx.currentTime + Math.random() * 0.2, f = 4200 + Math.random() * 900, pan = ctx.createStereoPanner(); pan.pan.value = Math.random() * 2 - 1;
+  const o = osc('sine', f), g = gain(0), am = osc('square', 38 + Math.random() * 12), ag = gain(0.5); am.connect(ag); ag.connect(g.gain);
+  o.connect(g); g.connect(pan); pan.connect(crickets.g);
+  const v = 0.012 + Math.random() * 0.02, d = 0.12 + Math.random() * 0.2;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.02); g.gain.linearRampToValueAtTime(0, t + d);
+  o.start(t); am.start(t); o.stop(t + d + 0.05); am.stop(t + d + 0.05);
+}
+// a wind-up music box: a little minor tune, slowing as it runs down. returns stop()
+const TUNE = [76, 79, 81, 79, 76, 74, 72, 74, 76, 76, 74, 72, 71, 72, 74, 76, 79, 76, 74, 72, 71, 69];
+export function musicBox(pos, slow = 1) {
+  if (!ctx) return () => { };
+  const o = out(pos, { ref: 1.2 }); let i = 0, alive = true, tempo = 0.42 * slow;
+  const note = () => {
+    if (!alive) return; const t = ctx.currentTime, f = 440 * Math.pow(2, (TUNE[i % TUNE.length] - 69) / 12) * (1 - Math.min(0.06, i * 0.0012));
+    [1, 2.01, 3.98, 6.3].forEach((r, k) => { const s = osc('sine', f * r), g = gain(0); s.connect(g); g.connect(o); env(g, t, 0.002, 0.08 / (k + 1), 1.4 / (k + 1)); stopAt(s, t + 1.6); });
+    i++; tempo *= 1.012; setTimeout(note, tempo * 1000 * (i % 4 === 0 ? 1.6 : 1));
+  };
+  note();
+  return () => { alive = false; };
+}
+export function carCrank(d = 1.4, v = 0.4) {
+  if (!ctx) return; const t = ctx.currentTime, n = src(), lp = filt('lowpass', 900), g = gain(0), am = osc('sawtooth', 14), ag = gain(0.4);
+  am.connect(ag); ag.connect(g.gain); n.connect(lp); lp.connect(g); g.connect(sfx);
+  g.gain.setValueAtTime(v * 0.5, t); g.gain.setValueAtTime(v * 0.5, t + d - 0.1); g.gain.linearRampToValueAtTime(0, t + d);
+  n.start(t); am.start(t); n.stop(t + d + 0.05); am.stop(t + d + 0.05);
+}
+export function engine(v = 0.3) {
+  if (!ctx) return { stop() { }, rev() { } };
+  const g = gain(0), o1 = osc('sawtooth', 38), o2 = osc('square', 76), lp = filt('lowpass', 260, 2), am = osc('sine', 19), ag = gain(0.3);
+  am.connect(ag); ag.connect(g.gain); o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(sfx); [o1, o2, am].forEach(x => x.start());
+  g.gain.setTargetAtTime(v, ctx.currentTime, 0.3);
+  return { stop() { g.gain.setTargetAtTime(0, ctx.currentTime, 0.3); setTimeout(() => [o1, o2, am].forEach(x => { try { x.stop(); } catch (e) { } }), 1500); },
+    rev(k) { const t = ctx.currentTime; o1.frequency.setTargetAtTime(38 * k, t, 0.3); o2.frequency.setTargetAtTime(76 * k, t, 0.3); am.frequency.setTargetAtTime(19 * k, t, 0.3); lp.frequency.setTargetAtTime(260 * k, t, 0.3); } };
+}
+export function garageMotor(d = 30, v = 0.25) {
+  if (!ctx) return; const t = ctx.currentTime, o = osc('sawtooth', 60), lp = filt('lowpass', 500), g = gain(0); o.connect(lp); lp.connect(g); g.connect(sfx);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v * 0.4, t + 0.5); g.gain.setValueAtTime(v * 0.4, t + d - 0.5); g.gain.linearRampToValueAtTime(0, t + d); o.start(t); o.stop(t + d + 0.1);
+  winch(d, v * 0.6);
+}
+export function phoneRingHouse(pos) { return phoneRing(pos); }

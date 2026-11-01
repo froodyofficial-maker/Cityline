@@ -2,34 +2,36 @@
 import * as THREE from 'three';
 import { R } from './state.js';
 import * as TX from './textures.js';
+import * as PB from './pbr.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 let M = null;
 export function goreMats() {
   if (M) return M;
-  const phong = (o) => new THREE.MeshPhongMaterial(o);
+  const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0, ...o });
+  const mus = PB.muscle(), meat = mus, skin = PB.corpseSkin();
   M = {
-    muscle: phong({ map: TX.muscleTex(), shininess: 70, specular: 0x552222 }),
-    meat: phong({ map: TX.meatTex(), shininess: 60, specular: 0x442222 }),
-    skin: new THREE.MeshLambertMaterial({ map: TX.skinTex() }),
-    skinGrey: new THREE.MeshLambertMaterial({ map: TX.skinTex([140, 138, 130]) }),
-    skinStitched: new THREE.MeshLambertMaterial({ map: TX.skinTex([185, 160, 145], true) }),
-    bone: new THREE.MeshLambertMaterial({ map: TX.boneTex() }),
-    organ: phong({ color: 0x5a0c14, shininess: 90, specular: 0x663333 }),
-    liver: phong({ color: 0x3a0814, shininess: 80, specular: 0x553333 }),
-    gut: phong({ color: 0x9a4a52, shininess: 90, specular: 0x664444 }),
-    cavity: new THREE.MeshLambertMaterial({ color: 0x2a0303, side: THREE.DoubleSide }),
-    blood: phong({ color: 0x3a0000, shininess: 120, specular: 0x772222 }),
-    bloodLiquid: phong({ color: 0x4a0202, shininess: 140, specular: 0x993333, emissive: 0x140000 }),
+    muscle: std({ map: mus.map, normalMap: mus.normalMap, roughnessMap: mus.roughnessMap, roughness: 1 }),
+    meat: std({ map: meat.map, normalMap: meat.normalMap, roughness: 0.3, color: 0xd09090 }),
+    skin: std({ map: skin.map, normalMap: skin.normalMap, roughness: 0.6, color: 0xf0d8cc }),
+    skinGrey: std({ map: skin.map, normalMap: skin.normalMap, roughness: 0.55 }),
+    skinStitched: std({ map: TX.skinTex([185, 160, 145], true), normalMap: skin.normalMap, roughness: 0.55 }),
+    bone: std({ map: TX.boneTex(), roughness: 0.55, color: 0xe8e0c8 }),
+    organ: std({ color: 0x5a0c14, roughness: 0.18 }),
+    liver: std({ color: 0x3a0814, roughness: 0.2 }),
+    gut: std({ color: 0x9a4a52, roughness: 0.2, normalMap: mus.normalMap }),
+    cavity: std({ color: 0x2a0303, side: THREE.DoubleSide, roughness: 0.4 }),
+    blood: std({ color: 0x3a0000, roughness: 0.08 }),
+    bloodLiquid: std({ color: 0x320000, roughness: 0.04, emissive: 0x080000 }),
     black: new THREE.MeshBasicMaterial({ color: 0x000000 }),
-    teeth: new THREE.MeshLambertMaterial({ color: 0xc8bc9a }),
-    hair: new THREE.MeshLambertMaterial({ color: 0x15100c }),
-    eye: new THREE.MeshPhongMaterial({ color: 0xd8d2c0, shininess: 100 }),
-    metal: new THREE.MeshLambertMaterial({ map: TX.metalTex(0.5) }),
-    steel: new THREE.MeshPhongMaterial({ map: TX.metalTex(0.15), shininess: 80, specular: 0x888888 }),
-    sheet: new THREE.MeshLambertMaterial({ map: TX.sheetTex() }),
-    cloth: new THREE.MeshLambertMaterial({ color: 0x2e3436 }),
-    pelt: new THREE.MeshLambertMaterial({ map: TX.peltTex(), alphaTest: 0.5, side: THREE.DoubleSide }),
+    teeth: std({ color: 0xc8bc9a, roughness: 0.4 }),
+    hair: std({ color: 0x15100c, roughness: 0.8 }),
+    eye: std({ color: 0xd8d2c0, roughness: 0.1 }),
+    metal: std({ map: TX.metalTex(0.5), roughness: 0.5, metalness: 0.7 }),
+    steel: std({ color: 0x9aa0a4, roughness: 0.25, metalness: 0.9 }),
+    sheet: std({ map: TX.sheetTex(), roughness: 0.9 }),
+    cloth: std({ color: 0x2e3436, roughness: 0.9 }),
+    pelt: std({ map: TX.peltTex(), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.5, normalMap: skin.normalMap }),
   };
   return M;
 }

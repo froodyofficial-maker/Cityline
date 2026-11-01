@@ -24,7 +24,7 @@ export const UI = {
   },
   note(title, body) { $('noteTitle').textContent = title; $('noteBody').innerHTML = body; UI.show('note'); },
   hud(p) {
-    const key = [Math.round(p.battery * 40), Math.round(p.stamina * 30), Math.round(p.breath * 30), p.hidden, G.fuses, G.hasKey, p.hasFlashlight, p.flashOn].join();
+    const key = [Math.round(p.battery * 40), Math.round(p.stamina * 30), Math.round(p.breath * 30), p.hidden, G.fuses, G.hasKey, p.hasFlashlight, p.flashOn, JSON.stringify(G.parts)].join();
     if (key === lastHud) return; lastHud = key;
     $('batFill').style.width = (p.battery * 100) + '%';
     $('batFill').style.background = p.battery < 0.15 ? '#8a1a10' : '#c9c0a0';
@@ -32,7 +32,7 @@ export const UI = {
     $('stam').style.opacity = p.stamina < 0.98 ? 0.6 : 0; $('stamFill').style.width = (p.stamina * 100) + '%';
     $('breath').style.opacity = p.hidden ? 0.85 : 0; $('breathFill').style.width = (p.breath * 100) + '%';
     $('breathFill').style.background = p.breath < 0.3 ? '#8a1a10' : '#9aa8b0';
-    $('inv').innerHTML = (G.fuses || G.fusesPlaced ? `<span>GATE KEYS ${G.fusesPlaced ? 3 : G.fuses}/3</span>` : '') + (G.hasKey ? '<span>CHAPEL KEY</span>' : '');
+    $('inv').innerHTML = (G.parts && (G.parts.keys || G.parts.gas || G.parts.battery) ? ['keys', 'gas', 'battery'].map(k => `<span class="${G.parts[k] ? 'got' : ''}">${k.toUpperCase()}</span>`).join('') : '') + (G.hasKey ? '<span class="got">STUDY KEY</span>' : '');
   },
   // a face for a frame
   _face: null,

@@ -101,7 +101,7 @@ export function createPlayer(camera, L) {
       const stride = P.sprinting ? 1.5 : P.crouching ? 0.75 : 1.05;
       if (P.stepAcc > stride) {
         P.stepAcc = 0;
-        const rid = L.roomAt(P.pos.x, P.pos.z), wet = rid === 'kill' || rid === 'render' || rid === 'shower';
+        const rid = L.roomAt(P.pos.x, P.pos.z), wet = rid === 'bath' || rid === 'kitchen' || rid === 'hut' || rid === 'hut_back';
         AU.footstep(P.sprinting ? 'run' : P.crouching ? 'crouch' : 'walk', wet && Math.random() < 0.5);
         G.noise?.(P.pos.clone(), P.sprinting ? 15 : P.crouching ? 1.2 : 4.5);
       }

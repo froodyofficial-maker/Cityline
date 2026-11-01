@@ -3,87 +3,11 @@ import * as THREE from 'three';
 import { G, T, rr, pick, clamp, angDiff, toTile, W3 } from './state.js';
 import * as GO from './gore.js';
 import * as AU from './audio.js';
-import * as TX from './textures.js';
+import { buildCreature } from './organic.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
-export function buildMonsterModel() {
-  const m = GO.goreMats(), mus = m.muscle;
-  const root = new THREE.Group();
-  const hips = new THREE.Group(); hips.position.y = 1.4; root.add(hips);
-  const legs = [-1, 1].map(s => {
-    const hip = new THREE.Group(); hip.position.set(s * 0.14, 0, 0); hips.add(hip);
-    GO.limb(hip, V(0, 0, 0), V(0, -0.72, 0.08), 0.07, 0.045, mus);
-    const knee = new THREE.Group(); knee.position.set(0, -0.72, 0.08); hip.add(knee);
-    GO.ball(knee, V(0, 0, 0.03), 0.055, m.bone);
-    GO.limb(knee, V(0, 0, 0), V(0, -0.66, -0.08), 0.045, 0.025, mus);
-    const foot = GO.mesh(new THREE.BoxGeometry(0.08, 0.04, 0.26), mus, knee, 0, -0.66, 0.04);
-    for (let i = 0; i < 3; i++) GO.mesh(new THREE.ConeGeometry(0.012, 0.08, 4), m.bone, knee, -0.025 + i * 0.025, -0.67, 0.2).rotation.x = Math.PI / 2;
-    return { hip, knee, foot };
-  });
-  // the habit: black wool gone stiff with blood, split up the front, hem worn to rags
-  const robe = new THREE.MeshLambertMaterial({ map: TX.robeTex(), alphaTest: 0.5, side: THREE.DoubleSide });
-  { const sg = new THREE.CylinderGeometry(0.2, 0.52, 1.38, 14, 4, true, 0.45, Math.PI * 2 - 0.9); sg.scale(1, 1, 0.8); const sk = GO.mesh(sg, robe, hips, 0, -0.66, -0.02); sk.castShadow = true; }
-  const spine = new THREE.Group(); hips.add(spine); spine.rotation.x = 0.35;
-  const tg = new THREE.CylinderGeometry(0.21, 0.1, 0.9, 10); tg.translate(0, 0.45, 0); tg.scale(1, 1, 0.6);
-  GO.ball(spine, V(0, 0.02, 0), 0.1, mus, 1.3, 0.7, 0.9);
-  GO.mesh(tg, mus, spine);
-  for (let i = 0; i < 6; i++) { const y = 0.45 + i * 0.07, rr2 = 0.1 + 0.11 * (y / 0.9) + 0.008; const r = GO.mesh(new THREE.TorusGeometry(rr2, 0.012, 3, 8, Math.PI * 0.8), m.bone, spine, 0, y, 0.0); r.rotation.set(Math.PI / 2 + 0.25, 0, Math.PI * 0.1); r.scale.set(1, 0.62, 1); }
-  for (let i = 0; i < 10; i++) GO.ball(spine, V(0, 0.05 + i * 0.09, -0.1 - (i > 5 ? 0.03 : 0)), 0.03, m.bone);
-  for (const s of [-1, 1]) { const sp = GO.mesh(new THREE.ConeGeometry(0.035, 0.32, 4), m.bone, spine, s * 0.13, 0.86, -0.12); sp.rotation.set(-0.9, 0, -s * 0.5); }
-  GO.intestinesHang(spine, V(0.04, 0.12, 0.1), 0.5);
-  { // mantle over the shoulders and back, open at the chest so the ribs show
-    const mg = new THREE.CylinderGeometry(0.27, 0.3, 0.95, 12, 3, true, 1.05, Math.PI * 2 - 2.1); mg.scale(1, 1, 0.75);
-    GO.mesh(mg, robe, spine, 0, 0.45, -0.02);
-  }
-  // neck + head
-  const neck = new THREE.Group(); neck.position.set(0, 0.9, 0.04); spine.add(neck);
-  GO.limb(neck, V(0, 0, 0), V(0, 0.2, 0.08), 0.05, 0.04, mus);
-  const head = new THREE.Group(); head.position.set(0, 0.22, 0.1); head.scale.setScalar(1.35); neck.add(head);
-  { // the hood: the face sits back inside it, in the dark
-    const hg = new THREE.SphereGeometry(0.27, 12, 8, Math.PI / 2 + 0.75, Math.PI * 2 - 1.5, 0, Math.PI * 0.72);
-    const hd = GO.mesh(hg, robe, neck, 0, 0.32, 0.07); hd.scale.set(0.85, 1.3, 1.05);
-  }
-  GO.ball(head, V(0, 0.06, -0.02), 0.13, mus, 0.8, 1.3, 1.1, 10);
-  // the face it wears: somebody's, stretched over the front
-  const maskG = new THREE.SphereGeometry(0.135, 12, 8, Math.PI * 0.1, Math.PI * 0.8, Math.PI * 0.1, Math.PI * 0.58);
-  const mask = GO.mesh(maskG, new THREE.MeshLambertMaterial({ map: TX.maskTex(), alphaTest: 0.5, side: THREE.DoubleSide }), head, 0, 0.07, 0.0); mask.scale.set(0.85, 1.3, 1.15);
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfff6dd });
-  const eyes = [];
-  for (const s of [-1, 1]) { GO.ball(head, V(s * 0.038, 0.1, 0.105), 0.03, m.black, 1, 1.2, 0.6); eyes.push(GO.ball(head, V(s * 0.038, 0.1, 0.128), 0.0065, eyeMat)); }
-  const jaw = new THREE.Group(); jaw.position.set(0, -0.02, 0.0); head.add(jaw);
-  GO.mesh(new THREE.BoxGeometry(0.085, 0.03, 0.19), m.cavity, jaw, 0, -0.03, 0.06);
-  GO.mesh(new THREE.BoxGeometry(0.1, 0.02, 0.2), m.blood, jaw, 0, -0.05, 0.06);
-  for (let i = 0; i < 9; i++) {
-    GO.mesh(new THREE.ConeGeometry(0.007, 0.06 + (i % 3) * 0.015, 3), m.teeth, jaw, -0.04 + i * 0.01, 0.0, 0.14 - Math.abs(i - 4) * 0.008);
-    const t = GO.mesh(new THREE.ConeGeometry(0.007, 0.07 + (i % 2) * 0.02, 3), m.teeth, head, -0.04 + i * 0.01, -0.03, 0.125 - Math.abs(i - 4) * 0.008); t.rotation.x = Math.PI;
-  }
-  GO.ball(jaw, V(0, 0.0, 0.06), 0.05, m.black, 1, 0.6, 1.4);
-  // arms: too long. left ends in fingers like knives, right holds the sickle
-  const arms = [-1, 1].map(s => {
-    const sh = new THREE.Group(); sh.position.set(s * 0.25, 0.76, 0); spine.add(sh);
-    GO.ball(sh, V(0, 0, 0), 0.07, mus);
-    GO.limb(sh, V(0, 0, 0), V(0, -0.8, 0), 0.055, 0.04, mus);
-    const el = new THREE.Group(); el.position.set(0, -0.8, 0); sh.add(el);
-    GO.ball(el, V(0, 0, 0), 0.045, m.bone);
-    GO.limb(el, V(0, 0, 0), V(0, -0.8, 0), 0.04, 0.026, mus);
-    const hand = new THREE.Group(); hand.position.set(0, -0.81, 0); el.add(hand);
-    if (s < 0) {
-      GO.ball(hand, V(0, 0, 0), 0.04, mus, 1, 1.2, 0.6);
-      for (let i = 0; i < 4; i++) { const f = GO.mesh(new THREE.ConeGeometry(0.012, 0.34, 4), m.bone, hand, -0.03 + i * 0.02, -0.18, 0.04); f.rotation.x = Math.PI + 0.3; f.rotation.z = (i - 1.5) * 0.12; }
-    } else {
-      GO.ball(hand, V(0, 0, 0), 0.04, mus, 1, 1.2, 0.6);
-      // a harvest sickle, rusted black, the edge bright where it's been used
-      GO.mesh(new THREE.CylinderGeometry(0.022, 0.02, 0.22, 6), GO.goreMats().cloth, hand, 0, -0.05, 0.03).rotation.x = Math.PI / 2;
-      const sk = GO.mesh(new THREE.TorusGeometry(0.18, 0.016, 3, 14, Math.PI * 1.15), m.metal, hand, 0, 0.0, 0.32); sk.rotation.set(0, Math.PI / 2, -0.2); sk.scale.set(1, 1, 0.4);
-      GO.mesh(new THREE.ConeGeometry(0.016, 0.1, 4), m.steel, hand, 0, 0.13, 0.45).rotation.x = -1.2;
-      GO.mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.05, 5), m.blood, hand, 0, -0.12, 0.3);
-    }
-    return { sh, el, hand };
-  });
-  root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
-  return { root, hips, legs, spine, neck, head, jaw, arms, eyes };
-}
+export function buildMonsterModel() { return buildCreature(); }
 
 // procedural animation: gait from speed, plus the wrongness
 export function animateModel(md, a, dt) {
@@ -109,7 +33,7 @@ export function animateModel(md, a, dt) {
   md.head.rotation.y += (ty - md.head.rotation.y) * Math.min(1, dt * k);
   md.head.rotation.z += (tz - md.head.rotation.z) * Math.min(1, dt * k);
   md.neck.rotation.x = -0.55 + (a.neckFwd || 0);
-  const jawT = (a.jawOpen ?? 0.2) + Math.max(0, Math.sin(G.time * 13)) * 0.06;
+  const jawT = (a.jawOpen ?? 0.06) + Math.max(0, Math.sin(G.time * 13)) * 0.03;
   md.jaw.rotation.x += (jawT - md.jaw.rotation.x) * Math.min(1, dt * 12);
   // glitch: one limb jerks to an impossible angle for a few frames
   a.glitchT -= dt;
@@ -117,7 +41,7 @@ export function animateModel(md, a, dt) {
   if (a.glitch) { const g = a.glitch; g.o.rotation.x += g.r.x; g.o.rotation.y += g.r.y; g.o.rotation.z += g.r.z; a.applied = { o: g.o, r: g.r }; g.t -= dt; if (g.t < 0) a.glitch = null; }
   return s;
 }
-export function newAnim() { return { phase: 0, speed: 0, twitchT: 1, twitch: V(0, 0, 0), glitchT: 3, glitch: null, jawOpen: 0.45 }; }
+export function newAnim() { return { phase: 0, speed: 0, twitchT: 1, twitch: V(0, 0, 0), glitchT: 3, glitch: null, jawOpen: 0.06 }; }
 
 // =====================================================================
 export function createMonster(scene, L) {
@@ -171,8 +95,8 @@ export function createMonster(scene, L) {
     if (!M.path || M.pi >= M.path.length) return true;
     const tgt = M.path[M.pi], dx = tgt.x - M.pos.x, dz = tgt.z - M.pos.z, d = Math.hypot(dx, dz);
     // doors ahead: it doesn't knock
-    const [tx, ty] = toTile(tgt.x, tgt.z);
-    if (L.cell(tx, ty) === 'D' && d < 3.2) { const door = L.doorAt(tx, ty); if (door && Math.abs(door.target) < 0.1) { door.open(M.pos, true); G.noise?.(door.pos, 0); G.shake = Math.max(G.shake, muffled() ? 0.03 : 0.12); } }
+    const door = L.doorBetween(M.pos, tgt);
+    if (door && Math.abs(door.target) < 0.1 && door.pos.distanceTo(V(M.pos.x, 1.2, M.pos.z)) < 2.4) { door.open(M.pos, true); G.noise?.(door.pos, 0); G.shake = Math.max(G.shake, muffled() ? 0.03 : 0.12); }
     if (d < 0.35) { M.pi++; return M.pi >= M.path.length; }
     move(dx / d, dz / d, speed, dt);
     return false;
@@ -292,7 +216,7 @@ export function createMonster(scene, L) {
     }
     if (M.state !== 'chase' && M.state !== 'rip') anim.reach = Math.max(0, (anim.reach || 0) - dt * 2);
     anim.lean = M.state === 'chase' ? 0.35 : 0;
-    anim.jawOpen = M.state === 'chase' ? 1.0 : M.state === 'sniff' ? 0.7 : 0.45;
+    anim.jawOpen = M.state === 'chase' ? 0.75 : M.state === 'sniff' ? 0.3 : 0.06;
     anim.snappy = M.state === 'chase' || M.state === 'sniff';
     // looking at you when it can see you
     if (M.canSee && M.state !== 'chase') { const want = Math.atan2(pp.x - M.pos.x, pp.z - M.pos.z); anim.lookYaw = clamp(angDiff(M.yaw, want), -1.2, 1.2); }

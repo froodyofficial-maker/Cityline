@@ -30,36 +30,39 @@ npm run desktop      # run the desktop app (Electron)
 npm run desktop:win  # build desktop/release/EmberCity-<version>-portable.exe and a zip
 ```
 
-## VESPERS (horror)
+## HOLLOW PARK (horror)
 
-A separate first-person survival horror game lives in `vespers/`. **Content warning:** extreme graphic gore (flayed and dismembered bodies, cannibalism, a violent death every time you're caught), sudden loud sounds, flashing light and screen distortion.
+A separate first-person survival horror game lives in `hollowpark/`. **Content warning:** extreme graphic gore (flayed and dismembered bodies, a violent death every time you're caught), sudden loud sounds, flashing light and screen distortion.
 
-> St. Aldric's Abbey, high on the Kessel Pass. Your brother Daniel joined as a novice in the autumn. Then the pass closed for winter, and the abbey went silent.
+> Dad stopped answering the phone a week ago. You drive back to the house on Hollow Lane, the one that backs onto the park where Mom disappeared thirty years ago. The kids still sing a rhyme about the man who lives there.
 
-**Play:** open `dist/vespers.html` (one self-contained file, runs from disk), or `npm start` and go to http://localhost:8080/vespers/. Use headphones, play in the dark, and set brightness on the title screen. Keyboard and mouse only.
+**Play:** open `dist/hollowpark.html` (one self-contained file, runs from disk; the fonts load from Google Fonts when online), or `npm start` and go to http://localhost:8080/hollowpark/. Use headphones, play in the dark, and set graphics and brightness in Settings. Keyboard and mouse only.
 
-**The abbey:** a candlelit dormitory, a lavatorium, the moonlit cloister, the Hall of Penitents (bodies hung on chains from the vault), the abbot's study, a refectory where the last meal is still on the table, a chapel with fonts full of blood and vestments made of skin, catacombs lined with skulls, and the gatehouse, where a blizzard blows in through the portcullis.
+**Where it happens:** your father's house (hall, living room with the TV still on, kitchen, garage, the bedrooms, a locked study, your old room), the backyard and shed, and Hollow Park behind the fence: lamp-lit paths, hedges, dead trees, the playground, the pond and pier, a gazebo, the restrooms and the groundskeeper's hut. It's all one connected map.
 
 **How it plays**
 
-- The Saint in the crypt was never dead. It walks the abbey in a blood-stiff habit with a sickle. It hunts by **sound** and **light**: running is loud, crouching is quiet, and pointing your torch at it gets you noticed.
-- There's no combat. Break line of sight and hide in a wardrobe or a standing coffin. If it watches you get in, it tears the door off.
-- If it stops outside to sniff, hold **Space** to hold your breath. Run out of breath and you'll gasp.
-- Find the three keys to the portcullis padlocks, throw the winch, and survive the 40 seconds the gate takes to rise, while the whole abbey hears it.
-- You die in one hit. Your body stays where it fell, and you wake in the dormitory with what you'd collected.
-- The audio is all synthesised live with WebAudio: a distant choir drifting between chords, the blizzard, a bell no one is ringing, positional footsteps and breathing (muffled through walls), heartbeat and breath that follow your fear, whispers, the chase score. The visuals are low-res and dithered, with candle and moonlight, flashlight shadows, procedural textures and gore.
+- Mr. Smiles is tall, grey and eyeless, with a grin that runs ear to ear. He hunts by **sound** and **light**: running is loud, crouching is quiet, and pointing your flashlight at him gets you noticed.
+- **The crickets stop when he's close.** Listen for the silence.
+- There's no combat. Break line of sight and hide in a wardrobe, closet, locker or restroom stall. If he watches you get in, he tears the door off. If he stops outside to sniff, hold **Space** to hold your breath.
+- Find the car keys, the gas and the battery your father hid in the park. Fix the car, start it, and survive while the garage door grinds open.
+- You die in one hit. Your body stays where it fell, and you wake back in the hall.
+
+**Graphics:** full-resolution physically based rendering with procedural albedo, normal and roughness maps for every surface; real thin walls with doors and windows; a moonlit sky with soft moon shadows that follow you; a flashlight with shadows; instanced bare trees and long grass; wet asphalt with puddles; a reflective pond; ground-truth ambient occlusion (High/Ultra), bloom, filmic tone mapping and SMAA. There are four quality presets, plus adaptive resolution that holds the frame rate.
+
+**Loading and menu:** a 3D loading scene shows real build progress (textures, house, park, shader compile), followed by a main menu over a live flythrough of the park, with settings for graphics quality, brightness, mouse sensitivity, field of view and volume.
 
 | Key | Action |
 | --- | --- |
 | W A S D / Mouse | Move / look |
-| Shift | Run (it hears you) |
+| Shift | Run (he hears it) |
 | C | Crouch |
-| F | Torch |
-| E | Interact, hide, step out |
+| F | Flashlight (he sees it) |
+| E | Use, hide, step out |
 | Space (while hiding) | Hold your breath |
-| Tab | Objective |
+| Tab / Esc | Objective / pause |
 
-`npm run build:vespers` rebuilds `dist/vespers.html`. Sources: `vespers/src/` (`level.js` map and rooms, `gore.js` bodies, `monster.js` the Saint's model and AI, `events.js` scares, director and ending, `audio.js` synth, `post.js` screen effects).
+`npm run build:hollowpark` rebuilds `dist/hollowpark.html`. Sources: `hollowpark/src/` (`world.js` map, walls, doors, collision, sight and navigation; `furnish.js` the house and park; `pbr.js` procedural materials; `organic.js` the creature's sculpted body; `monster.js` animation and AI; `events.js` story, scares and ending; `post.js` render pipeline; `main.js` loading, menus and loop; `audio.js` synthesised sound).
 
 ## Project layout
 

@@ -1,8 +1,8 @@
 // Shared state, timers and small helpers for MARROW.
 import * as THREE from 'three';
 
-export const T = 2.5;        // tile size in metres
-export const WALL_H = 3.4;   // ceiling height
+export const T = 2.0;        // tile size in metres
+export const WALL_H = 2.7;   // ceiling height
 
 export const G = {
   state: 'title',            // title | play | note | paused | dying | dead | ending | end

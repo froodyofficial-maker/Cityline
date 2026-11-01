@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HOLLOW PARK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Oswald:wght@300;400;500&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #d9d3c4; --dim: #7d776c; --red: #a3160f; --line: rgba(217,211,196,.18); --ui: 'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif; --title: 'IM Fell English SC', Georgia, serif; --hand: 'Special Elite', 'Courier New', monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--ink); overflow: hidden; font-family: var(--ui); font-weight: 300; }
+  #view canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  .hidden { display: none !important; }
+  .screen { position: fixed; inset: 0; z-index: 10; }
+
+  /* ---------- loading ---------- */
+  #loading { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 6vw 6vh; pointer-events: none; background: linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0) 45%); }
+  .brand { font-family: var(--title); font-size: clamp(54px, 9vw, 120px); letter-spacing: .06em; line-height: .9; color: #e6dfcf; text-shadow: 0 0 40px rgba(0,0,0,.9); }
+  .brand small { display: block; font-family: var(--ui); font-size: 14px; letter-spacing: .5em; color: var(--dim); margin-top: 14px; font-weight: 300; }
+  .loadrow { display: flex; align-items: center; gap: 18px; margin-top: 34px; max-width: 620px; }
+  .bar { flex: 1; height: 2px; background: var(--line); position: relative; overflow: hidden; }
+  #loadFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ink); box-shadow: 0 0 12px rgba(255,200,150,.6); }
+  #loadPct { font-size: 13px; letter-spacing: .2em; color: var(--dim); width: 44px; text-align: right; }
+  #loadLabel { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--dim); margin-top: 12px; }
+  #loadHint { margin-top: 28px; font-size: 13px; letter-spacing: .5em; color: transparent; }
+  #loadHint.ready { color: var(--ink); animation: pulse 1.8s infinite; }
+  .warn { position: absolute; right: 6vw; bottom: 6vh; max-width: 340px; font-size: 12px; line-height: 1.7; color: #9a8f86; border-left: 2px solid var(--red); padding-left: 14px; }
+  .warn b { color: #d0463c; letter-spacing: .2em; font-weight: 500; }
+  @keyframes pulse { 50% { opacity: .35 } }
+
+  /* ---------- menu ---------- */
+  #menu { display: flex; align-items: center; padding: 0 7vw; background: linear-gradient(90deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.4) 40%, rgba(0,0,0,0) 70%); }
+  .menu-col { display: flex; flex-direction: column; gap: 6px; }
+  .menu-col .brand { margin-bottom: 44px; }
+  .mi { background: none; border: 0; color: var(--dim); font-family: var(--ui); font-size: 22px; letter-spacing: .3em; text-align: left; padding: 8px 0; cursor: pointer; transition: color .2s, padding .2s; text-transform: uppercase; font-weight: 400; }
+  .mi:hover { color: var(--ink); padding-left: 12px; }
+  .mi:hover::before { content: ''; display: inline-block; width: 18px; height: 2px; background: var(--red); vertical-align: middle; margin-right: 12px; margin-left: -30px; }
+  .panel { position: fixed; z-index: 20; right: 7vw; top: 50%; transform: translateY(-50%); width: min(460px, 86vw); background: rgba(8,8,10,.92); border: 1px solid var(--line); padding: 28px 30px; }
+  .panel h3 { margin: 0 0 22px; font-weight: 400; letter-spacing: .4em; font-size: 15px; color: var(--ink); }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 0; font-size: 13px; letter-spacing: .15em; color: var(--dim); text-transform: uppercase; }
+  .seg { display: flex; border: 1px solid var(--line); }
+  .seg button { background: none; border: 0; color: var(--dim); font-family: var(--ui); font-size: 12px; letter-spacing: .12em; padding: 7px 10px; cursor: pointer; text-transform: uppercase; }
+  .seg button.sel { background: var(--ink); color: #111; }
+  input[type=range] { accent-color: var(--red); width: 170px; }
+  .keys { font-size: 13px; line-height: 2.1; color: var(--dim); letter-spacing: .06em; }
+  .keys kbd { display: inline-block; min-width: 26px; text-align: center; border: 1px solid var(--line); padding: 0 6px; margin-right: 10px; font-family: var(--ui); color: var(--ink); }
+  .close { margin-top: 18px; background: none; border: 1px solid var(--line); color: var(--ink); font-family: var(--ui); letter-spacing: .3em; padding: 8px 18px; cursor: pointer; }
+  .tip { font-size: 12px; color: #6d675e; letter-spacing: .05em; line-height: 1.6; margin-top: 4px; text-transform: none; }
+
+  /* ---------- hud ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #dot { position: fixed; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: rgba(230,225,210,.45); }
+  #prompt { position: fixed; left: 50%; top: 57%; transform: translateX(-50%); font-size: 15px; letter-spacing: .12em; color: var(--ink); opacity: 0; transition: opacity .2s; text-shadow: 0 0 6px #000, 0 0 12px #000; white-space: nowrap; text-transform: uppercase; }
+  #prompt b { display: inline-block; border: 1px solid rgba(230,225,210,.6); padding: 0 7px; margin-right: 8px; font-weight: 400; font-size: 12px; }
+  #prompt.on { opacity: 1; } #prompt.low { top: 84%; }
+  #obj { position: fixed; left: 32px; top: 26px; max-width: min(480px, 80vw); font-size: 15px; letter-spacing: .06em; color: var(--ink); opacity: 0; transition: opacity 1.2s; text-shadow: 0 0 8px #000; padding-left: 14px; border-left: 2px solid var(--red); }
+  #obj.on { opacity: .9; }
+  #subs { position: fixed; left: 50%; bottom: 10%; transform: translateX(-50%); max-width: min(780px, 92vw); text-align: center; font-family: var(--hand); font-size: 18px; color: #e8e2d2; opacity: 0; transition: opacity .6s; text-shadow: 0 0 6px #000, 0 0 14px #000; line-height: 1.5; }
+  #subs.on { opacity: 1; } #subs.voice { color: #e0a090; font-style: italic; } #subs.hint { font-family: var(--ui); font-size: 13px; letter-spacing: .2em; color: #a8a090; text-transform: uppercase; }
+  .meter { position: fixed; height: 2px; background: rgba(255,255,255,.08); transition: opacity .5s; }
+  .meter i { display: block; height: 100%; width: 100%; background: var(--ink); }
+  #bat { right: 32px; bottom: 32px; width: 140px; } #bat::before { content: 'FLASHLIGHT'; position: absolute; right: 0; bottom: 8px; font-size: 10px; letter-spacing: .35em; color: var(--dim); }
+  #stam { right: 32px; bottom: 54px; width: 90px; } #stam i { background: #8a8478; }
+  #breath { left: 50%; bottom: 20%; transform: translateX(-50%); width: 220px; } #breath::before { content: 'BREATH'; position: absolute; left: 0; right: 0; text-align: center; bottom: 8px; font-size: 10px; letter-spacing: .45em; color: #8aa0b0; }
+  #inv { position: fixed; right: 32px; top: 26px; font-size: 12px; letter-spacing: .3em; color: var(--dim); display: flex; gap: 16px; }
+  #inv span.got { color: var(--ink); } #inv span.got::before { content: '✓ '; color: #c0a060; }
+  #face { position: fixed; inset: 0; background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #000; opacity: 0; z-index: 30; pointer-events: none; }
+  #face.on { opacity: 1; }
+
+  /* ---------- note ---------- */
+  #note { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.72); z-index: 12; }
+  .paper { width: min(580px, 92vw); max-height: 86vh; overflow-y: auto; background: #d6cdb4; color: #2a2218; padding: 32px 36px; font-family: var(--hand); font-size: 15px; line-height: 1.7; box-shadow: 0 20px 80px #000; transform: rotate(-0.6deg);
+    background-image: radial-gradient(circle at 80% 18%, rgba(110,10,10,.32) 0, rgba(110,10,10,0) 70px), radial-gradient(circle at 12% 88%, rgba(90,60,20,.3) 0, rgba(90,60,20,0) 130px); }
+  .paper h2 { font-family: var(--ui); font-size: 11px; letter-spacing: .3em; margin: 0 0 20px; color: #6a5a48; font-weight: 400; text-transform: uppercase; }
+  .paper .scrawl { color: #6a0a06; font-size: 16px; letter-spacing: .04em; }
+  .paper .scrawl.big { font-size: 18px; line-height: 1.6; }
+  .paper .close2 { margin-top: 22px; font-family: var(--ui); font-size: 11px; color: #6a5a48; letter-spacing: .3em; }
+
+  /* ---------- pause / death / end ---------- */
+  #pause { display: flex; align-items: center; padding: 0 7vw; background: rgba(0,0,0,.7); }
+  #death { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; cursor: pointer; text-align: center; padding: 16px; }
+  #deathText { font-family: var(--title); font-size: clamp(36px, 7vw, 84px); color: #b01a12; letter-spacing: .06em; margin: 0; font-weight: 400; }
+  #deathSub { color: #7d776c; font-family: var(--hand); margin-top: 14px; font-size: 17px; }
+  #death .again { margin-top: 56px; font-size: 12px; letter-spacing: .5em; color: #4a443c; }
+  #end { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; cursor: pointer; padding: 16px; }
+  #end .body { max-width: 640px; line-height: 1.9; color: #a09888; font-family: var(--hand); font-size: 16px; }
+  #end .last { color: #c0281e; letter-spacing: .15em; margin-top: 18px; text-align: center; font-family: var(--ui); }
+  #endStats { color: #4a453e; font-size: 12px; letter-spacing: .3em; margin-top: 16px; }
+</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three/build/three.module.min.js", "three/addons/": "../vendor/three/examples/jsm/" } }</script>
+</head>
+<body>
+<div id="view"></div>
+
+<div id="loading" class="screen">
+  <div class="brand">Hollow Park<small>Hollow Lane · Night</small></div>
+  <div class="loadrow"><div class="bar"><div id="loadFill"></div></div><div id="loadPct">0%</div></div>
+  <div id="loadLabel">Starting</div>
+  <div id="loadHint">&nbsp;</div>
+  <div class="warn"><b>CONTENT WARNING</b><br>Extreme graphic gore: mutilated, flayed and dismembered bodies, and a violent death every time you're caught. Sudden loud sounds, flashing light and screen distortion.<br><br>Play in the dark, with headphones. Listen for the crickets.</div>
+</div>
+
+<div id="menu" class="screen hidden">
+  <div class="menu-col">
+    <div class="brand">Hollow Park<small>Dad stopped answering the phone</small></div>
+    <button class="mi" id="newgame">New game</button>
+    <button class="mi" data-open="settings">Settings</button>
+    <button class="mi" data-open="controls">Controls</button>
+  </div>
+</div>
+
+<div id="settings" class="panel hidden">
+  <h3>SETTINGS</h3>
+  <div class="opt">Graphics <div class="seg"><button data-q="low">Low</button><button data-q="medium">Med</button><button data-q="high">High</button><button data-q="ultra">Ultra</button></div></div>
+  <div class="tip">High and Ultra add ambient occlusion and sharper moon shadows. Resolution drops by itself if the frame rate does.</div>
+  <div class="opt">Brightness <input type="range" min="0.6" max="1.8" step="0.02" value="1" data-set="bright"></div>
+  <div class="opt">Mouse <input type="range" min="0.3" max="2.5" step="0.05" value="1" data-set="sens"></div>
+  <div class="opt">Field of view <input type="range" min="60" max="95" step="1" value="72" data-set="fov"></div>
+  <div class="opt">Volume <input type="range" min="0" max="1.2" step="0.02" value="1" data-set="vol"></div>
+  <button class="close" data-close>BACK</button>
+</div>
+<div id="controls" class="panel hidden">
+  <h3>CONTROLS</h3>
+  <div class="keys">
+    <kbd>WASD</kbd> Move &nbsp; <kbd>Mouse</kbd> Look<br>
+    <kbd>Shift</kbd> Run (he hears it)<br>
+    <kbd>C</kbd> Crouch<br>
+    <kbd>F</kbd> Flashlight (he sees it)<br>
+    <kbd>E</kbd> Use, hide, step out<br>
+    <kbd>Space</kbd> Hold your breath while hiding<br>
+    <kbd>Tab</kbd> Objective &nbsp; <kbd>Esc</kbd> Pause
+  </div>
+  <div class="tip" style="margin-top:14px">When the crickets stop, he's close.</div>
+  <button class="close" data-close>BACK</button>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="dot"></div><div id="prompt"></div><div id="obj"></div><div id="subs"></div><div id="inv"></div>
+  <div id="bat" class="meter"><i id="batFill"></i></div>
+  <div id="stam" class="meter"><i id="stamFill"></i></div>
+  <div id="breath" class="meter"><i id="breathFill"></i></div>
+</div>
+<div id="face"></div>
+
+<div id="note" class="screen hidden"><div class="paper"><h2 id="noteTitle"></h2><div id="noteBody"></div><div class="close2">E · CLICK TO PUT IT DOWN</div></div></div>
+
+<div id="pause" class="screen hidden">
+  <div class="menu-col">
+    <div class="brand">Paused</div>
+    <button class="mi" id="resume">Resume</button>
+    <button class="mi" data-open="settings">Settings</button>
+    <button class="mi" data-open="controls">Controls</button>
+    <button class="mi" id="quit">Quit to menu</button>
+  </div>
+</div>
+
+<div id="death" class="screen hidden">
+  <h2 id="deathText"></h2>
+  <div id="deathSub"></div>
+  <div class="again">CLICK TO WAKE UP</div>
+</div>
+
+<div id="end" class="screen hidden">
+  <div class="body">
+    You don't remember the drive. Morning finds you parked on the shoulder of the interstate, sixty miles away, engine still running, hands locked on the wheel.<br><br>
+    The back seat is empty. The upholstery is torn open in long parallel lines, and the rear window is smeared from the inside.<br><br>
+    The police search Hollow Park for a week. They find your father's car keys in the sandbox and nothing else.<br><br>
+    That night, in the motel, the crickets outside your window stop all at once.
+    <div class="last">COUNT TO TEN</div>
+  </div>
+  <div id="endStats"></div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
