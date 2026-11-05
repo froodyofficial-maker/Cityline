@@ -2,17 +2,17 @@
   "format_version": 2,
   "header": {
     "name": "CPS Counter",
-    "description": "Shows your clicks per second (CPS) above the hotbar.\nMade by ProMouser",
+    "description": "Shows your CPS and everyone else's. Counts clicks in the air too.\nMade by ProMouser",
     "uuid": "5938b5e9-6448-46c1-807a-6510fab04fc4",
     "version": [
       1,
-      0,
+      1,
       0
     ],
     "min_engine_version": [
       1,
       21,
-      0
+      130
     ]
   },
   "modules": [
@@ -23,7 +23,7 @@
       "entry": "scripts/main.js",
       "version": [
         1,
-        0,
+        1,
         0
       ]
     }
@@ -31,7 +31,7 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "1.11.0"
+      "version": "2.5.0"
     }
   ],
   "metadata": {
