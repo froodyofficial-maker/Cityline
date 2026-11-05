@@ -2,10 +2,18 @@
   "format_version": 2,
   "header": {
     "name": "CPS Counter",
-    "description": "Shows your clicks per second (CPS) above the hotbar.",
+    "description": "Shows your clicks per second (CPS) above the hotbar.\nMade by ProMouser",
     "uuid": "5938b5e9-6448-46c1-807a-6510fab04fc4",
-    "version": [1, 0, 0],
-    "min_engine_version": [1, 21, 0]
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
   },
   "modules": [
     {
@@ -13,7 +21,11 @@
       "language": "javascript",
       "uuid": "c2109518-5dbe-4d62-a705-cd1c4f0a5be7",
       "entry": "scripts/main.js",
-      "version": [1, 0, 0]
+      "version": [
+        1,
+        0,
+        0
+      ]
     }
   ],
   "dependencies": [
@@ -21,5 +33,10 @@
       "module_name": "@minecraft/server",
       "version": "1.11.0"
     }
-  ]
+  ],
+  "metadata": {
+    "authors": [
+      "ProMouser"
+    ]
+  }
 }

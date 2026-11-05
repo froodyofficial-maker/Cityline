@@ -31,6 +31,10 @@ function recordClick(entity) {
 world.afterEvents.entityHitEntity.subscribe((event) => recordClick(event.damagingEntity));
 world.afterEvents.entityHitBlock.subscribe((event) => recordClick(event.damagingEntity));
 
+world.afterEvents.playerSpawn.subscribe((event) => {
+  if (event.initialSpawn) event.player.sendMessage("§eCPS Counter §7- Made by ProMouser");
+});
+
 world.afterEvents.playerLeave.subscribe((event) => trackers.delete(event.playerId));
 
 // Refresh the action bar (the text above the hotbar) 10 times a second.

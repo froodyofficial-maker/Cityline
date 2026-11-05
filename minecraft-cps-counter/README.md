@@ -1,5 +1,7 @@
 # CPS Counter for Minecraft Education
 
+Made by ProMouser.
+
 A behavior pack (add-on) that shows your **clicks per second** above the hotbar:
 
 ```
