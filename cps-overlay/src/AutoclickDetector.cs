@@ -54,7 +54,7 @@ namespace CpsOverlay
             if (burst.Count > SampleSize + 1) burst.RemoveAt(0);
             if (burst.Count == SampleSize + 1) CheckTiming(now);
 
-            if (cps > MaxHumanCps) Flag(Verdict.Suspicious, $"{cps} CPS is faster than a person can click", now);
+            if (cps > MaxHumanCps) Flag(Verdict.Suspicious, $"{cps} CPS - faster than humanly possible", now);
         }
 
         public void Release(double now, bool injected)
@@ -67,7 +67,7 @@ namespace CpsOverlay
                 if (holdsMs.Count == SampleSize)
                 {
                     double median = Median(holdsMs);
-                    if (median < MinHoldMs) Flag(Verdict.Suspicious, $"button released instantly ({median:0.0} ms)", now);
+                    if (median < MinHoldMs) Flag(Verdict.Suspicious, $"instant release ({median:0.0} ms hold)", now);
                 }
             }
             pressedAt = null;
@@ -85,7 +85,7 @@ namespace CpsOverlay
                 reason = "looks human";
                 return Verdict.Human;
             }
-            reason = "click fast for a few seconds to check";
+            reason = "click fast to run the check";
             return Verdict.NoData;
         }
 
@@ -109,7 +109,7 @@ namespace CpsOverlay
             double sd = Math.Sqrt(intervals.Sum(x => (x - mean) * (x - mean)) / intervals.Length);
 
             if (sd < MinStdDevMs)
-                Flag(Verdict.Suspicious, $"clicks evenly spaced ({mean:0} ms ±{sd:0.0})", now);
+                Flag(Verdict.Suspicious, $"robotic timing ({mean:0} ms ±{sd:0.0})", now);
             else
                 lastPassed = now;
         }

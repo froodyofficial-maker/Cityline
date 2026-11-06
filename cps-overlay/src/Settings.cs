@@ -12,6 +12,7 @@ namespace CpsOverlay
         public int X = 20;
         public int Y = 20;
         public string PingTarget = DefaultPingTarget;
+        public float Scale = 1.0f;
 
         private static string FilePath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CpsOverlay", "settings.txt");
@@ -31,6 +32,9 @@ namespace CpsOverlay
                 if (values.TryGetValue("x", out string x) && int.TryParse(x, out int xi)) settings.X = xi;
                 if (values.TryGetValue("y", out string y) && int.TryParse(y, out int yi)) settings.Y = yi;
                 if (values.TryGetValue("ping", out string ping) && ping.Length > 0) settings.PingTarget = ping;
+                if (values.TryGetValue("scale", out string scale) &&
+                    float.TryParse(scale, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float sc) &&
+                    sc >= 0.5f && sc <= 2f) settings.Scale = sc;
             }
             catch (Exception)
             {
@@ -44,7 +48,8 @@ namespace CpsOverlay
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
-                File.WriteAllLines(FilePath, new[] { $"x={X}", $"y={Y}", $"ping={PingTarget}" });
+                File.WriteAllLines(FilePath, new[] { $"x={X}", $"y={Y}", $"ping={PingTarget}",
+                    "scale=" + Scale.ToString(System.Globalization.CultureInfo.InvariantCulture) });
             }
             catch (Exception)
             {

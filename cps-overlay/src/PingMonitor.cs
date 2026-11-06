@@ -16,7 +16,7 @@ namespace CpsOverlay
     public sealed class PingMonitor : IDisposable
     {
         private const int TimeoutMs = 1000;
-        private const int HistorySize = 10;
+        public const int HistorySize = 20;
 
         private readonly object gate = new object();
         private readonly Queue<long?> history = new Queue<long?>(); // null = lost
@@ -51,6 +51,7 @@ namespace CpsOverlay
             public int LossPercent;
             public int Samples;
             public bool Tcp;
+            public long?[] History; // oldest first, null = lost
         }
 
         public Snapshot Read()
@@ -65,6 +66,7 @@ namespace CpsOverlay
                     LossPercent = history.Count > 0 ? (int)Math.Round(100.0 * (history.Count - ok.Count) / history.Count) : 0,
                     Samples = history.Count,
                     Tcp = useTcp,
+                    History = history.ToArray(),
                 };
             }
         }

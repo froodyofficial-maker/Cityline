@@ -9,26 +9,17 @@ using System.Windows.Forms;
 namespace CpsOverlay
 {
     /// <summary>
-    /// A small always-on-top box that the mouse clicks straight through, so it sits over
-    /// Minecraft without getting in the way. Options live on the tray icon next to the clock.
+    /// An always-on-top overlay that mouse clicks pass straight through, so it sits over
+    /// Minecraft without getting in the way. It's a per-pixel-alpha layered window: each frame
+    /// is drawn into a bitmap by <see cref="OverlayRenderer"/> and handed to Windows as is.
+    /// Options live on the tray icon next to the clock.
     /// </summary>
     public sealed class OverlayForm : Form
     {
-        private static readonly Color Background = Color.FromArgb(18, 18, 24);
-        private static readonly Color Fg = Color.FromArgb(235, 235, 240);
-        private static readonly Color Dim = Color.FromArgb(150, 150, 165);
-        private static readonly Color Green = Color.FromArgb(110, 225, 120);
-        private static readonly Color Yellow = Color.FromArgb(245, 215, 85);
-        private static readonly Color Orange = Color.FromArgb(255, 165, 60);
-        private static readonly Color Red = Color.FromArgb(255, 95, 95);
-
-        private const int Pad = 10;
-        private const int LineGap = 3;
-
-        private readonly Font bigFont = new Font("Segoe UI", 18f, FontStyle.Bold);
-        private readonly Font font = new Font("Segoe UI", 10f, FontStyle.Regular);
-        private readonly Font boldFont = new Font("Segoe UI", 10f, FontStyle.Bold);
-        private readonly Font smallFont = new Font("Segoe UI", 7.5f, FontStyle.Regular);
+        private const int HistorySeconds = 6;
+        private const double HistoryStep = 0.05; // seconds between graph samples
+        private const double MeterTimeConstant = 0.07; // how quickly the bar slides to the CPS
+        private const double PulseTimeConstant = 0.18; // how quickly the click glow fades
 
         private readonly Settings settings = Settings.Load();
         private readonly ClickStats left = new ClickStats();
@@ -37,13 +28,20 @@ namespace CpsOverlay
         private readonly AutoclickDetector rightCheck = new AutoclickDetector();
         private readonly PingMonitor ping;
         private readonly MouseHook hook;
-        private readonly Timer refresh = new Timer { Interval = 50 };
+        private readonly OverlayRenderer renderer = new OverlayRenderer();
+        private readonly OverlayState state = new OverlayState();
+        private readonly Queue<float> history = new Queue<float>();
+        private readonly Timer frameTimer = new Timer { Interval = 15 }; // ~60 frames a second
         private readonly NotifyIcon tray;
         private readonly ToolStripMenuItem moveItem;
         private readonly ToolStripMenuItem pingItem;
         private readonly ToolStripMenuItem showItem;
+        private readonly double startTime = Now;
         private bool clickThrough = true;
-        private int ticks;
+        private double lastFrame = Now;
+        private double nextSample = Now;
+        private float dpiScale = 1f;
+        private int frames;
 
         private static double Now => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
 
@@ -53,12 +51,9 @@ namespace CpsOverlay
             ShowInTaskbar = false;
             TopMost = true;
             StartPosition = FormStartPosition.Manual;
-            BackColor = Background;
-            Opacity = 0.88;
-            DoubleBuffered = true;
             Text = "CPS Overlay";
             Location = OnScreen(new Point(settings.X, settings.Y));
-            ClientSize = new Size(260, 120);
+            Size = new Size(OverlayRenderer.Width, OverlayRenderer.Height);
 
             ping = new PingMonitor(settings.PingTarget);
 
@@ -80,6 +75,18 @@ namespace CpsOverlay
             pingItem.Click += (s, e) => AskPingTarget();
             showItem = new ToolStripMenuItem("Show overlay") { Checked = true, CheckOnClick = true };
             showItem.CheckedChanged += (s, e) => Visible = showItem.Checked;
+            var sizeItem = new ToolStripMenuItem("Size");
+            foreach (var (label, value) in new[] { ("Small", 0.8f), ("Medium", 1.0f), ("Large", 1.25f), ("Extra large", 1.5f) })
+            {
+                var item = new ToolStripMenuItem(label) { Checked = Math.Abs(settings.Scale - value) < 0.01f, Tag = value };
+                item.Click += (s, e) =>
+                {
+                    settings.Scale = value;
+                    settings.Save();
+                    foreach (ToolStripMenuItem other in sizeItem.DropDownItems) other.Checked = other == item;
+                };
+                sizeItem.DropDownItems.Add(item);
+            }
             var resetItem = new ToolStripMenuItem("Reset best CPS and checks");
             resetItem.Click += (s, e) => ResetAll();
             var exitItem = new ToolStripMenuItem("Exit");
@@ -91,7 +98,7 @@ namespace CpsOverlay
             {
                 new ToolStripMenuItem("CPS Overlay - Made by ProMouser") { Enabled = false },
                 new ToolStripSeparator(),
-                showItem, moveItem, pingItem, resetItem,
+                showItem, moveItem, sizeItem, pingItem, resetItem,
                 new ToolStripSeparator(),
                 exitItem,
             });
@@ -105,8 +112,7 @@ namespace CpsOverlay
             };
             tray.DoubleClick += (s, e) => showItem.Checked = !showItem.Checked;
 
-            refresh.Tick += (s, e) => OnRefresh();
-            refresh.Start();
+            frameTimer.Tick += (s, e) => OnFrame();
         }
 
         protected override bool ShowWithoutActivation => true;
@@ -116,17 +122,29 @@ namespace CpsOverlay
             get
             {
                 var cp = base.CreateParams;
-                cp.ExStyle |= WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED | WS_EX_TRANSPARENT;
+                cp.ExStyle |= WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
                 return cp;
             }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            UpdateDpi();
+            OnFrame();
+            frameTimer.Start();
         }
 
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             tray.ShowBalloonTip(4000, "CPS Overlay is running",
-                "Right-click the icon next to the clock to move the overlay, change the ping target or exit.", ToolTipIcon.Info);
+                "Right-click the icon next to the clock to move or resize the overlay, change the ping target or exit.", ToolTipIcon.Info);
         }
+
+        // Windows paints nothing for layered windows; every frame comes from OnFrame.
+        protected override void OnPaintBackground(PaintEventArgs e) { }
+        protected override void OnPaint(PaintEventArgs e) { }
 
         // ---- Input ----
 
@@ -139,6 +157,7 @@ namespace CpsOverlay
             {
                 stats.Press(now);
                 check.Press(now, injected, stats.Cps(now));
+                if (button == ClickButton.Left) state.Pulse = 1f;
             }
             else
             {
@@ -154,153 +173,91 @@ namespace CpsOverlay
             rightCheck.Reset();
         }
 
-        // ---- Drawing ----
+        // ---- Frames ----
 
-        private struct Piece
-        {
-            public string Text;
-            public Font Font;
-            public Color Color;
-            public Piece(string text, Font font, Color color) { Text = text; Font = font; Color = color; }
-        }
-
-        private List<List<Piece>> BuildLines()
+        private void OnFrame()
         {
             double now = Now;
-            int l = left.Cps(now), r = right.Cps(now);
-            var lines = new List<List<Piece>>();
+            double dt = Math.Min(0.25, now - lastFrame);
+            lastFrame = now;
 
-            lines.Add(new List<Piece>
+            // Live CPS = presses in the last second, so it climbs with every click and
+            // falls away within a second of stopping.
+            int cps = left.Cps(now);
+            state.Cps = cps;
+            state.RightCps = right.Cps(now);
+            state.Best = left.Best;
+            state.RightBest = right.Best;
+            state.Meter += (float)((cps - state.Meter) * (1 - Math.Exp(-dt / MeterTimeConstant)));
+            if (Math.Abs(state.Meter - cps) < 0.01f) state.Meter = cps;
+            state.Pulse *= (float)Math.Exp(-dt / PulseTimeConstant);
+            state.Time = (float)(now - startTime);
+
+            while (now >= nextSample)
             {
-                new Piece($"{l}", bigFont, CpsColor(l)),
-                new Piece(" CPS", boldFont, Fg),
-                new Piece($"    Right {r}", font, r > 0 ? CpsColor(r) : Dim),
-            });
-            lines.Add(new List<Piece>
-            {
-                new Piece("Best  ", font, Dim),
-                new Piece($"{left.Best}", boldFont, Fg),
-                new Piece("  ·  Right ", font, Dim),
-                new Piece($"{right.Best}", boldFont, Fg),
-            });
+                history.Enqueue(state.Meter);
+                while (history.Count > HistorySeconds / HistoryStep) history.Dequeue();
+                nextSample += HistoryStep;
+                if (now - nextSample > 1) nextSample = now; // after sleep/hibernate
+            }
+            state.History = history.ToArray();
 
             var p = ping.Read();
-            var pingLine = new List<Piece> { new Piece("Ping  ", font, Dim) };
-            if (p.Samples == 0)
-                pingLine.Add(new Piece("measuring…", font, Dim));
-            else if (p.LastMs is long ms)
-                pingLine.Add(new Piece($"{ms} ms", boldFont, PingColor(ms)));
-            else
-                pingLine.Add(new Piece("no reply", boldFont, Red));
-            if (p.Samples > 0)
-            {
-                string avg = p.AverageMs is long a ? $"avg {a}" : "avg -";
-                pingLine.Add(new Piece($"  ({avg} · {p.LossPercent}% lost{(p.Tcp ? " · TCP" : "")})", font, Dim));
-            }
-            lines.Add(pingLine);
+            state.PingMeasuring = p.Samples == 0;
+            state.PingMs = p.LastMs;
+            state.PingAverage = p.AverageMs;
+            state.PingLoss = p.LossPercent;
+            state.PingTcp = p.Tcp;
+            state.PingHistory = p.History ?? new long?[0];
 
             Verdict lv = leftCheck.Check(now, out string lReason);
             Verdict rv = rightCheck.Check(now, out string rReason);
             bool showRight = rv > lv;
-            Verdict v = showRight ? rv : lv;
-            string reason = showRight ? "right click: " + rReason : rReason;
-            switch (v)
-            {
-                case Verdict.Autoclicker:
-                    lines.Add(new List<Piece> { new Piece("✖ Autoclicker: ", boldFont, Red), new Piece(reason, font, Red) });
-                    break;
-                case Verdict.Suspicious:
-                    lines.Add(new List<Piece> { new Piece("⚠ Suspicious: ", boldFont, Yellow), new Piece(reason, font, Yellow) });
-                    break;
-                case Verdict.Human:
-                    lines.Add(new List<Piece> { new Piece("✔ No autoclicker: ", boldFont, Green), new Piece(reason, font, Green) });
-                    break;
-                default:
-                    lines.Add(new List<Piece> { new Piece("Autoclicker check: ", font, Dim), new Piece(reason, font, Dim) });
-                    break;
-            }
+            state.Verdict = showRight ? rv : lv;
+            state.Reason = showRight ? "right click: " + rReason : lReason;
+            state.MoveMode = !clickThrough;
 
-            lines.Add(new List<Piece> { new Piece("Made by ProMouser", smallFont, Dim) });
-            return lines;
+            if (++frames % 60 == 0)
+            {
+                UpdateDpi();
+                if (Visible) KeepOnTop(); // games sometimes push other windows behind them
+            }
+            if (Visible) Present(renderer.Render(state, dpiScale * settings.Scale));
         }
 
-        private const TextFormatFlags Flags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine;
-
-        private Size Measure(Graphics g, List<List<Piece>> lines)
+        private void Present(Bitmap frame)
         {
-            int width = 0, height = 0;
-            foreach (var line in lines)
+            IntPtr screenDc = GetDC(IntPtr.Zero);
+            IntPtr memDc = CreateCompatibleDC(screenDc);
+            IntPtr hBitmap = frame.GetHbitmap(Color.FromArgb(0));
+            IntPtr old = SelectObject(memDc, hBitmap);
+            try
             {
-                int w = 0, h = 0;
-                foreach (var piece in line)
-                {
-                    Size s = TextRenderer.MeasureText(g, piece.Text, piece.Font, Size.Empty, Flags);
-                    w += s.Width;
-                    h = Math.Max(h, s.Height);
-                }
-                width = Math.Max(width, w);
-                height += h + LineGap;
+                var size = new SIZE { cx = frame.Width, cy = frame.Height };
+                var source = new POINT();
+                var blend = new BLENDFUNCTION { BlendOp = AC_SRC_OVER, SourceConstantAlpha = 255, AlphaFormat = AC_SRC_ALPHA };
+                UpdateLayeredWindow(Handle, screenDc, IntPtr.Zero, ref size, memDc, ref source, 0, ref blend, ULW_ALPHA);
             }
-            return new Size(width + Pad * 2, height - LineGap + Pad * 2);
-        }
-
-        private void OnRefresh()
-        {
-            if (++ticks % 40 == 0 && Visible) KeepOnTop(); // games sometimes push other windows behind them
-            if (!Visible) return;
-            using (Graphics g = CreateGraphics())
+            finally
             {
-                Size size = Measure(g, BuildLines());
-                if (size != ClientSize) ClientSize = size;
-            }
-            Invalidate();
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            if (!clickThrough)
-            {
-                using (var pen = new Pen(Yellow, 2)) g.DrawRectangle(pen, 1, 1, ClientSize.Width - 2, ClientSize.Height - 2);
-            }
-
-            int y = Pad;
-            foreach (var line in BuildLines())
-            {
-                var sizes = new List<Size>();
-                int h = 0;
-                foreach (var piece in line)
-                {
-                    Size s = TextRenderer.MeasureText(g, piece.Text, piece.Font, Size.Empty, Flags);
-                    sizes.Add(s);
-                    h = Math.Max(h, s.Height);
-                }
-                int x = Pad;
-                for (int i = 0; i < line.Count; i++)
-                {
-                    // Bottom-align pieces of different sizes on one baseline-ish line.
-                    int dy = h - sizes[i].Height - (line[i].Font == bigFont ? 0 : 3);
-                    TextRenderer.DrawText(g, line[i].Text, line[i].Font, new Point(x, y + Math.Max(0, dy)), line[i].Color, Flags);
-                    x += sizes[i].Width;
-                }
-                y += h + LineGap;
+                SelectObject(memDc, old);
+                DeleteObject(hBitmap);
+                DeleteDC(memDc);
+                ReleaseDC(IntPtr.Zero, screenDc);
             }
         }
 
-        private static Color CpsColor(int cps)
+        private void UpdateDpi()
         {
-            if (cps >= 12) return Red;
-            if (cps >= 8) return Orange;
-            if (cps >= 4) return Yellow;
-            return Green;
-        }
-
-        private static Color PingColor(long ms)
-        {
-            if (ms < 60) return Green;
-            if (ms < 120) return Yellow;
-            return Red;
+            try
+            {
+                uint dpi = GetDpiForWindow(Handle);
+                if (dpi > 0) dpiScale = dpi / 96f;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                using (Graphics g = CreateGraphics()) dpiScale = g.DpiX / 96f; // Windows older than 10 (1607)
+            }
         }
 
         // ---- Moving ----
@@ -317,7 +274,6 @@ namespace CpsOverlay
                 settings.Y = Top;
                 settings.Save();
             }
-            Invalidate();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -352,6 +308,7 @@ namespace CpsOverlay
                 MinimizeBox = false,
                 MaximizeBox = false,
                 TopMost = true,
+                AutoScaleMode = AutoScaleMode.Dpi,
                 ClientSize = new Size(380, 130),
             })
             {
@@ -385,24 +342,29 @@ namespace CpsOverlay
         {
             using (var bmp = new Bitmap(32, 32))
             using (Graphics g = Graphics.FromImage(bmp))
-            using (var bg = new SolidBrush(Color.FromArgb(40, 44, 52)))
-            using (var border = new Pen(Color.FromArgb(255, 200, 40), 3))
-            using (var f = new Font("Segoe UI", 9f, FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var bg = new SolidBrush(Color.FromArgb(14, 16, 26)))
+            using (var border = new Pen(Color.FromArgb(0, 229, 255), 3))
+            using (var bar = new SolidBrush(Color.FromArgb(255, 46, 151)))
+            using (Font f = GameFonts.Create(GameFonts.DisplayHeavy, 11f))
+            using (var text = new SolidBrush(Color.White))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
                 g.FillRectangle(bg, 0, 0, 32, 32);
-                g.DrawRectangle(border, 1, 1, 29, 29);
-                TextRenderer.DrawText(g, "CPS", f, new Rectangle(0, 0, 32, 32), Color.White,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                g.DrawRectangle(border, 1.5f, 1.5f, 29, 29);
+                g.FillRectangle(bar, 6, 23, 20, 3);
+                var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                g.DrawString("CPS", f, text, new RectangleF(0, -2, 32, 30), format);
                 return Icon.FromHandle(bmp.GetHicon());
             }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            refresh.Stop();
+            frameTimer.Stop();
             hook?.Dispose();
             ping.Dispose();
+            renderer.Dispose();
             tray.Visible = false;
             tray.Dispose();
             base.OnFormClosed(e);
@@ -415,7 +377,29 @@ namespace CpsOverlay
         private const int WM_NCLBUTTONDOWN = 0xA1, HTCAPTION = 2;
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOACTIVATE = 0x10;
+        private const byte AC_SRC_OVER = 0, AC_SRC_ALPHA = 1;
+        private const int ULW_ALPHA = 2;
 
+        [StructLayout(LayoutKind.Sequential)] private struct POINT { public int x, y; }
+        [StructLayout(LayoutKind.Sequential)] private struct SIZE { public int cx, cy; }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private struct BLENDFUNCTION
+        {
+            public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, IntPtr pptDst, ref SIZE psize,
+            IntPtr hdcSrc, ref POINT pptSrc, int crKey, ref BLENDFUNCTION pblend, int dwFlags);
+
+        [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hWnd);
+        [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+        [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr hDC);
+        [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr hdc);
+        [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr hDC, IntPtr hObject);
+        [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr hObject);
+        [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hwnd);
         [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
         [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
         [DllImport("user32.dll")] private static extern bool ReleaseCapture();

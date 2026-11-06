@@ -7,8 +7,14 @@ namespace CpsOverlay
     internal static class Program
     {
         [STAThread]
-        private static void Main()
+        private static void Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--preview")
+            {
+                Preview.Run(args[1]);
+                return;
+            }
+
             using (var mutex = new Mutex(true, "CpsOverlay-ProMouser", out bool first))
             {
                 if (!first)

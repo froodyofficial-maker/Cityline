@@ -2,11 +2,13 @@
 
 Made by ProMouser.
 
-A small box that sits on top of Minecraft (or any game) and shows:
+A gaming-style overlay that sits on top of Minecraft (or any game) and shows:
 
-- **CPS**: your left-click CPS in big numbers, plus right-click CPS and your best for each.
-- **Ping**: your ping in milliseconds, with the average and how many pings were lost over the last 10 seconds.
+- **Live CPS**: big neon number that climbs with every click and drops within a second of stopping, a 20-segment meter, and a graph of your last 6 seconds. Plus right-click CPS and your best for each.
+- **Ping**: your ping in milliseconds with bars for the last 20 pings, the average, and how many were lost.
 - **Autoclicker check**: whether your clicks come from a real mouse button or an autoclicker.
+
+![CPS Overlay while clicking, at 21 CPS, catching an autoclicker, and idle](screenshot.png)
 
 It runs on its own, outside Minecraft, so **the host doesn't need anything**. It only sees your own mouse, so it shows your CPS, not other players'.
 
@@ -15,6 +17,8 @@ It runs on its own, outside Minecraft, so **the host doesn't need anything**. It
 1. Download `CpsOverlay.exe`.
 2. Double-click it. If Windows says "Windows protected your PC", click **More info → Run anyway** (it shows this for any program that isn't signed).
 3. The overlay appears in the top-left corner. Mouse clicks go straight through it to the game.
+
+If your browser blocks the `.exe`, download `CpsOverlay.zip` instead, right-click it, choose **Extract All**, and run the `.exe` inside.
 
 Works on Windows 10 and 11 with nothing to install, and doesn't need admin rights. Some school computers only allow approved programs. If it won't open at all, that's why.
 
@@ -27,7 +31,8 @@ Right-click the **CPS** icon next to the clock (it may be under the **^** arrow)
 | Option | What it does |
 |---|---|
 | Show overlay | Hide or show the box (double-clicking the icon does the same) |
-| Move overlay | Lets you drag the box. A yellow border shows it's movable. Click the option again to lock it, and it remembers the spot |
+| Move overlay | Lets you drag the box. A moving yellow border shows it's movable. Click the option again to lock it, and it remembers the spot |
+| Size | Small, Medium, Large or Extra large |
 | Ping target | What to ping (see below) |
 | Reset best CPS and checks | Starts your best scores and the autoclicker check over |
 | Exit | Closes the overlay |
@@ -45,10 +50,10 @@ If the network blocks normal pings, the overlay times a web connection instead a
 
 | Shows | Meaning |
 |---|---|
-| Autoclicker check: click fast for a few seconds | Not enough fast clicks yet. Click at 4+ CPS for about 16 clicks |
-| **✔ No autoclicker: looks human** | Your last burst of clicks passed every check |
-| **⚠ Suspicious: …** | The clicks look machine-made (see the reason). Not proof on its own |
-| **✖ Autoclicker: software clicks detected** | A program made the clicks |
+| **SCANNING** | Not enough fast clicks yet. Click at 4+ CPS for about 16 clicks |
+| **LEGIT** | Your last burst of clicks passed every check |
+| **SUSPICIOUS** | The clicks look machine-made (see the reason). Not proof on its own |
+| **AUTOCLICKER** | A program made the clicks |
 
 What it checks:
 
@@ -61,6 +66,10 @@ Checks 2–4 can catch macro mice and hardware clickers that check 1 misses, so 
 
 A warning stays on screen for 10 seconds after the last suspicious click.
 
+## Live CPS
+
+The big number is how many times you clicked in the last second, which is how CPS is normally measured. The overlay redraws about 60 times a second, so it goes up the moment you click and counts down as soon as you stop, reaching 0 one second after your last click. The meter slides with it, and the number glows brighter on every click.
+
 ## Build from source
 
 Needs the .NET SDK (6 or newer) on any OS:
@@ -68,6 +77,9 @@ Needs the .NET SDK (6 or newer) on any OS:
 ```bash
 dotnet build src -c Release      # -> src/bin/Release/net48/CpsOverlay.exe
 dotnet run --project tests       # CPS and autoclicker-check tests
+mono src/bin/Release/net48/CpsOverlay.exe --preview out   # draw sample frames to out/*.png (Linux/macOS)
 ```
 
 The app targets .NET Framework 4.8, which comes with Windows 10 and 11, so the `.exe` runs without installing anything.
+
+Fonts: [Orbitron](https://github.com/theleagueof/orbitron) and [Rajdhani](https://github.com/itfoundry/rajdhani), both under the SIL Open Font License (see `src/fonts`). They're built into the `.exe`. On Mono, the preview needs them installed on the system, because Mono can't draw fonts loaded from memory.
