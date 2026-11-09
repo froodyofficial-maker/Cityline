@@ -157,11 +157,20 @@
       if (p.cat === 'monitor' && d === 'speed' && consoleOnly()) w *= .4; // consoles cap at 120 Hz
       num += w * p.traits[d]; den += w;
     }
-    if (den < .15) {
-      const t = Object.values(p.traits);
-      return .1 + .8 * t.reduce((a, b) => a + b, 0) / t.length;
-    }
+    if (den < .15) return .6; // your games don't ask this product for anything, so it can't rank on game fit
     return num / den;
+  }
+
+  // Spread raw fits (mostly .45 to .98) over the full range so real differences show up in the score.
+  const sharpen = g => Math.max(0, Math.min(1, .25 + .75 * (g - .45) / .53));
+  const meanTrait = p => { const t = Object.values(p.traits); return t.reduce((x, y) => x + y, 0) / t.length; };
+  const MAX_PRICE = {};
+  for (const p of PRODUCTS) MAX_PRICE[p.cat] = Math.max(MAX_PRICE[p.cat] || 0, p.price);
+
+  // How much your games lean on this kind of product at all (0 to 1).
+  function relevance(cat, needs) {
+    const dims = cat.id === 'controller' ? ['pad', 'racing'] : cat.dims;
+    return Math.max(...dims.map(d => needs[d] || 0));
   }
 
   // Each comfort factor returns a 0-1 score and optionally a pro or a con worded for the user.
@@ -275,11 +284,18 @@
   function evaluate(p, needs) {
     const budget = budgetCap(p.cat), low = budgetLow(p.cat);
     const within = p.price <= budget;
-    const g = gameFit(p, needs);
+    const g = sharpen(gameFit(p, needs));
     const c = comfort(p);
     const b = within ? 1 : Math.max(0, 1 - 2 * (p.price - budget) / budget);
-    const wC = state.long ? .36 : .3, wG = .9 - wC;
-    const match = Math.round(Math.min(98, Math.max(20, 100 * (wG * g + wC * c.score + .1 * b))));
+    // Value: cheaper inside your range scores higher, measured against the top of your range.
+    const ref = Number.isFinite(budget) ? budget : MAX_PRICE[p.cat];
+    const v = within ? 1 - .45 * Math.min(1, p.price / ref) : 0;
+    // The more your games lean on this product type, the more game fit counts. If they barely do,
+    // comfort and value decide, so the answer follows you instead of one all-rounder winning everywhere.
+    const rel = relevance(CAT[p.cat], needs);
+    const wG = .12 + .48 * rel, wC = state.long ? .3 : .26, wB = .08, wQ = .08;
+    const wV = Math.max(0, 1 - wG - wC - wB - wQ);
+    const match = Math.round(Math.min(98, Math.max(20, 100 * (wG * g + wC * c.score + wB * b + wQ * meanTrait(p) + wV * v))));
 
     // Why it fits: game reasons first, ranked by how much each dimension mattered.
     const why = [], warn = [];
@@ -305,7 +321,7 @@
     else why.push(`${money(p.price)} fits your ${range} budget.`);
     warn.push(...c.cons);
 
-    return { p, match, within, parts: { game: g, comfort: c.score, budget: b }, why, warn };
+    return { p, match, within, parts: { game: g, comfort: c.score, value: v, budget: b }, why, warn };
   }
 
   function rankCategory(cat, needs) {
@@ -317,6 +333,52 @@
     }
     pool.sort((a, b) => b.match - a.match || a.p.price - b.p.price);
     return { pool, hidden };
+  }
+
+  // How alike two products are, so a list doesn't fill up with near-clones (0 = nothing alike, 1 = twins).
+  function shapeKey(p) {
+    if (p.cat === 'mouse') return `${p.handed}|${p.weight == null ? 'M' : p.weight < 65 ? 'L' : p.weight < 95 ? 'M' : 'H'}|${p.wireless}`;
+    if (p.cat === 'keyboard') return `${p.layout}|${p.rapid}`;
+    if (p.cat === 'headset') return `${p.back}|${p.wireless}`;
+    if (p.cat === 'monitor') return `${p.size <= 25 ? 's' : p.size <= 28 ? 'm' : p.size <= 32 ? 'l' : 'xl'}|${/OLED/.test(p.spec)}`;
+    if (p.cat === 'controller') return `${!!p.wheel}|${p.paddles}|${p.hall}`;
+    return `${p.w >= 900 ? 'desk' : p.w >= 440 ? 'l' : 's'}|${p.surface.split(',')[0]}`;
+  }
+  function similarity(x, y) {
+    const keys = new Set([...Object.keys(x.traits), ...Object.keys(y.traits)]);
+    let dot = 0, nx = 0, ny = 0;
+    for (const k of keys) { const u = x.traits[k] || 0, w = y.traits[k] || 0; dot += u * w; nx += u * u; ny += w * w; }
+    const cos = dot / (Math.sqrt(nx * ny) || 1);
+    const price = 1 - Math.min(1, Math.abs(Math.log(x.price / y.price)) / Math.log(2.5));
+    return (x.brand === y.brand ? .3 : 0) + .25 * price + (shapeKey(x) === shapeKey(y) ? .3 : 0) + .15 * cos;
+  }
+
+  // Choose a varied shortlist instead of the n highest scores, which are often near-duplicates.
+  function pickDiverse(cands, n) {
+    if (!cands.length) return [];
+    const chosen = [{ ...cands[0], role: 'Closest fit' }];
+    const top = cands[0].match;
+    const floor = Math.max(45, top - 32); // never pad the list with weak matches; the full ranking below has them
+    const left = () => cands.filter(r => !chosen.some(c => c.p.id === r.p.id) && r.match >= floor);
+    const take = (role, filter, score) => {
+      if (chosen.length >= n) return;
+      const pool = left().filter(r => filter(r));
+      if (!pool.length) return;
+      const best = pool.reduce((m, r) => (score(r) > score(m) ? r : m));
+      chosen.push({ ...best, role });
+    };
+    const priceOf = r => r.p.price;
+    const minChosen = () => Math.min(...chosen.map(priceOf)), maxChosen = () => Math.max(...chosen.map(priceOf));
+    take('Best value', r => r.match >= top - 14 && r.p.price < cands[0].p.price * .9, r => r.match / Math.pow(r.p.price + 12, .55));
+    take('Lesser-known gem', r => r.p.pop <= 2 && r.match >= top - 18, r => r.match);
+    take('Premium pick', r => r.match >= top - 12 && r.p.price >= maxChosen() * 1.25, priceOf);
+    take('Budget saver', r => r.match >= top - 16 && r.p.price <= minChosen() * .7, r => -r.p.price);
+    const unlike = r => Math.max(...chosen.map(c => similarity(r.p, c.p)));
+    take('A different take', r => r.match >= top - 20, r => r.match - 45 * unlike(r));
+    while (chosen.length < n && left().length) take('Also a strong fit', () => true, r => r.match - 30 * unlike(r));
+    // Fillers only count as strong fits when they are close to the best; otherwise call them what they are.
+    for (const c of chosen) if (c.role === 'Also a strong fit' && c.match < top - 15) c.role = 'Another option';
+    return [chosen[0], ...chosen.slice(1).sort((x, y) => y.match - x.match)];
   }
 
   // Alternatives at different price points from the same compatible pool.
@@ -351,7 +413,7 @@
   function card(r, i, pool, sortedByMatch) {
     const { p } = r;
     const alts = alternatives(r, pool);
-    const label = !sortedByMatch ? (r.within ? 'Within budget' : 'Over budget') : i === 0 ? 'Closest fit for you' : 'Also a strong fit';
+    const label = !sortedByMatch ? (r.within ? 'Within budget' : 'Over budget') : r.role || (i === 0 ? 'Closest fit' : 'Also a strong fit');
     const badges = [
       !r.within ? '<span class="badge over">Over budget</span>' : p.price < budgetLow(p.cat) ? '<span class="badge ok">Under your range</span>' : '<span class="badge ok">In your budget</span>',
       p.pop <= 2 ? '<span class="badge gem" title="Ranked on fit alone. Popularity is never part of the score.">Lesser-known pick</span>' : '',
@@ -379,7 +441,7 @@
         <a class="more" href="#/p/${p.id}" data-product="${p.id}">View details <span aria-hidden="true">→</span></a></div>
       <div class="badges">${badges}</div>
       <div class="spec">${esc(specLine(p))}</div>
-      <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Budget', r.parts.budget)}</div>
+      <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Value', r.parts.value)}</div>
       <div class="why"><h5>Why it matches you</h5><ul>
         ${r.why.map(t => `<li>${esc(t)}</li>`).join('')}
         ${r.warn.slice(0, 3).map(t => `<li class="warn">${esc(t)}</li>`).join('')}
@@ -426,7 +488,7 @@
     const within = pool.filter(r => r.within);
     const sortedByMatch = state.sort === 'match';
     const ordered = sortedByMatch ? within : [...within].sort((a, b) => state.sort === 'low' ? a.p.price - b.p.price : b.p.price - a.p.price);
-    let top = ordered.slice(0, 6);
+    let top = sortedByMatch ? pickDiverse(ordered, 6) : ordered.slice(0, 6);
     let emptyMsg = '';
     if (!top.length) {
       // Nothing fits the budget: show the closest stretch options instead of an empty shelf.
@@ -810,7 +872,7 @@
           <div class="pricebig"><b>${money(p.price)}</b><span>typical price</span>${listTag}</div>
           <div class="matchrow">
             <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
-            <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Budget', r.parts.budget)}</div>
+            <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Value', r.parts.value)}</div>
           </div>
           ${reason ? `<p class="catnote">Heads up: this ${esc(cat.one)} is hidden from your results because it ${esc(reason)}.</p>` : ''}
           <a class="pillbtn buy" href="${shop}" target="_blank" rel="noopener noreferrer">Check live prices <span aria-hidden="true">↗</span></a>
