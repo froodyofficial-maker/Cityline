@@ -64,6 +64,7 @@
     desk: 'medium', conn: 'any',
     glasses: false, long: false, quiet: false,
     sort: 'match',
+    detail: false, // beginners start with the simple card view
     currency: guessCurrency(),
   };
 
@@ -410,6 +411,60 @@
     return `${p.platforms.map(x => PLATFORMS[x]).join(', ')} · ${p.wireless ? 'Wireless' : 'Wired'}${p.hall ? ' · Hall-effect sticks' : ''}${p.paddles ? ' · Back buttons' : ''}`;
   }
 
+  // Three short facts in everyday words for the simple card view.
+  function plainFacts(p) {
+    const f = [];
+    if (p.cat === 'mouse') {
+      f.push(p.weight == null ? 'Weight not confirmed' : p.weight < 65 ? `Very light (${p.weight} g), quick to move` : p.weight < 95 ? `Medium weight (${p.weight} g)` : `Heavy, steady feel (${p.weight} g)`);
+      f.push({ right: 'Shaped for right hands', ambi: 'Works in either hand', sym: 'Even shape, fine for most hands' }[p.handed]);
+      f.push(p.wireless ? 'Wireless' : 'Wired, so no charging');
+    } else if (p.cat === 'keyboard') {
+      f.push({ full: 'Full size, with a number pad', tkl: 'No number pad, so more room for your mouse', 75: 'Compact, keeps the F-keys', 65: 'Compact', 60: 'Very compact, no arrow keys' }[p.layout]);
+      f.push(p.rapid ? 'Rapid Trigger for fast shooters' : p.noise >= .75 ? 'Quiet to type on' : p.noise < .5 ? 'Loud, clicky typing' : 'Moderate typing noise');
+      f.push(p.wireless ? 'Wireless' : 'Wired');
+    } else if (p.cat === 'headset') {
+      f.push(p.back === 'open' ? 'Open-back: roomy sound, people nearby can hear it' : 'Closed-back: keeps the sound in');
+      f.push(p.weight <= 300 ? `Light on your head (${p.weight} g)` : p.weight <= 350 ? `Average weight (${p.weight} g)` : `Heavy (${p.weight} g)`);
+      f.push(p.wireless ? 'Wireless' : 'Wired, works with almost anything');
+    } else if (p.cat === 'monitor') {
+      const hz = +(p.spec.match(/(\d+)\s*Hz/) || [])[1];
+      f.push(`${p.size}" screen`);
+      f.push(hz >= 300 ? `Extremely smooth (${hz} Hz), for competitive shooters` : hz >= 160 ? `Very smooth (${hz} Hz)` : `Smooth (${hz} Hz)`);
+      f.push(/4K|5120/.test(p.spec) ? 'Very sharp picture' : /1440p/.test(p.spec) ? 'Sharp picture (1440p)' : 'Standard sharpness (1080p)');
+    } else if (p.cat === 'controller') {
+      f.push(p.wheel ? 'A steering wheel with pedals' : 'Works on ' + p.platforms.map(x => PLATFORMS[x]).join(', '));
+      if (!p.wheel) f.push(p.hall ? 'Sticks that resist drifting' : 'Standard sticks');
+      f.push(p.paddles ? 'Extra back buttons' : p.wireless ? 'Wireless' : 'Wired');
+    } else if (p.cat === 'mousepad') {
+      f.push(p.w >= 900 ? 'Desk mat: fits keyboard and mouse' : p.w >= 440 ? `Large (${p.w} × ${p.h} mm)` : `Small (${p.w} × ${p.h} mm)`);
+      f.push(p.thick >= 4 ? 'Thick and cushioned' : p.thick <= 1 ? 'Very thin' : 'Standard thickness');
+      f.push(/speed|hybrid/i.test(p.surface) ? 'Fast glide' : 'Controlled glide, good for aim');
+    }
+    return f.filter(Boolean);
+  }
+
+  // Wrap jargon in tooltips that explain it in plain English (from the jargon buster).
+  const JARGON = [
+    [/Rapid Trigger/g, 'rapid'], [/Hall-effect sticks|drift-resistant TMR sticks|TMR sticks/gi, 'hall'], [/\b(Open|Closed)-back\b/g, 'openback'],
+    [/\bTenkeyless\b|\b(75|60|65)%|\bFull-size\b/g, 'layout'], [/\b\d{2,3} Hz\b/g, 'refresh'], [/\b(1080p|1440p|4K)\b/g, 'resolution'],
+    [/\b(QD-OLED|OLED|Mini-LED VA|Nano IPS|Fast IPS|Rapid IPS|IPS|VA|TN)\b/g, 'panel'], [/HDMI 2\.1/g, 'hdmi21'], [/Back buttons|back paddles/gi, 'paddles'],
+    [/\b(Symmetric|Right-hand ergonomic|Ambidextrous)\b/g, 'shape'], [/\b\d{1,2},?\d{3} DPI\b|\bDPI\b/g, 'dpi'], [/polling/g, 'polling'],
+  ];
+  function jargon(text) {
+    let html = esc(text);
+    const used = new Set();
+    for (const [re, id] of JARGON) {
+      const g = GLOSSARY.find(x => x.id === id);
+      if (!g) continue;
+      html = html.replace(re, m => {
+        if (used.has(id)) return m; // one tooltip per term is enough
+        used.add(id);
+        return `<span class="jt" tabindex="0" data-tip="${esc(g.term + ': ' + g.text)}">${m}</span>`;
+      });
+    }
+    return html;
+  }
+
   function card(r, i, pool, sortedByMatch) {
     const { p } = r;
     const alts = alternatives(r, pool);
@@ -425,9 +480,30 @@
 
     const listTag = p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s title="Manufacturer list price">List ${moneyExact(p.msrp)}</s>` : '';
     const shop = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(p.brand + ' ' + p.name)}`;
+    const ringTip = 'How well it fits you, out of 100. It is not a review score.';
+    if (!state.detail) {
+      // Simple view: what a beginner needs to decide whether to look closer.
+      const reason = r.why.find(t => !/budget|range/.test(t)) || r.why[0] || p.pros[0];
+      return `<article class="card glass clickable simple cat-${p.cat}${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
+        <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
+          <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match" title="${ringTip}"><b>${r.match}%<small>MATCH</small></b></div>
+          <div class="rank">${label}</div>
+        </div>
+        <div class="ctop">
+          <div class="ctitle"><div class="brandline">${esc(p.brand)}</div>
+            <h4><a class="plink" href="#/p/${p.id}" data-product="${p.id}">${esc(p.name)}</a></h4></div>
+          <div class="pricebox"><b>${money(p.price)}</b><span>${r.within ? 'fits your budget' : 'over your budget'}</span></div>
+        </div>
+        <p class="oneliner"><span aria-hidden="true">✓</span> ${jargon(reason)}</p>
+        <ul class="facts">${plainFacts(p).map(f => `<li>${jargon(f)}</li>`).join('')}</ul>
+        ${r.warn[0] ? `<p class="heads">Heads up: ${jargon(r.warn[0])}</p>` : ''}
+        <div class="cardlinks"><a class="more primary" href="#/p/${p.id}" data-product="${p.id}">See why it fits <span aria-hidden="true">→</span></a>
+          <a class="shop" href="${shop}" target="_blank" rel="noopener noreferrer">Check prices ↗</a></div>
+      </article>`;
+    }
     return `<article class="card glass clickable cat-${p.cat}${i === 0 && sortedByMatch ? ' first' : ''}" id="card-${p.id}">
       <div class="pimg${art.hasPhoto(p) ? ' has-photo' : ''}">${art(p)}
-        <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
+        <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match" title="${ringTip}"><b>${r.match}%<small>MATCH</small></b></div>
         <div class="rank">${label}</div>
       </div>
       <div class="ctop">
@@ -440,7 +516,7 @@
       <div class="cardlinks"><a class="shop" href="${shop}" target="_blank" rel="noopener noreferrer">Check live prices ↗</a>
         <a class="more" href="#/p/${p.id}" data-product="${p.id}">View details <span aria-hidden="true">→</span></a></div>
       <div class="badges">${badges}</div>
-      <div class="spec">${esc(specLine(p))}</div>
+      <div class="spec">${jargon(specLine(p))}</div>
       <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Value', r.parts.value)}</div>
       <div class="why"><h5>Why it matches you</h5><ul>
         ${r.why.map(t => `<li>${esc(t)}</li>`).join('')}
@@ -745,6 +821,7 @@
     $('#gameOptions').innerHTML = left.length ? left.map(g => `<button type="button" data-addgame="${g.id}">${esc(g.name)}<small>${esc(g.genre)}</small></button>`).join('') : '<small class="hint">No more matches</small>';
   }
   function renderBudget() {
+    $('#budgetLabel').textContent = 'Budget per ' + CAT[state.view].one;
     $('#budget').innerHTML = BUDGETS[state.view].map((_, i) => `<option value="${i}" ${i === state.budget[state.view] ? 'selected' : ''}>${bracketLabel(state.view, i)}</option>`).join('');
   }
   function renderTypes() {
@@ -761,6 +838,18 @@
     $('#platforms').innerHTML = Object.entries(PLATFORMS).map(([id, n]) => `<button type="button" class="chip" data-platform="${id}" aria-pressed="${state.platforms.includes(id)}">${n}</button>`).join('');
     document.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => { cb.checked = !!state[cb.dataset.key]; });
     $('#sort').value = state.sort;
+    renderViewToggle();
+    renderGuide();
+  }
+  function renderViewToggle() {
+    document.querySelectorAll('#viewToggle button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.detail === '1') === !!state.detail)));
+  }
+  const GUIDE_STORE = 'gearguide-guide-hidden';
+  function renderGuide() {
+    let hidden = false;
+    try { hidden = localStorage.getItem(GUIDE_STORE) === '1'; } catch { /* ignore */ }
+    $('#guide').hidden = hidden;
+    $('#showGuide').hidden = !hidden;
   }
 
   let timer = 0;
@@ -774,6 +863,18 @@
   $('#dashboard').addEventListener('click', e => {
     const t = e.target.closest('button');
     if (!t || t.closest('#out, #overview')) return;
+    if (t.classList.contains('tipbtn')) return;
+    if (t.dataset.detail != null) {
+      state.detail = t.dataset.detail === '1';
+      renderViewToggle(); changed();
+      return;
+    }
+    if (t.id === 'hideGuide' || t.id === 'showGuide') {
+      try { localStorage.setItem(GUIDE_STORE, t.id === 'hideGuide' ? '1' : '0'); } catch { /* ignore */ }
+      renderGuide();
+      if (t.id === 'showGuide') $('#guide').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (t.id === 'moreBtn') {
       const p = $('#morePanel');
       p.hidden = !p.hidden;
@@ -1033,7 +1134,7 @@
         <section class="glass psec"><h2>Why it matches you</h2>
           <ul class="why">${r.why.map(t => `<li>${esc(t)}</li>`).join('')}${r.warn.map(t => `<li class="warn">${esc(t)}</li>`).join('')}</ul></section>
         <section class="glass psec"><h2>Specifications</h2>
-          <dl class="specs">${specRows(p).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></section>
+          <dl class="specs">${specRows(p).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${jargon(v)}</dd></div>`).join('')}</dl></section>
       </div>
 
       <div class="pcols">

@@ -100,11 +100,22 @@
     <p class="eyebrow">Your recommendations</p>
     <h1 class="display" id="title"></h1>
     <p id="summary" class="summary"></p>
+    <button type="button" class="linkbtn" id="showGuide" hidden>How to use this page</button>
+  </section>
+
+  <section class="wrap">
+    <div class="guide card" id="guide" hidden>
+      <div class="gstep"><span class="hn">1</span><p><b>Pick a product type</b> with the buttons below, like Mouse or Headset.</p></div>
+      <div class="gstep"><span class="hn">2</span><p><b>Your closest fit comes first.</b> Tap any product to see why it suits you.</p></div>
+      <div class="gstep"><span class="hn">3</span><p><b>Change the filters</b> any time; results update straight away. Stuck? Press <b>Ask AI</b>.</p></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="hideGuide">Got it</button>
+    </div>
   </section>
 
   <div class="wrap typerow">
     <div id="types" class="tabs" role="tablist" aria-label="Product type"></div>
     <div class="typetools">
+    <div class="viewtoggle" id="viewToggle" role="group" aria-label="Card view"><button type="button" data-detail="0" aria-pressed="true">Simple</button><button type="button" data-detail="1" aria-pressed="false">Detailed</button></div>
     <button type="button" class="btn btn-ghost btn-sm" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More filters <span class="caret" aria-hidden="true">▾</span></button>
     <label class="tool">Sort
       <select id="sort" class="sel">
@@ -119,7 +130,7 @@
   <section class="wrap" aria-label="Filters">
     <div class="filters card" id="filters">
       <div class="fgroup fgames">
-        <span class="flabel">Games</span>
+        <span class="flabel">Your games <button type="button" class="tipbtn" data-tip="The games you play. We use them to work out what matters most for your gear. Press + to add one." aria-label="Help: The games you play. We use them to work out what matters most for your gear. Press + to add one.">?</button></span>
         <div id="gameChips" class="chips"></div>
         <div id="gamePicker" class="picker" hidden>
           <input id="gameSearch" type="search" placeholder="Search games…" aria-label="Search games">
@@ -127,22 +138,22 @@
         </div>
       </div>
       <div class="fgroup">
-        <label class="flabel" for="budget">Budget</label>
+        <span class="flabel"><label for="budget" id="budgetLabel">Budget</label> <button type="button" class="tipbtn" data-tip="How much you want to spend on this type of product. Pick a range; cheaper picks inside it score a little higher." aria-label="Help: How much you want to spend on this type of product. Pick a range; cheaper picks inside it score a little higher.">?</button></span>
         <div class="budgetrow">
           <select id="budget" class="sel"></select>
           <select id="currency" class="sel cur" aria-label="Currency" aria-describedby="fxnote"></select>
         </div>
       </div>
       <div class="fgroup" data-for="mouse">
-        <span class="flabel">Hand</span>
+        <span class="flabel">Mouse hand <button type="button" class="tipbtn" data-tip="The hand you hold your mouse with. Left-handed? We hide mice that only fit right hands. Both means you switch hands." aria-label="Help: The hand you hold your mouse with. Left-handed? We hide mice that only fit right hands. Both means you switch hands.">?</button></span>
         <div id="handed" class="radios" role="radiogroup" aria-label="Hand preference"></div>
       </div>
       <div class="fgroup" data-for="mouse">
-        <label class="flabel" for="weight">Weight</label>
+        <span class="flabel"><label for="weight">Mouse weight</label> <button type="button" class="tipbtn" data-tip="Light mice are quicker to move, which helps in shooters. Heavier ones feel steadier. Not sure? Leave No preference." aria-label="Help: Light mice are quicker to move, which helps in shooters. Heavier ones feel steadier. Not sure? Leave No preference.">?</button></span>
         <select id="weight" class="sel"></select>
       </div>
       <div class="fgroup" data-for="mouse controller">
-        <label class="flabel" for="hand">Hand length</label>
+        <span class="flabel"><label for="hand">Hand size</label> <button type="button" class="tipbtn" data-tip="Measured from the crease of your wrist to the tip of your middle finger. It decides which sizes will feel comfortable." aria-label="Help: Measured from the crease of your wrist to the tip of your middle finger. It decides which sizes will feel comfortable.">?</button></span>
         <select id="hand" class="sel"></select>
       </div>
 
