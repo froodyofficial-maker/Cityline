@@ -638,3 +638,54 @@ article.card.simple { gap: 13px; }
 .resetdone { margin: 18px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(95, 240, 180, .14); border: 1px solid rgba(95, 240, 180, .45); color: #fff; font-weight: 600; width: fit-content; }
 #dashboard.simple .adv { display: none; }
 @media (max-width: 720px) { .stephead { font-size: 19px; } .stephead small { padding-left: 0; } }
+
+/* ================= Blue × purple theme =================
+   Plain dark-indigo background (no gradient), solid panels, blue for actions and
+   selections, purple for highlights. Overrides the frosted-glass styling above. */
+:root, :root[data-accent] {
+  --bg: #0b0c1d; --solid: #181a36; --ringbg: #0f1026; --sel: #0b0c1d;
+  --surface: #13152c; --surface2: #191c38; --surface3: #232748;
+  --line: rgba(160, 170, 255, .12); --line2: rgba(160, 170, 255, .24);
+  --blue: #4f7dff; --blue-hi: #6d93ff; --purple: #9b6bff; --purple-hi: #b393ff;
+  --acc: var(--blue); --acc-ink: #fff; --acc-soft: rgba(79, 125, 255, .14); --acc-line: rgba(79, 125, 255, .55);
+  --gem: var(--purple-hi);
+}
+body { background: var(--bg); }
+.card, .glass, .topbar, .filters, .overview, .chat, .chatsettings, .sel, .chip, .field, .chatform textarea, .picker input, .matchrow, .ovcard, .altcard, details.allrank, .btn-primary, .pillbtn, .fab, .rank, .tipbtn {
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.card, .glass, .overview, .chat, .matchrow, details.allrank { background: var(--surface); box-shadow: none; }
+.ovcard, .altcard { background: var(--surface2); }
+.topbar { background: rgba(11, 12, 29, .92); border-bottom-color: var(--line); }
+.chip, .sel, .field, .picker input, .chatform textarea { background-color: var(--surface2); }
+.sel option { background: var(--solid); }
+.chat .chatsettings, .msg.bot { background: var(--surface2); }
+
+/* blue: buttons, selections, primary actions */
+.btn-primary, .fab, .pillbtn { background: var(--blue); color: #fff; border-color: var(--blue); box-shadow: 0 8px 24px rgba(79, 125, 255, .28); }
+.btn-primary:hover, .fab:hover, .pillbtn:hover { background: var(--blue-hi); border-color: var(--blue-hi); box-shadow: 0 10px 28px rgba(79, 125, 255, .38); }
+.btn-ghost:hover { border-color: var(--blue-hi); background: rgba(79, 125, 255, .12); }
+.chip[aria-pressed="true"], .tabs .chip[aria-pressed="true"], .viewtoggle button[aria-pressed="true"], .msg.user, .cardlinks .more.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.cardlinks .more.primary:hover, .cardlinks .more:hover { background: var(--blue-hi); color: #fff; border-color: var(--blue-hi); }
+.check input:checked + .box { background: var(--blue); border-color: var(--blue); }
+.check .box::after { border-color: #fff; }
+.radio input:checked + i { border-color: var(--blue-hi); background: radial-gradient(circle, var(--blue-hi) 0 4px, transparent 5px); }
+.toggle input:checked + span { background: var(--blue); border-color: var(--blue); }
+.combo-btn:hover, .combo-btn[aria-expanded="true"], .linkbtn:hover { color: var(--blue-hi); }
+.line:focus { border-bottom-color: var(--blue-hi); }
+.bar i::after, .gf i::after { background: var(--blue); }
+a, .msg a, .shop { color: var(--blue-hi); }
+
+/* purple: highlights and labels */
+.eyebrow, .acc { color: var(--purple-hi); -webkit-text-fill-color: currentColor; text-shadow: none; }
+.hn, .logomark { background: var(--purple); color: #fff; }
+article.card.first { border-color: rgba(155, 107, 255, .65); }
+article.card.first .rank { background: var(--purple); color: #fff; border-color: var(--purple); }
+.rank { background: #2a2352; border-color: rgba(155, 107, 255, .5); color: #fff; }
+.jt { border-bottom-color: var(--purple-hi); }
+.tipbtn { background: rgba(155, 107, 255, .18); border-color: rgba(155, 107, 255, .45); }
+.pimg, .pheroart { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--cc) 26%, transparent), transparent 65%), var(--surface2); border-color: var(--line); }
+.pimg.has-photo, .pheroart.has-photo { background: radial-gradient(circle at 50% 42%, #fff, #dfe1e7 75%); }
+.heroart::before { background: radial-gradient(circle, rgba(155, 107, 255, .35), transparent 68%); }
+.stepicon { background: rgba(155, 107, 255, .16); border-color: rgba(155, 107, 255, .4); }
+.resetbox { border-color: rgba(255, 209, 102, .5); }

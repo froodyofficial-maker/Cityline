@@ -9,10 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="styles.css">
-<script>
-  // Apply the saved accent colour before the first paint.
-  try { const a = localStorage.getItem('gearguide-accent'); if (a) document.documentElement.dataset.accent = a; } catch { /* storage unavailable */ }
-</script>
 </head>
 <body>
 
@@ -30,7 +26,6 @@
       <button type="button" class="navlink" data-nav="setup">Setup</button>
     </nav>
     <div class="topright">
-      <div class="swatches" id="swatches" role="radiogroup" aria-label="Accent colour"></div>
       <button type="button" class="btn btn-primary btn-sm" id="askNav"><span aria-hidden="true">✦</span> Ask AI</button>
       <button type="button" class="iconbtn burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
     </div>
@@ -111,7 +106,7 @@
     <div class="resetbox card" id="resetConfirm" hidden role="alertdialog" aria-labelledby="resetTitle" aria-describedby="resetText">
       <div>
         <h3 id="resetTitle">Start over from scratch?</h3>
-        <p id="resetText">This clears your games, budgets, hand size and every other answer, then takes you back to the start. Your background colour and any saved AI key stay as they are.</p>
+        <p id="resetText">This clears your games, budgets, hand size and every other answer, then takes you back to the start. Any saved AI key stays as it is.</p>
       </div>
       <div class="resetbtns">
         <button type="button" class="btn btn-primary btn-sm" id="resetYes">Yes, reset everything</button>
