@@ -3,20 +3,33 @@
    (jpg, png or webp; a square-ish shot on a white or transparent background looks best) or replace
    the path with a full https:// image URL. Products without a photo keep their illustration, and a
    photo that fails to load falls back to it automatically.
-   Use photos you have the right to publish: your own shots, a brand's press kit used under its
-   terms, or freely licensed images (for example Wikimedia Commons, with the credit it asks for). */
+   The mouse photos in use come from the ProMouser project (github.com/froodyofficial-maker/promouser),
+   whose licence waives all rights. For others, use photos you have the right to publish. */
 window.LOADOUT_IMAGES = {
-  // gpx2: 'img/gpx2.jpg', // Logitech G Pro X Superlight 2
-  // dav3p: 'img/dav3p.jpg', // Razer DeathAdder V3 Pro
-  // viperv3: 'img/viperv3.jpg', // Razer Viper V3 Pro
+  gpx2: 'img/gpx2.webp', // Logitech G Pro X Superlight 2
+  dav3p: 'img/dav3p.webp', // Razer DeathAdder V3 Pro
+  viperv3: 'img/viperv3.webp', // Razer Viper V3 Pro
   // x2mini: 'img/x2mini.jpg', // Pulsar X2 V2 Mini
-  // ec2c: 'img/ec2c.jpg', // Zowie EC2-C
-  // g502x: 'img/g502x.jpg', // Logitech G502 X Lightspeed
+  ec2c: 'img/ec2c.webp', // Zowie EC2-C
+  g502x: 'img/g502x.webp', // Logitech G502 X Lightspeed
   // naga: 'img/naga.jpg', // Razer Naga V2 Pro
   // g305: 'img/g305.jpg', // Logitech G305 Lightspeed
-  // cobra: 'img/cobra.jpg', // Razer Cobra
+  cobra: 'img/cobra.webp', // Razer Cobra
   // viper8k: 'img/viper8k.jpg', // Razer Viper 8KHz
-  // basv3: 'img/basv3.jpg', // Razer Basilisk V3
+  basv3: 'img/basv3.webp', // Razer Basilisk V3
+  // gm340: 'img/gm340.jpg', // Ant Esports GM340
+  modelo: 'img/modelo.webp', // Glorious Model O
+  // a15: 'img/a15.jpg', // Redgear A-15
+  m711: 'img/m711.webp', // Redragon M711 Cobra
+  // g102: 'img/g102.jpg', // Logitech G102 Lightsync
+  daess: 'img/daess.webp', // Razer DeathAdder Essential
+  // katar: 'img/katar.jpg', // Corsair Katar Pro
+  rival3: 'img/rival3.webp', // SteelSeries Rival 3
+  // pfcore: 'img/pfcore.jpg', // HyperX Pulsefire Core
+  g502hero: 'img/g502hero.webp', // Logitech G502 Hero
+  x3: 'img/x3.webp', // Attack Shark X3
+  // modelominus: 'img/modelominus.jpg', // Glorious Model O-
+  // bv3xhs: 'img/bv3xhs.jpg', // Razer Basilisk V3 X HyperSpeed
   // w60he: 'img/w60he.jpg', // Wooting 60HE+
   // hv3tkl: 'img/hv3tkl.jpg', // Razer Huntsman V3 Pro TKL
   // apextkl: 'img/apextkl.jpg', // SteelSeries Apex Pro TKL (2023)
@@ -56,4 +69,13 @@ window.LOADOUT_IMAGES = {
   // sw2pro: 'img/sw2pro.jpg', // Nintendo Switch 2 Pro Controller
   // wolv3: 'img/wolv3.jpg', // Razer Wolverine V3 Pro
   // g923: 'img/g923.jpg', // Logitech G923 Racing Wheel
+  // xlheavy: 'img/xlheavy.jpg', // Glorious XL Heavy
+  // g240: 'img/g240.jpg', // Logitech G240
+  // gigantus: 'img/gigantus.jpg', // Razer Gigantus V2 (Large)
+  // g640: 'img/g640.jpg', // Logitech G640 (Large)
+  // gsrse: 'img/gsrse.jpg', // Zowie G-SR-SE
+  // strider: 'img/strider.jpg', // Razer Strider (Large)
+  // qckheavy: 'img/qckheavy.jpg', // SteelSeries QcK Heavy (Large)
+  // es2: 'img/es2.jpg', // Pulsar ES2 (Large)
+  // mm700: 'img/mm700.jpg', // Corsair MM700 RGB Extended
 };

@@ -22,11 +22,12 @@ npm start            # serves the project at http://localhost:8080
 
 ## GearGuide (hardware advisor)
 
-`hardware-advisor/` is GearGuide, a separate static website that recommends gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels) from your games, budget, hands and setup. A short setup (welcome, then games, hand length and product types) builds a dashboard where every preference can be changed live. Each pick comes with a match percentage, the reasons it fits, strengths and weaknesses, and cheaper or pricier alternatives. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`.
+`hardware-advisor/` is GearGuide, a separate static website that helps people who are new to gaming choose gaming hardware (mice, keyboards, headsets, monitors, controllers and wheels, mouse pads) from their games, budget, hands and setup. A short setup builds a dashboard where every preference can be changed live; each pick has a match score, plain-English reasons, strengths and weaknesses, alternatives, and its own product page. Open `hardware-advisor/index.html` straight from disk, or browse to `/hardware-advisor/` with `npm start`. The layout and type follow the ProMouser project.
 
-- **Catalog:** `hardware-advisor/data.js`. Each product has a typical US street price and the manufacturer list price, both checked in October 2026.
-- **Currencies:** prices convert with live European Central Bank rates (via the free Frankfurter API) and fall back to built-in rates from 15 Oct 2026 when offline.
-- **Product photos:** add them in `hardware-advisor/images.js` (a file in `hardware-advisor/img/` or an image URL per product id). Products without a photo show an illustration drawn from their real shape and brand colors.
+- **Catalogue:** `hardware-advisor/data.js`, with typical US street prices and list prices checked in October 2026, the games list and the jargon buster.
+- **Currencies:** live European Central Bank rates (via Frankfurter), with built-in rates as an offline fallback.
+- **Product photos:** `hardware-advisor/images.js` and `hardware-advisor/img/`. 13 mouse photos come from the ProMouser project; other products show an illustration drawn from their real shape and brand colours.
+- **AI chat (`chat.js`):** a built-in assistant that answers from GearGuide's own data and works offline. Visitors can optionally save their own Anthropic API key (kept only in their browser) to get open-ended answers from Claude Opus 5.5. `vendor/anthropic-sdk.js` is the official `@anthropic-ai/sdk` 1.6.0 bundled for browsers with esbuild (Apache-2.0, licence alongside it), loaded only when a key is used.
 
 ## Build
 

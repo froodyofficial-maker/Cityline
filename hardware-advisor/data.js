@@ -506,5 +506,27 @@ window.LOADOUT = (() => {
       cons: ['Needs a wide desk', 'Needs a USB connection for its lighting and hub', 'Pricey compared with plain pads'] },
   ];
 
-  return { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED };
+  // Plain-English explanations for people new to gaming hardware (shown on the dashboard and used by the AI).
+  const GLOSSARY = [
+    { id: 'match', cat: 'GearGuide', term: 'Match %', text: 'How well a product fits you, out of 100, from your games, your hands and setup, and your budget. It is not a review score: a 70% product can be great, just less suited to you.' },
+    { id: 'dpi', cat: 'Mouse', term: 'DPI (or CPI)', text: 'How far the cursor moves when you move the mouse. Higher is not better: most players use 400 to 1600. Every gaming mouse here goes high enough, so you can ignore big DPI numbers on the box.' },
+    { id: 'polling', cat: 'Mouse', term: 'Polling rate (Hz)', text: 'How often the mouse reports to the PC each second. 1000 Hz is plenty for almost everyone; 4000 to 8000 Hz is a small extra for fast shooters on high refresh rate monitors.' },
+    { id: 'weight', cat: 'Mouse', term: 'Mouse weight (grams)', text: 'Light mice (under about 65 g) are quicker to flick around, which helps in shooters. Heavier mice feel steadier. Neither is wrong; it is a comfort choice.' },
+    { id: 'grip', cat: 'Mouse', term: 'Palm, claw and fingertip grip', text: 'Palm: your whole hand rests on the mouse. Claw: your palm touches the back and your fingers arch. Fingertip: only your fingertips touch it. Not sure? Pick "Not sure" and we will not penalise any shape.' },
+    { id: 'shape', cat: 'Mouse', term: 'Ergonomic vs symmetric', text: 'Ergonomic mice are shaped for the right hand and support it more. Symmetric mice are the same on both sides, so they suit left-handers too, though the side buttons are usually on the left only.' },
+    { id: 'wireless', cat: 'All gear', term: 'Wired vs wireless', text: 'Modern gaming wireless (2.4 GHz with a USB dongle) is as fast as a cable. Bluetooth is slower and better for laptops and travel. Wireless costs more and needs charging.' },
+    { id: 'switches', cat: 'Keyboard', term: 'Mechanical switches', text: 'The part under each key. Linear switches feel smooth, tactile ones have a small bump, and clicky ones make a loud click. Clicky keyboards can annoy people nearby.' },
+    { id: 'rapid', cat: 'Keyboard', term: 'Rapid Trigger', text: 'A feature of magnetic (Hall-effect) keyboards that resets a key the moment you start lifting it. It helps quick movement in games like Valorant and CS2, and does little for other games.' },
+    { id: 'layout', cat: 'Keyboard', term: 'Full-size, TKL, 75% and 60%', text: 'Keyboard sizes. Full-size has a number pad. Tenkeyless (TKL) drops the number pad, giving your mouse more room. 75% and 60% are smaller still; 60% even drops the arrow keys.' },
+    { id: 'openback', cat: 'Headset', term: 'Open-back vs closed-back', text: 'Open-back headphones sound more spacious and make it easier to tell where sounds come from, but people nearby can hear them. Closed-back headphones keep sound in and block noise.' },
+    { id: 'refresh', cat: 'Monitor', term: 'Refresh rate (Hz)', text: 'How many times a second the screen updates. 60 Hz is a basic screen; 144 to 180 Hz feels much smoother and is a great first upgrade; 240 Hz and above mainly helps competitive shooters. Your PC needs to be fast enough to use it.' },
+    { id: 'resolution', cat: 'Monitor', term: 'Resolution (1080p, 1440p, 4K)', text: 'How sharp the picture is. 1080p suits 24-inch screens and modest PCs, 1440p is the sweet spot at 27 inches, and 4K is very sharp but needs a powerful graphics card.' },
+    { id: 'panel', cat: 'Monitor', term: 'IPS, VA, TN and OLED', text: 'Screen technologies. IPS has good colours, VA has deep blacks, TN is fast but washed out, and OLED has perfect blacks and very fast response but costs more and can get burn-in from static images.' },
+    { id: 'hdmi21', cat: 'Monitor', term: 'HDMI 2.1', text: 'The connection PlayStation 5 and Xbox Series X need to run games at 120 frames per second on a 4K screen. It only matters if you play on a console.' },
+    { id: 'hall', cat: 'Controller', term: 'Hall-effect (or TMR) sticks', text: 'Thumbsticks that use magnets instead of parts that rub together, so they resist "stick drift", where a stick moves on its own after wear.' },
+    { id: 'paddles', cat: 'Controller', term: 'Back paddles', text: 'Extra buttons on the back of a controller. You can press them without moving your thumbs off the sticks, which helps in shooters.' },
+    { id: 'pad', cat: 'Mouse pad', term: 'Control vs speed pads', text: 'Soft cloth "control" pads slow the mouse slightly so it stops exactly where you want. Harder or hybrid "speed" pads glide faster. A bigger pad gives you room for big arm movements.' },
+  ];
+
+  return { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED, GLOSSARY };
 })();

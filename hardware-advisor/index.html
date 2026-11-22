@@ -7,138 +7,176 @@
 <meta name="description" content="Gaming hardware recommendations matched to your games, budget and hands, with the reasons why.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="styles.css">
+<script>
+  // Apply the saved accent colour before the first paint.
+  try { const a = localStorage.getItem('gearguide-accent'); if (a) document.documentElement.dataset.accent = a; } catch { /* storage unavailable */ }
+</script>
 </head>
 <body>
 
+<header class="topbar">
+  <div class="wrap topin">
+    <a class="logo" href="#" id="logo" aria-label="GearGuide home"><span class="logomark" aria-hidden="true">GG</span><span class="logotext">GearGuide</span></a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <button type="button" class="navlink" data-nav="recommend">Recommend</button>
+      <div class="menu">
+        <button type="button" class="navlink" id="productsBtn" aria-haspopup="true" aria-expanded="false">Products <span class="caret" aria-hidden="true">▾</span></button>
+        <div class="dropdown" id="productsMenu" hidden></div>
+      </div>
+      <button type="button" class="navlink" data-nav="how">How it works</button>
+      <button type="button" class="navlink" data-nav="glossary">Jargon buster</button>
+      <button type="button" class="navlink" data-nav="setup">Setup</button>
+    </nav>
+    <div class="topright">
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Accent colour"></div>
+      <button type="button" class="btn btn-primary btn-sm" id="askNav"><span aria-hidden="true">✦</span> Ask AI</button>
+      <button type="button" class="iconbtn burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
 <!-- 1. Welcome -->
-<section id="welcome" class="screen center">
-  <h1>Welcome to GearGuide</h1>
-  <p class="lead">Get recommended products that you'll like</p>
-  <button type="button" class="pillbtn" id="start">Get Started <span aria-hidden="true">→</span></button>
+<section id="welcome" class="screen">
+  <div class="wrap hero">
+    <div class="herocopy">
+      <p class="eyebrow">New to gaming gear? Start here</p>
+      <h1 class="display">Find gear that<br><span class="acc">fits how</span><br>you play.</h1>
+      <p class="lead">Buying your first gaming mouse, keyboard or headset? Tell us what you play, how big your hands are and what you want to spend. GearGuide picks gear that fits you and explains every choice in plain English, no jargon needed. There's no single "best" here, only the best fit for you.</p>
+      <div class="ctas">
+        <button type="button" class="btn btn-primary" id="start">Get started <span aria-hidden="true">→</span></button>
+        <button type="button" class="btn btn-ghost" data-open-chat>Ask GearGuide AI</button>
+      </div>
+      <div class="stats" id="heroStats"></div>
+    </div>
+    <div class="heroart" id="heroArt" aria-hidden="true"></div>
+  </div>
+  <div class="wrap steps" id="steps">
+    <article class="card step"><span class="stepicon" aria-hidden="true">🎮</span><h3>1. Pick your games</h3><p>Shooters, MMOs, racing, Minecraft or a mix. Each game asks different things of your gear, and we know what.</p></article>
+    <article class="card step"><span class="stepicon" aria-hidden="true">✋</span><h3>2. Set your preferences</h3><p>Hand size, budget and desk space. Not sure about something? Skip it; the defaults work for most people.</p></article>
+    <article class="card step"><span class="stepicon" aria-hidden="true">✓</span><h3>3. Get your shortlist</h3><p>A varied set of picks with a match score, why each one fits and what to watch out for. Stuck on a word? Ask the AI.</p></article>
+  </div>
 </section>
 
 <!-- 2. Prepare -->
-<section id="prepare" class="screen center" hidden>
-  <h1>Prepare your dashboard</h1>
-  <p class="lead small">Add your preferences to customize your recommendations.<br>Extra customization can be done at the prepared dashboard.</p>
-  <form id="prepForm" class="prep" autocomplete="off" onsubmit="return false">
-    <div class="glass prepcard">
-      <h2>Games played</h2>
-      <div class="lines" id="prepGames"></div>
-      <button type="button" class="addline" id="addLine"><span aria-hidden="true">+</span> Add another game</button>
-    </div>
-    <div class="glass prepcard">
-      <h2><label for="prepHand">Hand length (in cm)</label></h2>
-      <input id="prepHand" class="line" type="number" min="12" max="25" step="0.5" placeholder="e.g. 18" inputmode="decimal">
-      <small class="hint">Wrist crease to the tip of your middle finger</small>
-    </div>
-    <div class="glass prepcard">
-      <h2>Product</h2>
-      <div id="prepProducts" class="checks" role="group" aria-label="Products to include"></div>
-    </div>
-  </form>
-  <p class="prep-error" id="prepError" role="alert"></p>
-  <button type="button" class="pillbtn" id="build">Build my dashboard <span aria-hidden="true">→</span></button>
-  <datalist id="gameList"></datalist>
+<section id="prepare" class="screen" hidden>
+  <div class="wrap">
+    <p class="eyebrow">Setup</p>
+    <h1 class="display">Prepare your <span class="acc">dashboard</span></h1>
+    <p class="lead">Add your preferences to customize your recommendations. Only the games matter to get started; you can change everything later on the dashboard.</p>
+    <form id="prepForm" class="prep" autocomplete="off" onsubmit="return false">
+      <div class="card prepcard">
+        <h2>Games played</h2>
+        <small class="hint">Type a game, or press ▼ to see them all.</small>
+        <div class="lines" id="prepGames"></div>
+        <button type="button" class="addline" id="addLine"><span aria-hidden="true">+</span> Add another game</button>
+      </div>
+      <div class="card prepcard">
+        <h2><label for="prepHand">Hand length (in cm)</label></h2>
+        <input id="prepHand" class="line" type="number" min="12" max="25" step="0.5" placeholder="e.g. 18" inputmode="decimal">
+        <small class="hint">Measure from the crease of your wrist to the tip of your middle finger. Not sure? Leave it blank and we'll assume a medium hand.</small>
+      </div>
+      <div class="card prepcard">
+        <h2>Product</h2>
+        <div id="prepProducts" class="checks" role="group" aria-label="Products to include"></div>
+      </div>
+    </form>
+    <p class="prep-error" id="prepError" role="alert"></p>
+    <button type="button" class="btn btn-primary" id="build">Build my dashboard <span aria-hidden="true">→</span></button>
+  </div>
 </section>
 
 <!-- 3. Loading -->
 <section id="loading" class="screen center" hidden>
-  <h1>Loading dashboard</h1>
+  <p class="eyebrow">GearGuide</p>
+  <h1 class="display">Loading <span class="acc">dashboard</span></h1>
   <div class="spinner" role="progressbar" aria-label="Loading"></div>
 </section>
 
-<!-- 5. Product page -->
-<section id="product" class="product" hidden><div id="productBody" class="pwrap"></div></section>
-
 <!-- 4. Dashboard -->
-<div id="dashboard" class="dash" hidden>
-  <aside class="side" id="side">
-    <h1>Dashboard</h1>
+<div id="dashboard" hidden>
+  <section class="wrap dhead">
+    <p class="eyebrow">Your recommendations</p>
+    <h1 class="display" id="title"></h1>
+    <p id="summary" class="summary"></p>
+  </section>
 
-    <div class="sgroup">
-      <h3>Games</h3>
-      <div id="gameChips" class="chips"></div>
-      <div id="gamePicker" class="picker glass" hidden>
-        <input id="gameSearch" type="search" placeholder="Search games…" aria-label="Search games">
-        <div id="gameOptions" class="options"></div>
+  <div class="wrap typerow">
+    <div id="types" class="tabs" role="tablist" aria-label="Product type"></div>
+    <div class="typetools">
+    <button type="button" class="btn btn-ghost btn-sm" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More filters <span class="caret" aria-hidden="true">▾</span></button>
+    <label class="tool">Sort
+      <select id="sort" class="sel">
+        <option value="match">Best match</option>
+        <option value="low">Price: low to high</option>
+        <option value="high">Price: high to low</option>
+      </select>
+    </label>
+    </div>
+  </div>
+
+  <section class="wrap" aria-label="Filters">
+    <div class="filters card" id="filters">
+      <div class="fgroup fgames">
+        <span class="flabel">Games</span>
+        <div id="gameChips" class="chips"></div>
+        <div id="gamePicker" class="picker" hidden>
+          <input id="gameSearch" type="search" placeholder="Search games…" aria-label="Search games">
+          <div id="gameOptions" class="options"></div>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label class="flabel" for="budget">Budget</label>
+        <div class="budgetrow">
+          <select id="budget" class="sel"></select>
+          <select id="currency" class="sel cur" aria-label="Currency" aria-describedby="fxnote"></select>
+        </div>
+      </div>
+      <div class="fgroup" data-for="mouse">
+        <span class="flabel">Hand</span>
+        <div id="handed" class="radios" role="radiogroup" aria-label="Hand preference"></div>
+      </div>
+      <div class="fgroup" data-for="mouse">
+        <label class="flabel" for="weight">Weight</label>
+        <select id="weight" class="sel"></select>
+      </div>
+      <div class="fgroup" data-for="mouse controller">
+        <label class="flabel" for="hand">Hand length</label>
+        <select id="hand" class="sel"></select>
+      </div>
+
+      <div class="morepanel" id="morePanel" hidden>
+        <div class="mgroup"><span class="flabel">Platforms</span><div id="platforms" class="chips"></div></div>
+        <fieldset class="mgroup"><legend class="flabel">Show product types</legend><div id="cats" class="checks"></div></fieldset>
+        <div class="mgroup"><label class="flabel" for="grip">Mouse grip</label><select id="grip" class="sel"></select></div>
+        <div class="mgroup"><label class="flabel" for="desk">Desk space</label><select id="desk" class="sel"></select></div>
+        <div class="mgroup"><label class="flabel" for="conn">Connection</label><select id="conn" class="sel"></select></div>
+        <div class="mgroup toggles">
+          <label class="toggle"><input type="checkbox" data-key="glasses"><span></span>I wear glasses</label>
+          <label class="toggle"><input type="checkbox" data-key="long"><span></span>I play 3+ hours at a time</label>
+          <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around others</label>
+        </div>
+        <div class="mgroup"><button type="button" class="linkbtn" id="restart">Restart setup</button></div>
       </div>
     </div>
+  </section>
 
-    <div class="sgroup">
-      <h3><label for="budget">Budget</label></h3>
-      <div class="budgetrow">
-        <select id="budget" class="sel"></select>
-        <select id="currency" class="sel cur" aria-label="Currency" aria-describedby="fxnote"></select>
-      </div>
-    </div>
-
-    <div class="sgroup">
-      <h3>Product type</h3>
-      <div id="types" class="chips"></div>
-    </div>
-
-    <div class="sgroup" data-for="mouse">
-      <h3>Hand preferences</h3>
-      <div id="handed" class="radios" role="radiogroup" aria-label="Hand preference"></div>
-    </div>
-
-    <div class="sgroup" data-for="mouse">
-      <h3><label for="weight">Weight preference</label></h3>
-      <select id="weight" class="sel"></select>
-    </div>
-
-    <div class="sgroup" data-for="mouse controller">
-      <h3><label for="hand">Hand length</label></h3>
-      <select id="hand" class="sel"></select>
-    </div>
-
-    <details class="sgroup more" id="morePrefs">
-      <summary>More preferences</summary>
-      <div class="mgroup"><h4>Platforms</h4><div id="platforms" class="chips"></div></div>
-      <fieldset class="mgroup"><legend>Show product types</legend><div id="cats" class="checks"></div></fieldset>
-      <div class="mgroup"><h4><label for="grip">Mouse grip</label></h4><select id="grip" class="sel"></select></div>
-      <div class="mgroup"><h4><label for="desk">Desk space</label></h4><select id="desk" class="sel"></select></div>
-      <div class="mgroup"><h4><label for="conn">Connection</label></h4><select id="conn" class="sel"></select></div>
-      <label class="toggle"><input type="checkbox" data-key="glasses"><span></span>I wear glasses</label>
-      <label class="toggle"><input type="checkbox" data-key="long"><span></span>I play 3+ hours at a time</label>
-      <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around others</label>
-    </details>
-
-    <button type="button" class="linkbtn" id="restart">Restart setup</button>
-  </aside>
-
-  <main class="main" id="results" aria-live="polite">
-    <header class="mhead">
-      <div>
-        <h2 id="title"></h2>
-        <p id="summary" class="summary"></p>
-      </div>
-      <div class="tools">
-        <label class="tool">Sort
-          <select id="sort" class="sel">
-            <option value="match">Best match</option>
-            <option value="low">Price: low to high</option>
-            <option value="high">Price: high to low</option>
-          </select>
-        </label>
-      </div>
-    </header>
+  <main class="wrap" id="results" aria-live="polite">
     <p class="note">No product is best for everyone. Matches reflect only what you told us, and popularity never affects a score. <span id="fxnote"></span></p>
-    <section id="overview" class="overview glass"></section>
+    <section id="overview" class="overview card"></section>
     <div id="out"></div>
 
     <section class="how" id="how">
-      <h2>How GearGuide picks</h2>
-      <p class="howlead">Every product gets one score out of 100, built from three things about you. Nothing here is sponsored, and no product is ranked higher for being popular.</p>
+      <p class="eyebrow">How it works</p>
+      <h2 class="display">How GearGuide <span class="acc">picks</span></h2>
+      <p class="howlead">Every product gets one score out of 100, built from what you told us. Nothing here is sponsored, and no product is ranked higher for being popular.</p>
       <div class="howgrid">
-        <article class="glass"><span class="hn">1</span><h3>Game fit</h3><p>Each game asks different things of your gear: fast reactions, precise aim, lots of keybinds, hearing footsteps, sharp visuals. We blend the games you play, then see how well each product delivers. If your games barely use a product type (say, a mouse for a controller game), game fit counts for less and comfort and value decide instead.</p></article>
-        <article class="glass"><span class="hn">2</span><h3>Comfort</h3><p>Your hand length, grip, handedness, weight preference, desk space and play habits decide whether something feels right. A mouse that is too big for your hand, or a monitor too large for your desk, loses points and tells you why.</p></article>
-        <article class="glass"><span class="hn">3</span><h3>Budget</h3><p>Products inside your range are shown first. Over-budget options stay in the full list, and every card suggests a cheaper and a pricier alternative so you can see what the money buys.</p></article>
+        <article class="card"><span class="hn">1</span><h3>Game fit</h3><p>Each game asks different things of your gear: fast reactions, precise aim, lots of keybinds, hearing footsteps, sharp visuals. We blend the games you play, then see how well each product delivers. If your games barely use a product type (say, a mouse for a controller game), game fit counts for less and comfort and value decide instead.</p></article>
+        <article class="card"><span class="hn">2</span><h3>Comfort</h3><p>Your hand length, grip, handedness, weight preference, desk space and play habits decide whether something feels right. A mouse that is too big for your hand, or a monitor too large for your desk, loses points and tells you why.</p></article>
+        <article class="card"><span class="hn">3</span><h3>Value &amp; budget</h3><p>Products inside your range come first, and cheaper ones inside it score a little higher. Over-budget options stay in the full list, and every card suggests a cheaper and a pricier alternative.</p></article>
       </div>
-      <div class="howfoot glass">
+      <div class="howfoot card">
         <div><b>A varied shortlist</b><p>The top picks aren't six near-copies. You get the closest fit, plus a best-value pick, a lesser-known gem, a premium option and a different take, each labelled.</p></div>
         <div><b>Lesser-known picks</b><p>Smaller brands are ranked on fit alone and tagged, so a great mouse nobody has heard of isn't buried.</p></div>
         <div><b>Prices</b><p>Typical US prices, checked October 2026, shown next to the official list price and converted to your currency. Always check a live price before you buy.</p></div>
@@ -146,12 +184,60 @@
         <div><b>How we rate</b><p>Speed, aim and comfort ratings are our own judgement from spec sheets and published reviews, not lab tests, so treat them as a guide.</p></div>
       </div>
     </section>
+
+    <section class="glossary" id="glossary">
+      <p class="eyebrow">New to this?</p>
+      <h2 class="display">Jargon <span class="acc">buster</span></h2>
+      <p class="howlead">The words you'll see on product boxes and in reviews, explained simply. You can also ask the AI about any of them.</p>
+      <div class="glossgrid" id="glossaryGrid"></div>
+    </section>
   </main>
 </div>
+
+<!-- 5. Product page -->
+<section id="product" class="product" hidden><div id="productBody" class="wrap pwrap"></div></section>
+
+<footer class="foot wrap">
+  <span>GearGuide · Prices are typical US prices checked October 2026. Mouse photos from the ProMouser project.</span>
+</footer>
+
+<!-- AI chat -->
+<button type="button" class="fab" id="chatFab" data-open-chat aria-label="Ask GearGuide AI"><span aria-hidden="true">✦</span> Ask AI</button>
+<aside class="chat" id="chat" hidden aria-label="GearGuide AI chat">
+  <header class="chathead">
+    <div>
+      <p class="eyebrow">GearGuide AI</p>
+      <p class="chatmode" id="chatMode"></p>
+    </div>
+    <div class="chatbtns">
+      <button type="button" class="iconbtn" id="chatSettingsBtn" aria-label="AI settings" aria-expanded="false" aria-controls="chatSettings">⚙</button>
+      <button type="button" class="iconbtn" id="chatClose" aria-label="Close chat">✕</button>
+    </div>
+  </header>
+  <div class="chatsettings" id="chatSettings" hidden>
+    <h3>Connect Claude (optional)</h3>
+    <p>The built-in assistant answers from GearGuide's own data and works for everyone. To also get open-ended answers from Claude, paste your own Anthropic API key.</p>
+    <label class="flabel" for="apiKey">Anthropic API key</label>
+    <input id="apiKey" class="field" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+    <div class="setrow">
+      <button type="button" class="btn btn-primary btn-sm" id="saveKey">Save key</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="removeKey">Remove key</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="useClaude"><span></span>Answer with Claude when a key is saved</label>
+    <p class="fine">Your key is kept only in this browser and is sent only to Anthropic's API (api.anthropic.com). Anyone using this browser could use it, so don't save it on a shared computer. Claude use is billed to your Anthropic account.</p>
+  </div>
+  <div class="chatlog" id="chatLog" role="log" aria-live="polite"></div>
+  <div class="chatsuggest" id="chatSuggest"></div>
+  <form class="chatform" id="chatForm" autocomplete="off">
+    <textarea id="chatInput" rows="1" placeholder="Ask about gear, games or your picks…" aria-label="Message"></textarea>
+    <button type="submit" class="btn btn-primary btn-sm" id="chatSend" aria-label="Send">Send</button>
+  </form>
+</aside>
 
 <script src="data.js"></script>
 <script src="images.js"></script>
 <script src="art.js"></script>
 <script src="app.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>

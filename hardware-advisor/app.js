@@ -1,7 +1,7 @@
 /* GearGuide: scores every product against the user's games, body, setup and budget,
    then explains the score. Popularity (`pop`) is display-only. */
 (() => {
-  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED } = window.LOADOUT;
+  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED, GLOSSARY } = window.LOADOUT;
   const art = window.LOADOUT_ART;
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
   const GAME = Object.fromEntries(GAMES.map(g => [g.id, g]));
@@ -591,7 +591,6 @@
   }
 
   function renderPrepare() {
-    $('#gameList').innerHTML = GAMES.map(g => `<option value="${esc(g.name)}">`).join('');
     const names = state.games.map(id => GAME[id].name);
     $('#prepGames').innerHTML = '';
     for (let i = 0; i < Math.max(4, names.length); i++) addGameLine(names[i] || '');
@@ -605,16 +604,81 @@
     const box = $('#prepGames');
     const n = box.children.length;
     if (n >= MAX_GAMES) return;
-    const input = document.createElement('input');
-    input.className = 'line';
-    input.setAttribute('list', 'gameList');
-    input.setAttribute('aria-label', 'Game ' + (n + 1));
-    input.placeholder = n ? '' : 'e.g. Minecraft';
-    input.value = value;
-    box.appendChild(input);
+    const wrap = document.createElement('div');
+    wrap.className = 'combo';
+    const listId = 'gl' + n;
+    wrap.innerHTML = `<input class="line" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}" aria-label="Game ${n + 1}" placeholder="${n ? '' : 'e.g. Minecraft'}">`
+      + `<button type="button" class="combo-btn" tabindex="-1" aria-label="Show all games" aria-expanded="false">▼</button>`
+      + `<div class="combolist" id="${listId}" role="listbox" hidden></div>`;
+    wrap.querySelector('input').value = value;
+    box.appendChild(wrap);
     $('#addLine').hidden = box.children.length >= MAX_GAMES;
-    return input;
+    return wrap.querySelector('input');
   }
+
+  // Game combobox: typing filters the list; the arrow button always shows every game,
+  // even when something is already typed, with the current pick highlighted.
+  let combo = null; // { wrap, input, list, items, active }
+  function comboOpen(wrap, showAll) {
+    if (combo && combo.wrap !== wrap) comboClose();
+    const input = wrap.querySelector('input'), list = wrap.querySelector('.combolist');
+    const q = input.value.trim().toLowerCase();
+    const items = showAll || !q ? GAMES : GAMES.filter(g => g.name.toLowerCase().includes(q) || g.genre.toLowerCase().includes(q) || Object.keys(ALIASES).some(k => k.startsWith(q) && ALIASES[k] === g.id));
+    const current = findGame(input.value);
+    list.innerHTML = items.length
+      ? items.map((g, i) => `<div role="option" id="${list.id}-${i}" data-game="${g.id}" aria-selected="false" class="${current && current.id === g.id ? 'current' : ''}">${esc(g.name)}<small>${esc(g.genre)}</small></div>`).join('')
+      : '<div class="none">No games match. Press the arrow to see them all.</div>';
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    wrap.querySelector('.combo-btn').setAttribute('aria-expanded', 'true');
+    combo = { wrap, input, list, items, active: -1, showAll: !!showAll };
+    if (showAll && current) { const el = list.querySelector('.current'); if (el) el.scrollIntoView({ block: 'nearest' }); }
+  }
+  function comboClose() {
+    if (!combo) return;
+    combo.list.hidden = true;
+    combo.input.setAttribute('aria-expanded', 'false');
+    combo.input.removeAttribute('aria-activedescendant');
+    combo.wrap.querySelector('.combo-btn').setAttribute('aria-expanded', 'false');
+    combo = null;
+  }
+  function comboPick(id) {
+    if (!combo) return;
+    combo.input.value = GAME[id].name;
+    const input = combo.input;
+    comboClose();
+    input.focus();
+  }
+  function comboMove(step) {
+    if (!combo || !combo.items.length) return;
+    combo.active = (combo.active + step + combo.items.length) % combo.items.length;
+    combo.list.querySelectorAll('[role="option"]').forEach((el, i) => el.setAttribute('aria-selected', i === combo.active));
+    const el = combo.list.querySelector(`#${combo.list.id}-${combo.active}`);
+    if (el) { el.scrollIntoView({ block: 'nearest' }); combo.input.setAttribute('aria-activedescendant', el.id); }
+  }
+  $('#prepGames').addEventListener('input', e => { const w = e.target.closest('.combo'); if (w) comboOpen(w, false); });
+  $('#prepGames').addEventListener('focusin', e => { const w = e.target.closest('.combo'); if (w && e.target.matches('input') && !e.target.value) comboOpen(w, false); });
+  $('#prepGames').addEventListener('mousedown', e => {
+    const btn = e.target.closest('.combo-btn');
+    if (btn) {
+      e.preventDefault(); // keep focus in the input
+      const w = btn.closest('.combo');
+      // A filtered list switches to the full list; only a full list closes again.
+      if (combo && combo.wrap === w && combo.showAll) comboClose(); else { comboOpen(w, true); w.querySelector('input').focus(); }
+      return;
+    }
+    const opt = e.target.closest('[role="option"]');
+    if (opt) { e.preventDefault(); comboPick(opt.dataset.game); }
+  });
+  $('#prepGames').addEventListener('keydown', e => {
+    const w = e.target.closest('.combo');
+    if (!w) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!combo || combo.wrap !== w) comboOpen(w, e.altKey || !e.target.value); comboMove(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (combo) comboMove(-1); }
+    else if (e.key === 'Escape' && combo) { e.stopPropagation(); comboClose(); }
+    else if (e.key === 'Enter' && combo && combo.active >= 0) { e.preventDefault(); e.stopPropagation(); comboPick(combo.items[combo.active].id); }
+  });
+  document.addEventListener('mousedown', e => { if (combo && !combo.wrap.contains(e.target)) comboClose(); });
 
   function checkbox(id, label, checked, attrs) {
     return `<label class="check"><input type="checkbox" ${attrs} ${checked ? 'checked' : ''}><span class="box" aria-hidden="true"></span><span class="ctext">${esc(label)}</span></label>`;
@@ -636,6 +700,7 @@
   }
 
   function buildDashboard() {
+    comboClose();
     const typed = [...document.querySelectorAll('#prepGames input')].map(i => i.value).filter(v => v.trim());
     const found = typed.map(findGame);
     const unknown = typed.filter((t, i) => !found[i]);
@@ -706,9 +771,15 @@
   }
   const toggleIn = (arr, v) => { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); };
 
-  $('#side').addEventListener('click', e => {
+  $('#dashboard').addEventListener('click', e => {
     const t = e.target.closest('button');
-    if (!t) return;
+    if (!t || t.closest('#out, #overview')) return;
+    if (t.id === 'moreBtn') {
+      const p = $('#morePanel');
+      p.hidden = !p.hidden;
+      t.setAttribute('aria-expanded', !p.hidden);
+      return;
+    }
     if (t.id === 'addGame') {
       const p = $('#gamePicker');
       p.hidden = !p.hidden;
@@ -729,11 +800,15 @@
       t.setAttribute('aria-pressed', state.platforms.includes(t.dataset.platform));
       changed();
     } else if (t.id === 'restart') {
-      state.onboarded = false; save();
-      renderPrepare(); show('prepare');
+      goSetup();
     }
   });
-  $('#side').addEventListener('change', e => {
+  // The games list floats over the page, so close it on an outside click.
+  document.addEventListener('click', e => {
+    const p = $('#gamePicker');
+    if (!p.hidden && !p.contains(e.target) && e.target.id !== 'addGame') { p.hidden = true; const b = $('#addGame'); if (b) b.setAttribute('aria-expanded', 'false'); }
+  });
+  $('#dashboard').addEventListener('change', e => {
     const t = e.target;
     if (t.dataset.catbox) {
       const id = t.dataset.catbox;
@@ -767,9 +842,80 @@
   $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); renderBudget(); renderResults(); });
 
   $('#addLine').addEventListener('click', () => addGameLine().focus());
-  $('#start').addEventListener('click', () => { renderPrepare(); show('prepare'); });
+  $('#start').addEventListener('click', () => goSetup());
+
+  /* ---------------- top bar, hero, colours, glossary ---------------- */
+  function clearProductHash() {
+    if (/^#\/p\//.test(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch { /* ignore */ } }
+  }
+  function goSetup(preselect) {
+    state.onboarded = false; save();
+    clearProductHash();
+    if (preselect && !state.cats.includes(preselect)) state.cats.push(preselect);
+    renderPrepare(); show('prepare');
+  }
+  function goDashboard(view, anchor) {
+    if (!state.onboarded) { if (anchor === 'how') { show('welcome'); $('#steps').scrollIntoView({ behavior: 'smooth' }); } else goSetup(view); return; }
+    if (view) {
+      if (!state.cats.includes(view)) { state.cats.push(view); state.cats.sort((x, y) => CATEGORIES.findIndex(c => c.id === x) - CATEGORIES.findIndex(c => c.id === y)); }
+      state.view = view; save();
+    }
+    clearProductHash();
+    openDashboard();
+    if (anchor) requestAnimationFrame(() => document.getElementById(anchor).scrollIntoView({ behavior: 'smooth' }));
+  }
+
+  const ACCENTS = [['volt', '#c8ff2e', 'Volt'], ['ember', '#ff7a1a', 'Ember'], ['cyan', '#22d3ee', 'Cyan'], ['violet', '#a78bfa', 'Violet'], ['rose', '#ff3d6e', 'Rose']];
+  function renderSwatches() {
+    const cur = document.documentElement.dataset.accent || 'volt';
+    $('#swatches').innerHTML = ACCENTS.map(([id, hex, name]) => `<button type="button" class="swatch" role="radio" aria-checked="${id === cur}" aria-label="${name} accent" title="${name}" data-accent="${id}" style="--sw:${hex}"></button>`).join('');
+  }
+  $('#swatches').addEventListener('click', e => {
+    const b = e.target.closest('[data-accent]');
+    if (!b) return;
+    document.documentElement.dataset.accent = b.dataset.accent;
+    try { localStorage.setItem('gearguide-accent', b.dataset.accent); } catch { /* ignore */ }
+    renderSwatches();
+  });
+
+  function renderProductsMenu() {
+    $('#productsMenu').innerHTML = CATEGORIES.map(c => `<button type="button" data-menuview="${c.id}">${esc(c.name)}<small>${PRODUCTS.filter(p => p.cat === c.id).length}</small></button>`).join('');
+  }
+  const closeMenus = () => { $('#productsMenu').hidden = true; $('#productsBtn').setAttribute('aria-expanded', 'false'); };
+  $('#productsBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const m = $('#productsMenu'); m.hidden = !m.hidden;
+    $('#productsBtn').setAttribute('aria-expanded', !m.hidden);
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.menu')) closeMenus(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
+  $('.topbar').addEventListener('click', e => {
+    const t = e.target.closest('[data-nav], [data-menuview], #logo, #burger');
+    if (!t) return;
+    if (t.id === 'burger') { const open = $('#nav').classList.toggle('open'); t.setAttribute('aria-expanded', open); return; }
+    $('#nav').classList.remove('open'); $('#burger').setAttribute('aria-expanded', 'false');
+    if (t.id === 'logo') { e.preventDefault(); state.onboarded ? goDashboard() : (clearProductHash(), show('welcome')); }
+    else if (t.dataset.menuview) { closeMenus(); goDashboard(t.dataset.menuview, 'results'); }
+    else if (t.dataset.nav === 'recommend') goDashboard();
+    else if (t.dataset.nav === 'how') goDashboard(null, 'how');
+    else if (t.dataset.nav === 'glossary') goDashboard(null, 'glossary');
+    else if (t.dataset.nav === 'setup') goSetup();
+  });
+
+  function renderHero() {
+    const n = c => PRODUCTS.filter(p => p.cat === c).length;
+    $('#heroStats').innerHTML = `<div><b>${PRODUCTS.length}</b><span>Products</span></div><div><b>${GAMES.length}</b><span>Games</span></div><div><b>${CATEGORIES.length}</b><span>Product types</span></div><div><b>${n('mouse')}</b><span>Mice</span></div>`;
+    const p = PROD.viperv3;
+    $('#heroArt').innerHTML = (art.hasPhoto(p) ? `<div class="heroph">${art(p)}</div>` : art(p))
+      + `<div class="chipstat c1"><small>Weight</small><b>${p.weight} g</b></div><div class="chipstat c2"><small>Typical price</small><b>${money(p.price)}</b></div><div class="chipstat c3"><small>${esc(p.brand)}</small><b>${esc(p.name)}</b></div>`;
+  }
+
+  // Plain-English explanations for newcomers; the AI assistant uses the same list.
+  function renderGlossary() {
+    $('#glossaryGrid').innerHTML = GLOSSARY.map(g => `<article class="card gterm" id="term-${g.id}"><span class="gtag">${esc(g.cat)}</span><h3>${esc(g.term)}</h3><p>${esc(g.text)}</p></article>`).join('');
+  }
   $('#build').addEventListener('click', buildDashboard);
-  $('#prepForm').addEventListener('keydown', e => { if (e.key === 'Enter') buildDashboard(); });
+  $('#prepForm').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.defaultPrevented) buildDashboard(); });
 
   // Clicking an alternative jumps to its card, or opens the full ranking where it's listed.
   $('#out').addEventListener('click', e => {
@@ -902,6 +1048,7 @@
   function swap(fn) {
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const t = document.startViewTransition(fn);
+      t.ready.catch(() => { /* skipped because a newer navigation started: fine */ });
       t.finished.finally(() => document.querySelectorAll('.vt-src').forEach(el => el.classList.remove('vt-src')));
     } else fn();
   }
@@ -939,6 +1086,20 @@
   });
   window.addEventListener('popstate', () => route(true));
 
+  // A small surface for the AI assistant (chat.js); everything else stays private.
+  window.GearGuide = {
+    get state() { return state; }, CAT, GAME, PROD, GLOSSARY, BUDGETS,
+    computeNeeds, evaluate, rankCategory, alternatives, compatibility, fitForGame, specRows, specLine, comfort,
+    budgetCap, bracketLabel, money, moneyExact, roundMoney, findGame, ALIASES, list, art, PLATFORMS, HAND_WORD, CURRENCY_NAMES,
+    get fx() { return fx; },
+    openProduct: id => openProduct(id, null),
+    onboarded: () => state.onboarded,
+  };
+
+  renderSwatches();
+  renderProductsMenu();
+  renderHero();
+  renderGlossary();
   // Returning visitors go straight to their dashboard (or the product page in the link).
   if (state.onboarded) { openDashboard(); route(false); } else show('welcome');
   loadRates();
