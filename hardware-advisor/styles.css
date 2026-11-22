@@ -496,3 +496,104 @@ body.chat-open .fab { display: none; }
   .chat { inset: 0; width: auto; top: 0; border-radius: 0; }
   .fab { right: 16px; bottom: 16px; }
 }
+
+
+/* ================= Glass theme =================
+   GearGuide's original look (mesh gradient + frosted glass + Inter) over the new layout.
+   The colour picker switches gradient themes; Aurora is the original. */
+:root {
+  --g1: rgba(150, 128, 255, .95); --g2: rgba(8, 170, 105, .95); --g3: rgba(135, 235, 205, .95);
+  --g4: rgba(10, 110, 120, .9); --g5: rgba(30, 24, 160, .9); --gbase: linear-gradient(160deg, #3a2fd6 0%, #15128a 40%, #0d3a78 70%, #0a6d66 100%);
+  --solid: #25239b; --ringbg: rgba(20, 18, 90, .85); --sel: #2b2fd8;
+  --bg: #10106a;
+  --surface: rgba(255, 255, 255, .1); --surface2: rgba(255, 255, 255, .12); --surface3: rgba(255, 255, 255, .2);
+  --line: rgba(255, 255, 255, .22); --line2: rgba(255, 255, 255, .35);
+  --txt: #fff; --mut: rgba(255, 255, 255, .74); --dim: rgba(255, 255, 255, .55);
+  --good: #5ff0b4; --warn: #ffd166; --bad: #ff8fa3; --gem: #bfe9ff;
+  --acc: #ffffff; --acc-ink: var(--sel);
+  --acc-soft: rgba(255, 255, 255, .14); --acc-line: rgba(255, 255, 255, .55);
+  --display: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --radius: 18px;
+}
+:root[data-accent="sunset"] { --g1: rgba(255, 140, 170, .95); --g2: rgba(255, 150, 60, .95); --g3: rgba(255, 210, 140, .9); --g4: rgba(170, 40, 110, .9); --g5: rgba(110, 30, 150, .9); --gbase: linear-gradient(160deg, #7a2fd6 0%, #5a1470 40%, #9a2a5a 70%, #c2562e 100%); --solid: #5a1d6e; --ringbg: rgba(70, 18, 70, .85); --sel: #8a1f6a; }
+:root[data-accent="ocean"] { --g1: rgba(110, 190, 255, .95); --g2: rgba(0, 200, 220, .95); --g3: rgba(150, 240, 255, .9); --g4: rgba(10, 90, 160, .9); --g5: rgba(20, 50, 170, .9); --gbase: linear-gradient(160deg, #1d5fe0 0%, #0c2f8a 40%, #0a4f8a 70%, #078a9a 100%); --solid: #133e9b; --ringbg: rgba(10, 30, 90, .85); --sel: #0f4fd0; }
+:root[data-accent="forest"] { --g1: rgba(160, 230, 120, .95); --g2: rgba(20, 170, 110, .95); --g3: rgba(200, 245, 170, .9); --g4: rgba(10, 100, 80, .9); --g5: rgba(20, 80, 60, .9); --gbase: linear-gradient(160deg, #2f9a5a 0%, #105a3a 40%, #0d5a4a 70%, #3a8a2a 100%); --solid: #145a3e; --ringbg: rgba(10, 50, 35, .85); --sel: #157a44; }
+:root[data-accent="midnight"] { --g1: rgba(120, 110, 200, .8); --g2: rgba(40, 60, 140, .9); --g3: rgba(90, 120, 200, .8); --g4: rgba(20, 30, 80, .9); --g5: rgba(10, 10, 50, .95); --gbase: linear-gradient(160deg, #1b1a4a 0%, #0b0b26 45%, #101836 75%, #16284a 100%); --solid: #1d1c52; --ringbg: rgba(10, 10, 30, .9); --sel: #3b3ab8; }
+
+body { background: var(--bg); font-family: var(--body); }
+body::before {
+  background:
+    radial-gradient(45% 45% at 42% 4%, var(--g1), transparent 70%),
+    radial-gradient(40% 55% at 104% -2%, var(--g2), transparent 70%),
+    radial-gradient(48% 42% at -4% 104%, var(--g3), transparent 70%),
+    radial-gradient(55% 50% at 80% 75%, var(--g4), transparent 70%),
+    radial-gradient(50% 50% at 20% 45%, var(--g5), transparent 70%),
+    var(--gbase);
+}
+.card, .glass, .topbar, .filters, .overview, .chat, .chatsettings, .sel, .chip, .field, .chatform textarea, .picker input, .matchrow, .ovcard, .altcard, details.allrank {
+  backdrop-filter: blur(18px) saturate(130%); -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+.card, .glass { box-shadow: 0 10px 40px rgba(5, 5, 40, .25); }
+.topbar { background: rgba(255, 255, 255, .08); border-bottom-color: var(--line); }
+.dropdown, .picker, .combolist { background: var(--solid); border-color: var(--line2); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.chat { background: rgba(255, 255, 255, .1); }
+.chat .chatsettings { background: rgba(255, 255, 255, .06); }
+.field, .picker input, .chatform textarea { background: rgba(0, 0, 0, .18); }
+.sel { background-color: rgba(255, 255, 255, .14); }
+.sel option { background: var(--solid); }
+body::before { pointer-events: none; }
+
+/* typography back to the original Inter look */
+.display { font-family: var(--display); font-weight: 800; text-transform: none; letter-spacing: -.02em; line-height: 1.02; font-size: clamp(36px, 5.4vw, 68px); }
+.dhead .display, .how .display, .glossary .display { font-size: clamp(30px, 4vw, 50px); }
+.eyebrow { color: rgba(255, 255, 255, .8); }
+.acc { color: #fff; text-shadow: 0 0 30px rgba(255, 255, 255, .35); background: linear-gradient(90deg, #fff, rgba(255, 255, 255, .72)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.logotext { font: 800 22px/1 var(--body); text-transform: none; letter-spacing: -.01em; }
+.logomark { font: 800 14px/1 var(--body); background: #fff; color: var(--sel); }
+.stats b { font: 800 32px/1 var(--body); }
+.chipstat b { font: 800 19px/1.1 var(--body); }
+.ovhead h3, .compare h3 { font: 800 21px/1.2 var(--body); text-transform: none; letter-spacing: 0; }
+.ovtotal b { font: 800 28px/1 var(--body); }
+.ctitle h4 { font: 700 22px/1.15 var(--body); text-transform: none; letter-spacing: 0; }
+.brandline { color: var(--mut); letter-spacing: .02em; text-transform: none; font-weight: 600; font-size: 13px; }
+.pricebox b { font: 800 24px/1 var(--body); }
+.ring::before { background: var(--ringbg); }
+.ring b { font: 800 17px/1 var(--body); }
+.hn { font: 800 16px/1 var(--body); background: #fff; color: var(--sel); border: 0; border-radius: 50%; }
+.pinfo h1 { font: 800 clamp(36px, 4.6vw, 58px)/1.02 var(--body); text-transform: none; letter-spacing: -.01em; }
+.pricebig b { font: 800 44px/1 var(--body); }
+.matchrow .ring b { font-size: 24px; }
+.psec h2, .psec2 h2 { font: 800 22px/1.2 var(--body); text-transform: none; letter-spacing: 0; }
+.alttxt b { font: 700 17px/1.2 var(--body); text-transform: none; letter-spacing: 0; }
+.alttxt small, .ovtxt small, .gtag, .alt .lbl, .psec2 h4 { color: var(--mut); }
+
+/* buttons and selections: glass pills, white when selected (the original look) */
+.btn-primary, .pillbtn, .fab { background: rgba(255, 255, 255, .18); color: #fff; border: 1px solid var(--line2); box-shadow: 0 8px 30px rgba(10, 10, 80, .25); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.btn-primary:hover, .pillbtn:hover, .fab:hover { background: rgba(255, 255, 255, .28); box-shadow: 0 10px 34px rgba(10, 10, 80, .35); }
+.btn-ghost { border-color: var(--line2); }
+.btn-ghost:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, .1); }
+.chip[aria-pressed="true"], .tabs .chip[aria-pressed="true"] { background: #fff; color: var(--sel); border-color: #fff; }
+.check input:checked + .box { background: #fff; border-color: #fff; }
+.check .box::after { border-color: var(--sel); }
+.toggle input:checked + span { background: var(--good); border-color: var(--good); }
+.toggle input:checked + span::after { background: #fff; }
+.radio input:checked + i { border-color: #fff; background: radial-gradient(circle, #fff 0 4px, transparent 5px); }
+article.card.first { border-color: rgba(255, 255, 255, .55); }
+article.card.first .rank { background: #fff; color: var(--sel); border-color: #fff; }
+.rank { background: rgba(255, 255, 255, .2); border-color: var(--line2); backdrop-filter: blur(10px); }
+.pimg { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--cc) 35%, transparent), transparent 65%), rgba(255, 255, 255, .08); border: 1px solid var(--line); }
+.pheroart { background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--cc) 38%, transparent), transparent 66%), rgba(255, 255, 255, .08); }
+.cardlinks .more:hover { background: #fff; color: var(--sel); border-color: #fff; }
+.bar i, .gf i { background: rgba(255, 255, 255, .16); }
+.bar i::after, .gf i::after { background: #fff; }
+.msg.user { background: #fff; color: var(--sel); }
+.msg.bot { background: rgba(255, 255, 255, .1); }
+a, .msg a, .shop { color: #d6f0ff; }
+.heroart::before { background: radial-gradient(circle, rgba(255, 255, 255, .28), transparent 68%); }
+.stepicon { background: rgba(255, 255, 255, .14); border-color: var(--line2); }
+.swatch[aria-checked="true"] { box-shadow: 0 0 0 2px var(--solid), 0 0 0 4px #fff; }
+.combo-btn:hover, .combo-btn[aria-expanded="true"] { color: #fff; }
+.line:focus { border-bottom-color: #fff; }
+.compare thead th, .flabel, .why h5, .sw h5, .alts h5 { color: var(--dim); }
+.foot { border-top-color: var(--line); }

@@ -865,15 +865,19 @@
     if (anchor) requestAnimationFrame(() => document.getElementById(anchor).scrollIntoView({ behavior: 'smooth' }));
   }
 
-  const ACCENTS = [['volt', '#c8ff2e', 'Volt'], ['ember', '#ff7a1a', 'Ember'], ['cyan', '#22d3ee', 'Cyan'], ['violet', '#a78bfa', 'Violet'], ['rose', '#ff3d6e', 'Rose']];
+  // Gradient themes for the glass look; Aurora is GearGuide's original.
+  const ACCENTS = [['aurora', 'linear-gradient(135deg,#8f7bff,#0aa86b)', 'Aurora'], ['sunset', 'linear-gradient(135deg,#ff8caa,#ff963c)', 'Sunset'], ['ocean', 'linear-gradient(135deg,#6ebeff,#00c8dc)', 'Ocean'], ['forest', 'linear-gradient(135deg,#a0e678,#14aa6e)', 'Forest'], ['midnight', 'linear-gradient(135deg,#786ec8,#1b1a4a)', 'Midnight']];
   function renderSwatches() {
-    const cur = document.documentElement.dataset.accent || 'volt';
+    const known = ACCENTS.some(([id]) => id === document.documentElement.dataset.accent);
+    if (!known) delete document.documentElement.dataset.accent; // older saved colours fall back to Aurora
+    const cur = document.documentElement.dataset.accent || 'aurora';
     $('#swatches').innerHTML = ACCENTS.map(([id, hex, name]) => `<button type="button" class="swatch" role="radio" aria-checked="${id === cur}" aria-label="${name} accent" title="${name}" data-accent="${id}" style="--sw:${hex}"></button>`).join('');
   }
   $('#swatches').addEventListener('click', e => {
     const b = e.target.closest('[data-accent]');
     if (!b) return;
-    document.documentElement.dataset.accent = b.dataset.accent;
+    if (b.dataset.accent === 'aurora') delete document.documentElement.dataset.accent;
+    else document.documentElement.dataset.accent = b.dataset.accent;
     try { localStorage.setItem('gearguide-accent', b.dataset.accent); } catch { /* ignore */ }
     renderSwatches();
   });
