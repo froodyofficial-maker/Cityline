@@ -582,7 +582,7 @@
       ${hidden.length ? `<div class="hidden-note">Hidden ${hidden.length}: ${hidden.map(h => `${esc(h.p.brand)} ${esc(h.p.name)} (${esc(h.reason)})`).join(', ')}.</div>` : ''}
       ${emptyMsg}
       <div class="cards">${top.map((r, i) => card(r, i, pool, sortedByMatch && !emptyMsg)).join('')}</div>
-      ${top.length > 1 ? compareTable(top, cat) : ''}
+      ${top.length > 1 && state.detail ? compareTable(top, cat) : ''}
       ${rest.length ? `<details class="allrank glass"><summary>See all ${pool.length} ranked ${cat.name.toLowerCase()}</summary>
         <div class="rows">${rest.map(r => `<a class="row${r.within ? '' : ' over'}" data-id="${r.p.id}" href="#/p/${r.p.id}" data-product="${r.p.id}">
           <span class="pill ${tone(r.match)}">${r.match}%</span>
@@ -801,6 +801,7 @@
   }
 
   function openDashboard() {
+    hideReset();
     renderSide();
     renderCurrency();
     renderResults();
@@ -842,6 +843,8 @@
     renderGuide();
   }
   function renderViewToggle() {
+    $('#dashboard').classList.toggle('simple', !state.detail);
+    if (!state.detail && state.sort !== 'match') { state.sort = 'match'; $('#sort').value = 'match'; }
     document.querySelectorAll('#viewToggle button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.detail === '1') === !!state.detail)));
   }
   const GUIDE_STORE = 'gearguide-guide-hidden';
@@ -902,6 +905,12 @@
       changed();
     } else if (t.id === 'restart') {
       goSetup();
+    } else if (t.dataset.reset != null) {
+      showReset(t);
+    } else if (t.id === 'resetNo') {
+      hideReset();
+    } else if (t.id === 'resetYes') {
+      resetAll();
     }
   });
   // The games list floats over the page, so close it on an outside click.
@@ -945,6 +954,36 @@
   $('#addLine').addEventListener('click', () => addGameLine().focus());
   $('#start').addEventListener('click', () => goSetup());
 
+  /* ---------------- reset ---------------- */
+  // Wipes every saved answer (games, budgets, comfort, view) and starts again from the welcome screen.
+  // The background colour and any saved AI key are left alone; the confirm box says so.
+  let resetFrom = null;
+  function showReset(from) {
+    resetFrom = from;
+    const box = $('#resetConfirm');
+    box.hidden = false;
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#resetNo').focus({ preventScroll: true });
+  }
+  function hideReset() {
+    $('#resetConfirm').hidden = true;
+    if (resetFrom && resetFrom.isConnected && !resetFrom.closest('[hidden]')) resetFrom.focus({ preventScroll: true });
+    resetFrom = null;
+  }
+  function resetAll() {
+    try { localStorage.removeItem(STORE); localStorage.removeItem(GUIDE_STORE); } catch { /* ignore */ }
+    state = structuredClone(DEFAULTS);
+    resetFrom = null;
+    $('#resetConfirm').hidden = true;
+    $('#morePanel').hidden = true; $('#moreBtn').setAttribute('aria-expanded', 'false');
+    clearProductHash();
+    renderPrepare();
+    show('welcome');
+    window.scrollTo(0, 0);
+    const n = $('#resetDone'); n.hidden = false;
+    clearTimeout(resetAll.t); resetAll.t = setTimeout(() => { n.hidden = true; }, 6000);
+  }
+
   /* ---------------- top bar, hero, colours, glossary ---------------- */
   function clearProductHash() {
     if (/^#\/p\//.test(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch { /* ignore */ } }
@@ -966,18 +1005,18 @@
     if (anchor) requestAnimationFrame(() => document.getElementById(anchor).scrollIntoView({ behavior: 'smooth' }));
   }
 
-  // Gradient themes for the glass look; Aurora is GearGuide's original.
-  const ACCENTS = [['aurora', 'linear-gradient(135deg,#8f7bff,#0aa86b)', 'Aurora'], ['sunset', 'linear-gradient(135deg,#ff8caa,#ff963c)', 'Sunset'], ['ocean', 'linear-gradient(135deg,#6ebeff,#00c8dc)', 'Ocean'], ['forest', 'linear-gradient(135deg,#a0e678,#14aa6e)', 'Forest'], ['midnight', 'linear-gradient(135deg,#786ec8,#1b1a4a)', 'Midnight']];
+  // Plain background colours (no gradients); Navy is the default.
+  const ACCENTS = [['navy', '#1a2350', 'Navy'], ['slate', '#222831', 'Slate'], ['teal', '#0f3d3e', 'Teal'], ['plum', '#34204a', 'Plum'], ['charcoal', '#141518', 'Charcoal']];
   function renderSwatches() {
     const known = ACCENTS.some(([id]) => id === document.documentElement.dataset.accent);
-    if (!known) delete document.documentElement.dataset.accent; // older saved colours fall back to Aurora
-    const cur = document.documentElement.dataset.accent || 'aurora';
-    $('#swatches').innerHTML = ACCENTS.map(([id, hex, name]) => `<button type="button" class="swatch" role="radio" aria-checked="${id === cur}" aria-label="${name} accent" title="${name}" data-accent="${id}" style="--sw:${hex}"></button>`).join('');
+    if (!known) delete document.documentElement.dataset.accent; // older saved colours fall back to Navy
+    const cur = document.documentElement.dataset.accent || 'navy';
+    $('#swatches').innerHTML = ACCENTS.map(([id, hex, name]) => `<button type="button" class="swatch" role="radio" aria-checked="${id === cur}" aria-label="${name} background" title="${name}" data-accent="${id}" style="--sw:${hex}"></button>`).join('');
   }
   $('#swatches').addEventListener('click', e => {
     const b = e.target.closest('[data-accent]');
     if (!b) return;
-    if (b.dataset.accent === 'aurora') delete document.documentElement.dataset.accent;
+    if (b.dataset.accent === 'navy') delete document.documentElement.dataset.accent;
     else document.documentElement.dataset.accent = b.dataset.accent;
     try { localStorage.setItem('gearguide-accent', b.dataset.accent); } catch { /* ignore */ }
     renderSwatches();

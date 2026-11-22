@@ -44,6 +44,7 @@
       <p class="eyebrow">New to gaming gear? Start here</p>
       <h1 class="display">Find gear that<br><span class="acc">fits how</span><br>you play.</h1>
       <p class="lead">Buying your first gaming mouse, keyboard or headset? Tell us what you play, how big your hands are and what you want to spend. GearGuide picks gear that fits you and explains every choice in plain English, no jargon needed. There's no single "best" here, only the best fit for you.</p>
+      <p class="resetdone" id="resetDone" role="status" hidden>✓ Your preferences were reset. Press Get started to begin again.</p>
       <div class="ctas">
         <button type="button" class="btn btn-primary" id="start">Get started <span aria-hidden="true">→</span></button>
         <button type="button" class="btn btn-ghost" data-open-chat>Ask GearGuide AI</button>
@@ -100,7 +101,23 @@
     <p class="eyebrow">Your recommendations</p>
     <h1 class="display" id="title"></h1>
     <p id="summary" class="summary"></p>
-    <button type="button" class="linkbtn" id="showGuide" hidden>How to use this page</button>
+    <div class="dheadbtns">
+      <button type="button" class="btn btn-ghost btn-sm" id="showGuide" hidden>How to use this page</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-reset>↺ Reset preferences</button>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="resetbox card" id="resetConfirm" hidden role="alertdialog" aria-labelledby="resetTitle" aria-describedby="resetText">
+      <div>
+        <h3 id="resetTitle">Start over from scratch?</h3>
+        <p id="resetText">This clears your games, budgets, hand size and every other answer, then takes you back to the start. Your background colour and any saved AI key stay as they are.</p>
+      </div>
+      <div class="resetbtns">
+        <button type="button" class="btn btn-primary btn-sm" id="resetYes">Yes, reset everything</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="resetNo">Cancel</button>
+      </div>
+    </div>
   </section>
 
   <section class="wrap">
@@ -112,12 +129,13 @@
     </div>
   </section>
 
+  <h2 class="wrap stephead"><span class="hn">1</span> What are you shopping for?</h2>
   <div class="wrap typerow">
     <div id="types" class="tabs" role="tablist" aria-label="Product type"></div>
     <div class="typetools">
     <div class="viewtoggle" id="viewToggle" role="group" aria-label="Card view"><button type="button" data-detail="0" aria-pressed="true">Simple</button><button type="button" data-detail="1" aria-pressed="false">Detailed</button></div>
     <button type="button" class="btn btn-ghost btn-sm" id="moreBtn" aria-expanded="false" aria-controls="morePanel">More filters <span class="caret" aria-hidden="true">▾</span></button>
-    <label class="tool">Sort
+    <label class="tool adv">Sort
       <select id="sort" class="sel">
         <option value="match">Best match</option>
         <option value="low">Price: low to high</option>
@@ -127,6 +145,7 @@
     </div>
   </div>
 
+  <h2 class="wrap stephead"><span class="hn">2</span> Tell us about you <small>Change anything here and your matches update straight away.</small></h2>
   <section class="wrap" aria-label="Filters">
     <div class="filters card" id="filters">
       <div class="fgroup fgames">
@@ -168,15 +187,16 @@
           <label class="toggle"><input type="checkbox" data-key="long"><span></span>I play 3+ hours at a time</label>
           <label class="toggle"><input type="checkbox" data-key="quiet"><span></span>I play around others</label>
         </div>
-        <div class="mgroup"><button type="button" class="linkbtn" id="restart">Restart setup</button></div>
+        <div class="mgroup resetrow"><button type="button" class="btn btn-ghost btn-sm" id="restart">Change my setup answers</button><button type="button" class="btn btn-ghost btn-sm" data-reset>↺ Reset all preferences</button></div>
       </div>
     </div>
   </section>
 
   <main class="wrap" id="results" aria-live="polite">
+    <h2 class="stephead"><span class="hn">3</span> Your matches <small>Closest fit first. Tap “View details” on any card to learn more.</small></h2>
     <p class="note">No product is best for everyone. Matches reflect only what you told us, and popularity never affects a score. <span id="fxnote"></span></p>
-    <section id="overview" class="overview card"></section>
     <div id="out"></div>
+    <section id="overview" class="overview card"></section>
 
     <section class="how" id="how">
       <p class="eyebrow">How it works</p>
