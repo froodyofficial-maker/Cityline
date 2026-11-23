@@ -1,7 +1,7 @@
 /* GearGuide: scores every product against the user's games, body, setup and budget,
    then explains the score. Popularity (`pop`) is display-only. */
 (() => {
-  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, PRICES_CHECKED, GLOSSARY } = window.LOADOUT;
+  const { DIMS, CATEGORIES, PLATFORMS, GAMES, PRODUCTS, GLOSSARY } = window.LOADOUT;
   const art = window.LOADOUT_ART;
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
   const GAME = Object.fromEntries(GAMES.map(g => [g.id, g]));
@@ -165,8 +165,59 @@
   // Spread raw fits (mostly .45 to .98) over the full range so real differences show up in the score.
   const sharpen = g => Math.max(0, Math.min(1, .25 + .75 * (g - .45) / .53));
   const meanTrait = p => { const t = Object.values(p.traits); return t.reduce((x, y) => x + y, 0) / t.length; };
+  /* ---------------- shop prices ----------------
+     Every product carries the prices we found on real shop pages (prices.js, each with its link and the
+     date it was checked). live-prices.json, refreshed daily from Best Buy's official API, replaces the
+     Best Buy price with today's. A product's price for matching is the lowest new, in-stock offer. */
+  const SAVED = window.GG_PRICES || { offers: {}, refRates: { USD: 1 }, checkedLabel: '' };
+  let LIVE = null; // { updated, source, prices }
+  const NOT_NEW = /refurb|renewed|open-box|out of stock|sold out|unavailable/i;
+  const offerUSD = o => o.price / (fx.rates[o.cur] || SAVED.refRates[o.cur] || 1);
+  function applyOffers() {
+    for (const p of PRODUCTS) {
+      p.catalogPrice ??= p.price;
+      let list = (SAVED.offers[p.id] || []).map(o => ({ ...o, live: false }));
+      const live = LIVE && LIVE.prices[p.id];
+      if (live) list = [...list.filter(o => !live.some(l => l.store === o.store)), ...live.map(o => ({ ...o, live: true }))];
+      list.sort((a, b) => offerUSD(a) - offerUSD(b));
+      p.offers = list;
+      const usable = list.filter(o => !NOT_NEW.test(o.note || ''));
+      const best = usable[0] || list[0];
+      p.price = best ? Math.round(offerUSD(best) * 100) / 100 : p.catalogPrice;
+      p.bestOffer = best || null;
+    }
+    for (const c in MAX_PRICE) delete MAX_PRICE[c];
+    for (const p of PRODUCTS) MAX_PRICE[p.cat] = Math.max(MAX_PRICE[p.cat] || 0, p.price);
+  }
+  // Show a shop's price in the visitor's currency; a price in another currency shows its original too.
+  function offerMoney(o) {
+    if (o.cur === cur()) return new Intl.NumberFormat(LOCALE[cur()] || 'en-US', { style: 'currency', currency: o.cur, maximumFractionDigits: o.cur === 'USD' ? 2 : 0 }).format(o.price);
+    const here = money(offerUSD(o));
+    if (o.cur === 'USD') return here;
+    return `${here} <small class="orig">(${new Intl.NumberFormat('en-IN', { style: 'currency', currency: o.cur, maximumFractionDigits: 0 }).format(o.price)})</small>`;
+  }
+  const ago = iso => {
+    const h = Math.max(0, Math.round((Date.now() - new Date(iso)) / 36e5));
+    return h < 1 ? 'less than an hour ago' : h < 48 ? `${h} hour${h === 1 ? '' : 's'} ago` : `${Math.round(h / 24)} days ago`;
+  };
+  const whereLine = p => p.bestOffer ? `lowest price we found, at ${p.bestOffer.store}${p.bestOffer.live ? ' (live)' : ''}` : 'typical price';
+  async function loadLivePrices() {
+    if (location.protocol === 'file:') return; // browsers can't fetch files next to a page opened from disk
+    try {
+      const res = await fetch('live-prices.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.prices || !data.updated) return;
+      LIVE = data;
+      applyOffers();
+      renderCurrency();
+      if (!$('#dashboard').hidden) renderResults();
+      if (!$('#product').hidden) { const id = productId(); if (id) renderProduct(id); }
+    } catch { /* opened from a file, or no live prices yet: keep the checked shop prices */ }
+  }
+
   const MAX_PRICE = {};
-  for (const p of PRODUCTS) MAX_PRICE[p.cat] = Math.max(MAX_PRICE[p.cat] || 0, p.price);
+  applyOffers();
 
   // How much your games lean on this kind of product at all (0 to 1).
   function relevance(cat, needs) {
@@ -492,7 +543,7 @@
         <div class="ctop">
           <div class="ctitle"><div class="brandline">${esc(p.brand)}</div>
             <h4><a class="plink" href="#/p/${p.id}" data-product="${p.id}">${esc(p.name)}</a></h4></div>
-          <div class="pricebox"><b>${money(p.price)}</b><span>${r.within ? 'fits your budget' : 'over your budget'}</span></div>
+          <div class="pricebox"><b>${moneyExact(p.price)}</b><span>${r.within ? 'fits your budget' : 'over your budget'}${p.bestOffer ? ` · at ${esc(p.bestOffer.store)}` : ''}</span></div>
         </div>
         <p class="oneliner"><span aria-hidden="true">✓</span> ${jargon(reason)}</p>
         <ul class="facts">${plainFacts(p).map(f => `<li>${jargon(f)}</li>`).join('')}</ul>
@@ -511,7 +562,7 @@
           <div class="brandline">${esc(p.brand)}</div>
           <h4><a class="plink" href="#/p/${p.id}" data-product="${p.id}">${esc(p.name)}</a></h4>
         </div>
-        <div class="pricebox"><b>${money(p.price)}</b><span>typical price</span>${listTag}</div>
+        <div class="pricebox"><b>${moneyExact(p.price)}</b><span>${esc(whereLine(p))}</span>${listTag}</div>
       </div>
       <div class="cardlinks"><a class="shop" href="${shop}" target="_blank" rel="noopener noreferrer">Check live prices ↗</a>
         <a class="more" href="#/p/${p.id}" data-product="${p.id}">View details <span aria-hidden="true">→</span></a></div>
@@ -623,7 +674,7 @@
         <span class="ovart">${art(best.p)}</span>
         <span class="ovtxt"><small>${cap(cat.one)}</small><b>${esc(best.p.brand)} ${esc(best.p.name)}</b>
         <em>${money(best.p.price)} · ${best.match}% match${over ? ' · over budget' : ''}</em></span></button>` : '').join('')}</div>
-      <div class="ovtotal">Full setup <b>${money(total)}</b><small>${items.length} item${items.length === 1 ? '' : 's'} at typical prices</small></div>`;
+      <div class="ovtotal">Full setup <b>${money(total)}</b><small>${items.length} item${items.length === 1 ? '' : 's'} at the lowest shop prices we found</small></div>`;
   }
 
   /* ---------------- currency ---------------- */
@@ -639,9 +690,10 @@
       .map(c => `<option value="${c}" title="${CURRENCY_NAMES[c]}">${symbol(c)} ${c}</option>`).join('');
     sel.value = state.currency;
     const d = new Date(((!fx.live && fx.dates[state.currency]) || fx.date) + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const shops = `Each price is the lowest we found across real shops (checked ${SAVED.checkedLabel}${LIVE ? `; Best Buy prices live, updated ${ago(LIVE.updated)}` : ''}).`;
     $('#fxnote').textContent = state.currency === 'USD'
-      ? `Prices are typical US prices checked ${PRICES_CHECKED}.`
-      : `Prices are converted from US prices (checked ${PRICES_CHECKED}) at ${state.currency === 'INR' && !fx.live ? 'the market rate' : 'ECB rates'} of ${d}; local shops often differ because of taxes and import duties.`;
+      ? shops
+      : `${shops} Converted at ${fx.live ? 'live ECB exchange rates' : 'saved exchange rates'} of ${d}; local shops often differ because of taxes and import duties.`;
   }
 
   async function loadRates() {
@@ -652,6 +704,7 @@
         const data = await res.json();
         if (!data.rates || !data.rates.EUR) continue;
         fx = { live: true, date: data.date, dates: {}, rates: { ...fx.rates, ...data.rates, USD: 1 } };
+        applyOffers(); // prices listed in rupees rank against today's rate
         renderCurrency();
         if (!$('#dashboard').hidden) { renderBudget(); renderResults(); }
         return;
@@ -1026,6 +1079,7 @@
     else if (t.dataset.nav === 'recommend') goDashboard();
     else if (t.dataset.nav === 'how') goDashboard(null, 'how');
     else if (t.dataset.nav === 'glossary') goDashboard(null, 'glossary');
+    else if (t.dataset.nav === 'vsai') goDashboard(null, 'vsai');
     else if (t.dataset.nav === 'setup') goSetup();
   });
 
@@ -1034,7 +1088,7 @@
     $('#heroStats').innerHTML = `<div><b>${PRODUCTS.length}</b><span>Products</span></div><div><b>${GAMES.length}</b><span>Games</span></div><div><b>${CATEGORIES.length}</b><span>Product types</span></div><div><b>${n('mouse')}</b><span>Mice</span></div>`;
     const p = PROD.viperv3;
     $('#heroArt').innerHTML = (art.hasPhoto(p) ? `<div class="heroph">${art(p)}</div>` : art(p))
-      + `<div class="chipstat c1"><small>Weight</small><b>${p.weight} g</b></div><div class="chipstat c2"><small>Typical price</small><b>${money(p.price)}</b></div><div class="chipstat c3"><small>${esc(p.brand)}</small><b>${esc(p.name)}</b></div>`;
+      + `<div class="chipstat c1"><small>Weight</small><b>${p.weight} g</b></div><div class="chipstat c2"><small>Lowest price</small><b>${money(p.price)}</b></div><div class="chipstat c3"><small>${esc(p.brand)}</small><b>${esc(p.name)}</b></div>`;
   }
 
   // Plain-English explanations for newcomers; the AI assistant uses the same list.
@@ -1097,7 +1151,7 @@
       ? [['Type', 'Racing wheel and pedals'], ['Platforms', p.platforms.map(x => PLATFORMS[x]).join(', ')], ['Connection', 'Wired']]
       : [['Type', 'Gamepad'], ['Platforms', p.platforms.map(x => PLATFORMS[x]).join(', ')], ['Connection', conn], ['Weight', `${p.weight} g`], ['Hall-effect sticks', yes(p.hall)], ['Back buttons', yes(p.paddles)]];
     if (p.cat === 'mousepad') rows = [['Size', `${p.w} × ${p.h} mm`], ['Thickness', `${p.thick} mm`], ['Surface', p.surface]];
-    rows.push(['Typical price', money(p.price)]);
+    rows.push(['Lowest shop price', money(p.price)]);
     if (p.msrp) rows.push(['Official list price', moneyExact(p.msrp)]);
     rows.push(['Popularity (not scored)', dots(p.pop)]);
     return rows;
@@ -1142,13 +1196,13 @@
             ${p.pop <= 2 ? '<span class="badge gem">Lesser-known pick</span>' : ''}
             <span class="badge">Popularity ${dots(p.pop)}</span>
           </div>
-          <div class="pricebig"><b>${money(p.price)}</b><span>typical price</span>${listTag}</div>
+          <div class="pricebig"><b>${moneyExact(p.price)}</b><span>${esc(whereLine(p))}</span>${listTag}</div>
           <div class="matchrow">
             <div class="ring" style="--p:${r.match};--c:${toneColor(r.match)}" role="img" aria-label="${r.match}% match"><b>${r.match}%<small>MATCH</small></b></div>
             <div class="bars">${bar('Game fit', r.parts.game)}${bar('Comfort', r.parts.comfort)}${bar('Value', r.parts.value)}</div>
           </div>
           ${reason ? `<p class="catnote">Heads up: this ${esc(cat.one)} is hidden from your results because it ${esc(reason)}.</p>` : ''}
-          <a class="pillbtn buy" href="${shop}" target="_blank" rel="noopener noreferrer">Check live prices <span aria-hidden="true">↗</span></a>
+          <a class="pillbtn buy" href="#shops" data-scroll="shops">Compare ${p.offers.length} shop price${p.offers.length === 1 ? '' : 's'} <span aria-hidden="true">↓</span></a>
         </div>
       </div>
 
@@ -1167,8 +1221,32 @@
           <div class="gamefits">${games.map(({ g, fit }) => `<div class="gf${state.games.includes(g.id) ? ' mine' : ''}"><span>${esc(g.name)}${state.games.includes(g.id) ? ' ✓' : ''}</span><i style="--w:${Math.round(fit * 100)}%"></i><b>${Math.round(fit * 100)}%</b></div>`).join('')}</div></section>
       </div>
 
+      ${shopTable(p, shop)}
       ${alts.cheaper || alts.pricier ? `<section class="psec2"><h2>Other price points</h2><div class="altrow">${alt('Spend less', alts.cheaper)}${alt('Spend more', alts.pricier)}</div></section>` : ''}
       ${similar.length ? `<section class="psec2"><h2>Similar ${esc(cat.name.toLowerCase())} that match you</h2><div class="simgrid">${similar.map(mini).join('')}</div></section>` : ''}`;
+  }
+
+  // Shop notes in plain words: "listing (white), was 74.99" -> "White, was $74.99".
+  function niceNote(o) {
+    let n = (o.note || '').replace(/^listing,?\s*/i, '').replace(/^\(([^)]*)\)/, '$1').replace(/\blisting\b/gi, 'shop page');
+    n = n.replace(/\b(was|list|comp\. value|MSRP|MRP|regular price) (\d+(?:\.\d+)?)/gi, (m, w, v) => `${w.toLowerCase() === 'comp. value' ? 'usual price' : w} ${o.cur === 'USD' ? moneyExact(+v) : v}`);
+    return n ? n.charAt(0).toUpperCase() + n.slice(1) : 'New';
+  }
+
+  // Every shop we found the product at, cheapest first, each with its link and when its price was checked.
+  function shopTable(p, search) {
+    if (!p.offers.length) return '';
+    const when = o => o.live ? `<span class="livetag">Live</span> ${esc(ago(LIVE.updated))}` : `Checked ${esc(SAVED.checkedLabel)}`;
+    const rows = p.offers.map((o, i) => `<tr${i === 0 && o === p.bestOffer ? ' class="best"' : ''}>
+      <th scope="row">${esc(o.store)}${o === p.bestOffer ? ' <span class="badge ok">Lowest</span>' : ''}</th>
+      <td class="num">${offerMoney(o)}</td>
+      <td class="note">${esc(niceNote(o))}</td>
+      <td class="when">${when(o)}</td>
+      <td><a class="shoplink" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a></td></tr>`).join('');
+    return `<section class="glass psec shops" id="shops"><h2>Prices at different shops</h2>
+      <p class="psub">${LIVE && p.offers.some(o => o.live) ? `Best Buy prices are live from Best Buy, updated ${esc(ago(LIVE.updated))}. ` : ''}Other prices were read from each shop's own page on ${esc(SAVED.checkedLabel)}. Shops change prices often, so the price on the shop's page is the one that counts.</p>
+      <div class="tablewrap"><table><thead><tr><th>Shop</th><th>Price</th><th>Details</th><th>When</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="psub"><a href="${search}" target="_blank" rel="noopener noreferrer">Search more shops on Google Shopping ↗</a></p></section>`;
   }
 
   // The View Transitions API gives the card-expands-into-page animation where the browser supports it.
@@ -1200,6 +1278,8 @@
   }
 
   $('#product').addEventListener('click', e => {
+    const jump = e.target.closest('[data-scroll]');
+    if (jump) { e.preventDefault(); document.getElementById(jump.dataset.scroll).scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (e.target.closest('#pback')) {
       if (history.state && history.state.pp) history.back();
       else { try { history.replaceState(null, '', location.pathname + location.search); } catch { /* ignore */ } route(true); }
@@ -1229,4 +1309,5 @@
   // Returning visitors go straight to their dashboard (or the product page in the link).
   if (state.onboarded) { openDashboard(); route(false); } else show('welcome');
   loadRates();
+  loadLivePrices();
 })();

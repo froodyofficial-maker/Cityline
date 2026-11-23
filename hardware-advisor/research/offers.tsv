@@ -1,0 +1,186 @@
+# id	store	price	currency	url	note
+gpx2	Best Buy	149.99	USD	https://www.bestbuy.com/site/6556754.p	listing, was 179.99
+dav3p	Best Buy	99.99	USD	https://www.bestbuy.com/site/6514425.p	listing, was 149.99
+viperv3	Best Buy	129.99	USD	https://www.bestbuy.com/site/6576242.p	listing, was 159.99
+gpx2	Newegg	159.99	USD	https://www.newegg.com/logitech-pro-x-superlight-2-910-006636-usb-type-c-2-4ghz-wired/p/N82E16826197630	listing (white)
+gpx2	Walmart	146.90	USD	https://www.walmart.com/ip/Logitech-G-Pro-X-Superlight-2-Lightspeed-Wireless-Gaming-Mouse-Lightweight-Black/5074158876	listing
+gpx2	Logitech	179.99	USD	https://www.logitechg.com/en-us/shop/p/pro-x-superlight-2-cyan	official store (cyan)
+dav3p	Razer	139.99	USD	https://www.razer.com/gaming-mice/razer-deathadder-v3-pro/buy	official store, was 159.99
+dav3p	Newegg	123.99	USD	https://www.newegg.com/deathadder-v3-pro-razer/p/32K-00FT-00BP6	listing (white)
+viperv3	Razer	129.99	USD	https://www.razer.com/gaming-mice/Razer-Viper-V3-Pro/RZ01-05120100-R3U1	official store, was 159.99
+viperv3	Walmart	119.99	USD	https://www.walmart.com/ip/Razer-Viper-V3-Pro-Optical-USB-Wireless-Gaming-Mouse-Black/5464020169	listing
+x2mini	Pulsar	99.95	USD	https://www.pulsar.gg/collections/x2	official store
+x2mini	Amazon	119.95	USD	https://www.amazon.com/Pulsar-Gaming-Gears-Lightweight-Symmetrical/dp/B0D66D4GLM	listing (Founder's Edition)
+ec2c	Newegg	225.59	USD	https://www.newegg.com/p/pl?d=zowie+ec2-c	third-party sellers; Amazon showed unavailable
+g502x	Best Buy	99.99	USD	https://www.bestbuy.com/product/logitech-g502-x-lightspeed-wireless-optical-gaming-mouse-with-hero-25k-sensor-wireless-black/J7H7ZY3TGG	listing, was 159.99
+g502x	Walmart	104.99	USD	https://www.walmart.com/ip/Logitech-G502-X-LIGHTSPEED-Wireless-Gaming-Mouse-Optical-mouse-LIGHTFORCE-hybrid-optical-mechanical-switches-HERO-25K-gaming-sensor-compatible-PC-mac/1124911746	listing (black)
+g502x	Newegg	110.99	USD	https://www.newegg.com/p/32K-0002-00778	third-party seller
+naga	Razer	179.99	USD	https://www.razer.com/gaming-mice/Razer-Naga-V2-Pro/RZ01-04400100-R3U1	official store (was out of stock)
+naga	Walmart	149.99	USD	https://www.walmart.com/ip/Razer-Naga-V2-Pro-MMO-Wireless-Gaming-Mouse-with-Hyperscroll-Pro-Wheel-Interchangeable-Side-Plates-30K-Optical-Sensor-Black/1119297591	listing
+naga	Best Buy	179.99	USD	https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=naga+v2+pro	search results
+g305	Logitech	59.99	USD	https://www.logitechg.com/en-us/shop/p/g305-lightspeed-wireless-gaming-mouse.910-006012	official store, some colours 34.99
+g305	Best Buy	26.99	USD	https://www.bestbuy.com/product/logitech-g305-lightspeed-wireless-optical-6-programmable-button-gaming-mouse-with-12000-dpi-hero-sensor-wireless-white/J7H7ZY2ZYR	listing (white)
+g305	Newegg	35.89	USD	https://www.newegg.com/logitech-910-005289-g305-wireless/p/N82E16826197309	listing (white), list 49.99
+g305	Walmart	29.99	USD	https://www.walmart.com/ip/Logitech-G305-LIGHTSPEED-Wireless-Gaming-Mouse-HERO-Sensor-12-000-DPI-Lightweight-6-Programmable-Buttons-250h-Battery-White/774459101	listing (white)
+cobra	Razer	39.99	USD	https://www.razer.com/gaming-mice/Razer-Cobra/RZ01-04650100-R3U1	official store
+cobra	Best Buy	29.99	USD	https://www.bestbuy.com/product/razer-cobra-lightweight-optical-gaming-mouse-with-chroma-rgb-lighting-wired-black/J39HWFQK4V	listing, sale
+cobra	Walmart	34.99	USD	https://www.walmart.com/ip/Razer-Cobra-Wired-Gaming-Mouse-58g-Lightweight-Design-Gen-3-Optical-Switches-RGB-Lighting-Black/2306255875	listing
+cobra	Newegg	29.99	USD	https://www.newegg.com/p/N82E16826153358	listing, was 39.99
+viper8k	Best Buy	79.99	USD	https://www.bestbuy.com/site/razer-viper-8khz-wired-optical-gaming-mouse-with-chroma-rgb-lighting-black/6447994.p?skuId=6447994	listing
+viper8k	Newegg	73.00	USD	https://www.newegg.com/p/pl?d=razer+viper+8khz	lowest listing (Razer seller)
+basv3	Walmart	34.98	USD	https://www.walmart.com/ip/Razer-Basilisk-V3-Ergonomic-Wired-Gaming-Mouse-with-26K-DPI-Optical-Sensor-11-Programmable-Buttons-Chroma-RGB-and-HyperScroll-Tilt-Wheel-Black/565068772	listing, was 49.98
+basv3	Newegg	34.99	USD	https://www.newegg.com/razer-basilisk-v3-rz01-04000100-r3u1-usb-wired/p/0GA-002P-002U7	listing, list 69.99
+gm340	Amazon India	649	INR	https://www.amazon.in/Ant-Esports-Ergonomic-Braided-Programmable/dp/B0CCDLR236	listing, MRP 2799
+gm340	Flipkart	519	INR	https://www.flipkart.com/ant-esports-gm340-ergonomic-design-braided-cable-8-programmable-buttons-upto-12800-dpi-wired-optical-gaming-mouse/p/itmbad0bd1e79d9e	listing
+gm340	Ant Esports	799	INR	https://antesports.com/product-category/mouse/page/4/	official store
+gm340	MD Computers	680	INR	https://mdcomputers.in/product/ant-esports-gm340-mouse	listing
+modelo	Best Buy	49.99	USD	https://www.bestbuy.com/product/glorious-model-o-lightweight-wired-optical-gaming-mouse-with-customizable-rgb-wired-black/J3GWJX2HXR/sku/6675746	listing
+modelo	Walmart	39.99	USD	https://www.walmart.com/ip/Glorious-Model-O-Wired-Gaming-Mouse-67g-Superlight-Honeycomb-Design-RGB-Pixart-3360-Sensor-Omron-Switches-Matte-Black/13479607642	listing
+a15	Flipkart	599	INR	https://www.flipkart.com/redgear-a-15-wired-optical-gaming-mouse/p/itmcb553c6fb668c	listing, MRP 799
+a15	Amazon India	399	INR	https://www.amazon.in/redgear-a15-gaming-mouse/s?k=redgear+a15+gaming+mouse	listing (Appario Retail), MRP 799
+m711	Redragon	22.99	USD	https://redragonshop.com/products/cobra-m711-white	official store (white), was 27.99
+m711	Best Buy	19.99	USD	https://www.bestbuy.com/product/redragon-cobra-m711-wired-optical-gaming-mouse-black/CZ6WWR974V/sku/12324192/reviews	listing
+m711	Walmart	19.99	USD	https://www.walmart.com/ip/Redragon-M711-Cobra-Gaming-Mouse-with-16-8-Million-RGB-Color-Backlit-10-000-DPI-Adjustable-Comfortable-Grip-7-Programmable-Buttons/975451699	listing
+g102	Newegg	24.50	USD	https://www.newegg.com/p/32K-0002-006T1	listing (black)
+daess	Razer	29.99	USD	https://www.razer.com/gaming-mice/Razer-DeathAdder-Essential/RZ01-03850200-R3U1	official store
+daess	Best Buy	24.00	USD	https://www.bestbuy.com/product/razer-deathadder-essential-wired-optical-gaming-mouse-wired-white/J3GTVWW23W/sku/10188867/reviews	listing (white)
+daess	Newegg	26.99	USD	https://www.newegg.com/razer-rz01-03850100-r3u1-deathadder-essential-wired/p/32K-000N-00173	listing
+daess	Walmart	20.98	USD	https://www.walmart.com/ip/Razer-DeathAdder-Essential-Wired-Optical-Gaming-Mouse-for-PC-5-Buttons-Black/991934229	listing
+katar	Corsair	11.99	USD	https://www.corsair.com/us/en/p/revival-series/ch-930c011-na-rv/katar-pro-ultra-light-gaming-mouse-revival-series-ch-930c011-na-rv	official store (Revival Series), was 14.99
+katar	Best Buy	24.99	USD	https://www.bestbuy.com/site/corsair-katar-pro-ultra-light-wired-gaming-mouse-wired-black/6558788.p	listing
+rival3	Best Buy	34.99	USD	https://www.bestbuy.com/site/steelseries-rival-3-gen-2-wired-optical-gaming-mouse-with-3-zone-rgb-wired-black/6621855.p?skuId=6621855	listing (Gen 2 wired)
+rival3	Walmart	34.97	USD	https://www.walmart.com/ip/SteelSeries-Rival-3-Wired-Gen-2-Black-US/14706066124	listing (Gen 2 wired)
+pfcore	HyperX	29.99	USD	https://hyperx.com/products/hyperx-pulsefire-core-gaming-mouse	official store
+pfcore	Walmart	17.49	USD	https://www.walmart.com/ip/HyperX-Pulsefire-Core-Gaming-Mouse-Black/840628204	listing, sale
+pfcore	Newegg	24.99	USD	https://www.newegg.com/p/32K-009Z-000M2	listing (white/pink)
+pfcore	Best Buy	29.99	USD	https://www.bestbuy.com/product/hyperx-pulsefire-core-wired-optical-gaming-mouse-with-rgb-lighting-wired-pink/JJGX373JKQ/sku/6516696/reviews	listing (pink)
+g502hero	Best Buy	31.99	USD	https://www.bestbuy.com/site/logitech-g502-hero-wired-optical-gaming-mouse-with-rgb-lighting-black/6265133.p?skuId=6265133	listing, comp. value 69.99
+g502hero	Walmart	39.98	USD	https://www.walmart.com/ip/Logitech-G502-Hero-High-Performance-Gaming-Mouse/901832480	listing
+g502hero	Newegg	35.99	USD	https://www.newegg.com/logitech-910-005469-g502-hero-usb-wired/p/3C6-0064-00002	lowest seller
+x3	Attack Shark	35.99	USD	https://attackshark.com/products/attack-shark-x3-wireless-gaming-mouse-paw3395	official store (white), MSRP 39.99, was sold out
+x3	Newegg	29.99	USD	https://www.newegg.com/x3-attack-shark/p/32K-01G6-00007	listing, sale
+x3	Walmart	35.99	USD	https://www.walmart.com/ip/ATTACK-SHARK-X3-49g-SUPERLIGHT-Mouse-PixArt-PAW3395-Gaming-Sensor-BT-2-4G-Wireless-Wired-Gaming-Mouse-6-Adjustable-DPI-26000-200-Hrs-Battery-G502-Off/5479284741	listing (white)
+modelominus	Newegg	97.48	USD	https://www.newegg.com/p/pl?d=glorious+model+o+minus	third-party seller; Amazon had no offers, Walmart out of stock
+bv3xhs	Razer	44.99	USD	https://www.razer.com/gaming-mice/razer-basilisk-v3-x-hyperspeed/RZ01-04870100-R3U1	official store, was 69.99
+bv3xhs	Walmart	44.99	USD	https://www.walmart.com/ip/Razer-Basilisk-V3-X-Hyperspeed-Wireless-Gaming-Mouse-for-PC-RGB-Chroma-Black/3760091663	listing
+bv3xhs	Best Buy	49.98	USD	https://www.bestbuy.com/site/razer-basilisk-v3-x-hyperspeed-optical-gaming-mouse-with-9-customizable-controls-wireless-black/6538211.p?skuId=6538211	listing
+w60he	Newegg	217.99	USD	https://www.newegg.com/p/pl?d=wooting+60he	listing, limited-time price
+w60he	Newegg (other listing)	228.99	USD	https://www.newegg.com/p/32N-04U5-00001	listing
+hv3tkl	Best Buy	149.99	USD	https://www.bestbuy.com/site/razer-huntsman-v3-pro-tkl-wired-analog-optical-gaming-keyboard-with-snap-tap-black/6558753.p?skuId=6558753	listing, comp. value 219.99
+hv3tkl	Walmart	147.99	USD	https://www.walmart.com/ip/Razer-Huntsman-V3-Pro-TKL-Tenkeyless-Analog-Optical-Esports-Keyboard-Snap-Tap-RGB-Chroma-Black/5109506433	listing
+q1max	Keychron	203.99	USD	https://www.keychron.com/products/keychron-q1-max-qmk-via-wireless-custom-mechanical-keyboard	official store, was 229.99
+q1max	Newegg	450.00	USD	https://www.newegg.com/p/32N-0139-000M1	third-party seller
+apextkl	SteelSeries	203.99	USD	https://steelseries.com/gaming-keyboards/apex-pro-gen-3?keyboardSize=tkl&connectivityType=wired&keyboardLanguage=english&color=black	official store, Gen 3 wired (current model), list 239.99
+apextkl	Best Buy	199.99	USD	https://www.bestbuy.com/site/steelseries-apex-pro-tkl-gen-3-wired-mechanical-omnipoint-adjustable-hypermagnetic-gaming-keyboard-with-rapid-tap-black/6594154.p	listing, Gen 3 wired
+apextkl	Walmart	216.99	USD	https://www.walmart.com/c/kp/steelseries-apex-pro-keyboard	listing, Gen 3 wired
+w60he	Wooting	154.99	USD	https://wooting.io/post/the-difference-between-the-60he-and-the-60he-v2	official store, pre-built
+k2	Keychron	48.74	USD	https://www.keychron.com/products/keychron-k2-wireless-mechanical-keyboard	official store, was 74.99
+g915x	Best Buy	229.99	USD	https://www.bestbuy.com/product/logitech-g915-x-lightspeed-tkl-wireless-mechanical-gl-blue-clicky-switch-gaming-keyboard-for-pc-mac-with-rgb-backlighting-black/J7H7ZYGSFS	listing
+g915x	Walmart	209.95	USD	https://www.walmart.com/ip/Logitech-G915-X-LIGHTSPEED-TKL-Wireless-Gaming-Keyboard-Black-English-Clicky/12896958783	listing
+g915x	Newegg	189.99	USD	https://www.newegg.com/p/N82E16823126753	listing
+k100	Corsair	289.99	USD	https://www.corsair.com/us/en/p/keyboards/ch-912a014-na/k100-rgb-mechanical-gaming-keyboard-cherry-mx-speed-black-ch-912a014-na	official store (Cherry MX Speed)
+k100	Corsair (Revival Series)	109.99	USD	https://www.corsair.com/us/en/search?q=K100	official refurbished-style Revival Series, OPX
+k100	Newegg	299.00	USD	https://www.newegg.com/corsair-k100-rgb-ch-912a01a-na-mechanical-keyboard-opx-optical-mechanical-linear/p/N82E16823816138	listing
+k552	Redragon	36.99	USD	https://redragonshop.com/products/redragon-kumara-k552	official store, was 44.99
+k552	Best Buy	43.99	USD	https://www.bestbuy.com/product/redragon-kumara-k552-rgb-wired-tkl-gaming-mechanical-blue-switch-keyboard-with-rgb-backlighting-black/CZ6WWR978T	listing (RGB)
+k552	Amazon	33.99	USD	https://www.amazon.com/-/es/Redragon-KUMARA-K552-Rojo-RGB/dp/B019O9BLVY	listing, list 43.98
+rk61	Royal Kludge	49.99	USD	https://rkgamingstore.com/products/rk61-60-percent-keyboard	official store
+rk61	Royal Kludge (red switch)	34.99	USD	https://rkgamingstore.com/products/wireless-60-mechanical-gaming-keyboard-hot-swappable-red-switch	official store sale, was 49.99
+a75pro	DrunkDeer	109.99	USD	https://drunkdeer.com/products/drunkdeer-a75-pro-wired-actuation-distance-adjustable-magnetic-switch-keyboard	official store, was 129.99
+g213	Walmart	49.99	USD	https://www.walmart.com/ip/Logitech-G213-Prodigy-Gaming-Keyboard/118141287	listing
+g213	Newegg	39.99	USD	https://www.newegg.com/logitech-g213-prodigy-920-008083-tactile-mechanical-keyboard/p/N82E16823126473	listing, was 49.99
+g213	Best Buy	59.99	USD	https://www.bestbuy.com/site/logitech-prodigy-g213-full-size-wired-membrane-gaming-keyboard-with-rgb-backlighting-black/5799701.p?skuId=5799701	listing
+novapro	SteelSeries	289.99	USD	https://steelseries.com/gaming-headsets/arctis-nova-pro-wireless-pc-playstation	official store, was 349.99
+novapro	Best Buy	379.99	USD	https://www.bestbuy.com/product/steelseries-arctis-nova-pro-wireless-multi-gaming-headset-for-pc-ps5-ps4-switch-black/J3LG47VK2V/sku/6506219	listing
+novapro	Walmart	244.99	USD	https://www.walmart.com/ip/SteelSeries-Arctis-Nova-Pro-Wireless-Multi-System-Gaming-Headset-Premium-Hi-Fi-Drivers-Active-Noise-Cancellation-Infinity-Power-System-ClearCast-Gen/1128329368	listing
+alphaw	HyperX	108.99	USD	https://hyperx.com/products/hyperx-cloud-alpha-wireless	official store, MSRP 199.99
+alphaw	Amazon	108.99	USD	https://www.amazon.com/HyperX-Cloud-Alpha-Wireless-Noise-canceling/dp/B09TRW57WB	listing, list 199.99
+alphaw	Walmart	119.99	USD	https://www.walmart.com/ip/HyperX-Cloud-Alpha-Wireless-Over-Ear-Gaming-Headset-Red/553448134	listing
+cloud3	HyperX	69.99	USD	https://hyperx.com/products/hyperx-cloud-iii-wired-gaming-headset?variant=43656365375645	official store (black), MSRP 99.99
+cloud3	Walmart	69.99	USD	https://www.walmart.com/ip/HyperX-Cloud-III-Gaming-Headset-Black/2894015515	listing (black)
+maxwell2	Audeze	329.00	USD	https://www.audeze.com/products/maxwell-2-wireless-gaming-headset	official store (PlayStation/PC), Xbox 349
+maxwell2	Best Buy	329.00	USD	https://www.bestbuy.com/product/audeze-maxwell-2-over-the-ear-wireless-gaming-headset-for-playstation-4-playstation-5-pc-black/J3Y87W27CY	listing
+maxwell2	Walmart	329.00	USD	https://www.walmart.com/ip/Audeze-Maxwell-2-Wireless-Gaming-Headset-compatible-with-PlayStation-PC-Mac-and-Switch/19944652389	listing
+gprox2	Amazon	208.00	USD	https://www.amazon.com/dp/B0B3F8V4JG	listing (black), list 279.99
+gprox2	Newegg	249.99	USD	https://www.newegg.com/logitech-g-pro-x2-lightspeed-981-001262-black-3-5mm-usb/p/N82E16826197623	listing (black)
+gprox2	Walmart	214.39	USD	https://www.walmart.com/ip/Logitech-G-PRO-X-2-LIGHTSPEED-Wireless-Gaming-Headset-Detachable-Boom-Mic-for-PC-PS5-PS4-Nintendo-Switch-Black/1345219365	listing
+bsv2x	Razer	59.99	USD	https://www.razer.com/gaming-headsets/razer-blackshark-v2-x	official store
+bsv2x	Walmart	49.99	USD	https://www.walmart.com/ip/Razer-BlackShark-V2-X-Wired-Gaming-Headset-HyperClear-Cardioid-Mic-Black/991147411	listing
+pc38x	Newegg	289.99	USD	https://www.newegg.com/p/1VH-06AP-000E1	listing (Drop + EPOS, black)
+pc38x	Newegg (other seller)	300.99	USD	https://www.newegg.com/p/0TH-059U-00037	listing
+stealth600	Turtle Beach	94.99	USD	https://www.turtlebeach.com/products/stealth-600-headset	official store, MSRP 109.99
+stealth600	Walmart	89.99	USD	https://www.walmart.com/ip/Turtle-Beach-Stealth-600-Gen-3-Headset-Xbox-Black/5113175394	listing (Xbox black)
+nova7g2	Best Buy	174.99	USD	https://www.bestbuy.com/product/steelseries-arctis-nova-7-gen-2-wireless-over-the-ear-multi-gaming-headset-for-pc-ps5-switch-handheld-black/J3GWPZ3CY5/sku/6640850	listing (black), MSRP 199.99
+nova7g2	SteelSeries	159.99	USD	https://steelseries.com/gaming-headsets/arctis-nova-7-gen-2?color=white&primaryPlatform=xbox	official store (7X Xbox version), MSRP 199.99
+nova7g2	Walmart	199.99	USD	https://www.walmart.com/ip/SteelSeries-Arctis-Nova-7-Wireless-Gen-2-Multi-Platform-Gaming-Headset-Real-Time-App-Control-50-HR-Mixable-2-4GHz-Bluetooth-PC-PS5-PS4-Switch-1-2-Mob/17781203262	listing (black, was out of stock)
+bsv2p	Razer	129.99	USD	https://www.razer.com/gaming-headsets/razer-blackshark-v2-pro-white	official store, was 199.99
+bsv2p	Best Buy	179.99	USD	https://www.bestbuy.com/site/razer-blackshark-v2-pro-2023-wireless-esports-gaming-headset-for-pc-ps5-ps4-switch-black/6538210.p	listing (black)
+aw2725df	Dell	469.99	USD	https://www.dell.com/en-us/shop/monitors/apd/alienware-27-360hz-qd-oled-gaming-monitor-aw2725df/aw2725df/-	official store sale, value 649.99
+aw2725df	Walmart	584.00	USD	https://www.walmart.com/ip/Alienware-27-WQHD-OLED-Gaming-Monitor-Black-AW2725DF/5321628010	listing
+aw2725df	Newegg	564.99	USD	https://www.newegg.com/p/pl?d=alienware+aw2725df	lowest listing
+xl2566k	Newegg	649.00	USD	https://www.newegg.com/benq-xl2566k-25/p/0JC-002S-00245	marketplace seller; Best Buy no longer sells it new
+27gp850	Walmart	199.99	USD	https://www.walmart.com/ip/LG-27GP850-B-27-in-16-9-Ratio-2560-x-1440-Resolution-Adaptive-Sync-QHD-165-Hz-HDR-IPS-Gaming-Monitor/842633016	listing; LG says this model is discontinued
+27gp850	Newegg (refurbished)	249.99	USD	https://www.newegg.com/lg-electronics-ultragear-27gp850-b-27/p/0JC-000D-00D67?Item=9SIB5FSGZU3734	refurbished, third-party seller
+q27g3xmn	Newegg	363.99	USD	https://www.newegg.com/aoc-q27g3xmn-27-qhd-180-hz-144-hz-va-black-red/p/N82E16824160516	listing
+q27g3xmn	Walmart	349.99	USD	https://www.walmart.com/ip/AOC-Q27G3XMN-27-Mini-LED-Gaming-Monitor-2K-QHD-2560x1440-180Hz-1ms-2X-HDMI-2-0-2X-Display-Port-Height-Adjustable-Xbox-PS5-Switch-Ready-3-Year-Zero-Br/5292875126	listing, was 549.99
+q27g3xmn	AOC	299.99	USD	https://www.aoc.com/us/gaming/monitors/q27g3xmn	official page (sold through Amazon)
+24g4	Walmart	170.55	USD	https://walmart.com/ip/AOC-24G4-24-Class-Full-HD-Gaming-LED-Monitor-Black-Red-23-8-Viewable-Fast-IPS-Backlight-1920-x-1080-16-7-Million-Colors-Adaptive-Sync-FreeSync-Premiu/5893310221	listing (was out of stock)
+24g4	Newegg (refurbished)	89.00	USD	https://www.newegg.com/p/3D4-001B-00088	refurbished
+g95sc	Best Buy	1099.99	USD	https://www.bestbuy.com/site/samsung-49-odyssey-qd-oled-g9-g95sc-dqhd-240hz-0-03ms-g-sync-compatible-curved-smart-gaming-monitor-silver/6544291.p?skuId=6544291	listing, comp. value 1799.99
+g95sc	Samsung	1799.99	USD	https://www.samsung.com/us/monitors/gaming/49-inch-odyssey-oled-g9-g95sc-dqhd-240hz-03ms-g-sync-sku-ls49cg954snxza/	official store
+g95sc	Walmart	1399.99	USD	https://www.walmart.com/ip/SAMSUNG-49-inch-Class-Odyssey-OLED-G95SC-DQHD-240Hz-Curved-Smart-Gaming-Monitor-LS49CG954SNXZA/2033328405	listing (was out of stock)
+32gs95ue	Walmart	1399.99	USD	https://www.walmart.com/ip/LG-UltraGear-32-OLED-Dual-Mode-4K-UHD-240Hz-or-FHD-480Hz-0-03ms-G-Sync-Compatible-Gaming-Monitor-with-Pixel-Sound/5677336964	listing (was out of stock)
+32gs95ue	Newegg	1399.00	USD	https://www.newegg.com/lg-32gs95ue-b-32-uhd-dual-mode-ultragear-oled-black/p/N82E16824026414	lowest listing
+274qrfe2	MSI	349.99	USD	https://us-store.msi.com/MAG-274QRF-QD-E2	official store
+274qrfe2	Walmart	249.99	USD	https://www.walmart.com/ip/MSI-MAG274QRF-QD-E2-27-QHD-Rapid-IPS-with-Quantum-Dot-Technology-180Hz-1ms-GtG-HDR400-Height-Adjustable/5290427656	listing (was out of stock)
+g5uw	Samsung	399.99	USD	https://www.samsung.com/us/monitors/gaming/34-inch-g5-odyssey-gaming-monitor-with-1000r-curved-screen-sku-lc34g55twwnxza/	official store
+g5uw	Newegg	399.99	USD	https://www.newegg.com/samsung-c34g55t-34-ultra-wqhd-165-hz-odyssey-g5-va-black/p/N82E16824022912	listing
+g5uw	Best Buy	279.99	USD	https://www.bestbuy.com/product/samsung-34-odyssey-g5-1000r-curved-1ms-165hz-qhd-freesync-prem-gaming-monitor-black/J3ZYGCT485	listing, sale, was 399.99
+dualsense	Best Buy	54.99	USD	https://www.bestbuy.com/product/sony-interactive-entertainment-dualsense-wireless-controller-for-ps5-pc-mac-mobile-midnight-black/JXHQ37T9XC	listing (black), Black Friday, was 74.99
+dualsense	Walmart	54.00	USD	https://www.walmart.com/ip/Sony-PS5-DualSense-Wireless-Controller-Midnight-Black/18288610344	listing (black), was 74.99
+dualsense	Walmart (white)	69.99	USD	https://www.walmart.com/ip/Sony-PS5-DualSense-Wireless-Controller-White/18248050357	listing (white)
+xboxpad	Microsoft	49.06	USD	https://www.microsoft.com/en-us/d/xbox-wireless-controller/8xn59crbsqgz	official store sale, was 64.99
+xboxpad	Walmart	55.49	USD	https://www.walmart.com/ip/Microsoft-Xbox-Wireless-Controller-Carbon-Black/15060559533	listing, was 64.00
+elite2	Microsoft	167.99	USD	https://www.microsoft.com/en-us/d/xbox-elite-wireless-controller-series-2/8rsn7j6375gg	official store sale, was 199.99
+elite2	Xbox.com	167.99	USD	https://www.xbox.com/en-US/accessories/controllers/elite-wireless-controller	official, was 199.99
+elite2	Walmart	167.99	USD	https://www.walmart.com/ip/XBOX-Elite-Wireless-Controller-Series-2-Black-for-PC-Microsoft-Xbox-One/784834522	listing
+edge	Best Buy	199.99	USD	https://www.bestbuy.com/product/sony-dualsense-edge-wireless-controller-midnight-black/JXHQ3CXX9X	listing (black)
+edge	Walmart	169.00	USD	https://www.walmart.com/ip/Sony-PS5-DualSense-Edge-Wireless-Controller-Midnight-Black/14938419884	listing, was 199.99
+ult2	8BitDo	59.99	USD	https://shop.8bitdo.com/products/8bitdo-ultimate-2	official store (was sold out)
+ult2	Best Buy	59.99	USD	https://www.bestbuy.com/product/8bitdo-ultimate-2-bluetooth-wireless-controller-with-hall-effect-triggers-tmr-joysticks-and-integrated-charging-dock-purple/CZY3JSJSG9/sku/10411194	listing (purple)
+ult2	Walmart	59.99	USD	https://www.walmart.com/ip/8BitDo-Ultimate-2-Wireless-Controller-Windows-Android-Gaming-Controller-TMR-Joysticks-Switchable-Hall-Effect-Tactile-Triggers-RGB-Fire-Ring-8Speed-Wi/16502050519	listing
+g7se	GameSir	44.99	USD	https://gamesir.com/products/gamesir-g7-se/buy	official store
+g7se	Walmart	39.99	USD	https://www.walmart.com/ip/GameSir-G7-SE-Wired-Xbox-Game-Controller-Jet-Black/18400059825	listing, was 59.99
+g7se	Newegg	59.99	USD	https://www.newegg.com/p/232-00AM-000D9	listing
+g7se	Best Buy	69.99	USD	https://www.bestbuy.com/product/gamesir-g7-se-wired-controller-for-xbox-series-xsone-windows-10-11-plug-play-with-hall-effect-joysticks-trigger-3-5mm-white/CZS9HRX2CJ/sku/12558299/reviews	listing (white)
+sw2pro	Nintendo	89.99	USD	https://www.nintendo.com/us/store/hardware/joy-con-and-controllers/	official store
+sw2pro	Walmart	89.00	USD	https://www.walmart.com/ip/Nintendo-Switch-2-Pro-Controller/15955005005	listing
+sw2pro	Best Buy	89.99	USD	https://www.bestbuy.com/product/nintendo-switch-2-pro-controller-black/J7GSL57TYS/sku/6625904/reviews	listing
+wolv3	Razer	199.99	USD	https://www.razer.com/console-controllers/Razer-Wolverine-V3-Pro/RZ06-05200100-R3U1	official store
+wolv3	Best Buy	191.99	USD	https://www.bestbuy.com/product/razer-wolverine-v3-pro-wireless-gaming-controller-with-6-remappable-buttons-fast-triggers-licensed-for-xbox-series-xs-pc-white/J39HWFHWZ9/sku/6640413	listing (white)
+wolv3	Walmart	169.90	USD	https://www.walmart.com/ip/RAZER-Wolverine-V3-Pro-Xbox-Licensed-Wireless-Gaming-Controller-for-Xbox-Series-X-S-PC-Black-NASA-Packaging/10979901443	listing
+g923	Walmart	249.99	USD	https://www.walmart.com/ip/Logitech-G923-Racing-Wheel-and-Pedals-for-PS5-PS4-and-PC/100486319	listing (PS/PC), was 299.99
+g923	Best Buy	279.99	USD	https://www.bestbuy.com/site/logitech-g923-racing-wheel-and-pedals-for-ps5-ps4-and-pc-black/6423223.p?skuId=6423223	listing, comp. value 349.99
+g923	Newegg	305.49	USD	https://www.newegg.com/logitech-g923-wheel-black/p/N82E16879212027?item=9SIA6ZPK9Y6181	third-party seller
+xlheavy	Best Buy	10.99	USD	https://www.bestbuy.com/product/glorious-heavy-stitched-edge-cloth-gaming-mouse-pad-with-washable-surface-xl-white/J3QSK5LPWY	listing (white)
+xlheavy	Newegg	34.99	USD	https://www.newegg.com/p/173-00XJ-00006	third-party seller (black)
+g240	Logitech	9.99	USD	https://www.logitechg.com/en-us/shop/p/g240-cloth-gaming-mouse-pad	official store
+g240	Best Buy	9.99	USD	https://www.bestbuy.com/site/logitech-g240-cloth-gaming-mouse-pad-with-rubber-base-black/6514575.p?skuId=6514575	listing
+g240	Walmart	19.99	USD	https://www.walmart.com/ip/Logitech-G240-Cloth-Gaming-Mouse-Pad-for-Low-DPI-Gaming-Black/609036615	listing
+gigantus	Razer	14.99	USD	https://www.razer.com/gaming-mouse-mats/razer-gigantus-v2/RZ02-03330400-R3U1	official store (older page)
+g640	Logitech	29.99	USD	https://www.logitechg.com/en-us/shop/p/g640-cloth-gaming-mouse-pad	official store
+g640	Best Buy	29.99	USD	https://www.bestbuy.com/product/logitech-g640-cloth-gaming-mouse-pad-with-rubber-base-black/J7H7ZY8YX3	listing
+g640	Walmart	37.00	USD	https://www.walmart.com/ip/Logitech-G640-Large-Cloth-Gaming-Mousepad-Blk/214110699	listing
+gsrse	Zowie	34.99	USD	https://zowie.benq.com/en-us/mouse-pad/g-sr-se-orange.html	official page
+gsrse	Newegg	53.58	USD	https://www.newegg.com/p/N82E16826951007	listing (red ZC05)
+strider	Razer	29.99	USD	https://www.razer.com/gaming-mouse-mats/razer-strider/RZ02-03810200-R3U1	official store (Large Black)
+strider	Best Buy	29.99	USD	https://www.bestbuy.com/site/razer-strider-hybrid-gaming-mouse-pad-large-quartz/6521039.p?skuId=6521039	listing (quartz)
+qckheavy	SteelSeries	34.99	USD	https://steelseries.com/gaming-mousepads/qck-heavy?color=magenta&mousepadSize=large	official store (MSRP)
+qckheavy	Best Buy	34.99	USD	https://www.bestbuy.com/product/steelseries-qck-heavy-gaming-mouse-pad-large-white/J3GWPZ3XFF	listing (white)
+qckheavy	Walmart	34.99	USD	https://www.walmart.com/ip/SteelSeries-QcK-Heavy-Gaming-Mousepad-Thicker-Non-Slip-Silicone-Rubber-Base-Optimized-for-Gaming-Large-Size-450-mm-x-400-mm-x-6-mm-White/19981310938	listing (white)
+qckheavy	Newegg	36.99	USD	https://www.newegg.com/steelseries-63008/p/N82E16826995024	listing (black)
+es2	Pulsar	34.95	USD	https://us.pulsar.gg/collections/all-products	official US store (L~XL)
+es2	Pulsar (RRQ Edition)	19.98	USD	https://www.pulsar.gg/collections/es-pad-series	official store sale, was 39.95 (was sold out)
+mm700	Corsair	39.99	USD	https://www.corsair.com/us/en/p/mousepads/ch-9417070-ww/mm700-rgb-extended-mouse-pad-ch-9417070-ww	official store, was 59.99
+mm700	Amazon	39.99	USD	https://www.amazon.com/dp/B08QSNNV5H	listing, list 59.99
+mm700	Walmart	42.99	USD	https://www.walmart.com/ip/CORSAIR-Gaming-MM700-RGB-Extended-Mouse-pad/108361576	listing
