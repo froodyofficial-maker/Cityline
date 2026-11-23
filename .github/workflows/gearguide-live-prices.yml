@@ -1,8 +1,10 @@
 name: GearGuide live prices
 
-# Refreshes hardware-advisor/live-prices.json from Best Buy's official Products API every day,
-# so GearGuide shows today's Best Buy prices. Needs a repository secret named BESTBUY_API_KEY
-# (a free key from https://developer.bestbuy.com). Without the secret this workflow skips itself.
+# Refreshes hardware-advisor/live-prices.json every day from shops with an official price service:
+#  - Best Buy (US): repository secret BESTBUY_API_KEY (free key from https://developer.bestbuy.com)
+#  - Flipkart (India): secrets FLIPKART_AFFILIATE_ID and FLIPKART_AFFILIATE_TOKEN (free affiliate account
+#    at https://affiliate.flipkart.com)
+# Each shop runs only when its secrets are set; with none set, this workflow skips itself.
 on:
   schedule:
     - cron: '17 9 * * *'
@@ -22,9 +24,11 @@ jobs:
       - name: Fetch today's prices
         env:
           BESTBUY_API_KEY: ${{ secrets.BESTBUY_API_KEY }}
+          FLIPKART_AFFILIATE_ID: ${{ secrets.FLIPKART_AFFILIATE_ID }}
+          FLIPKART_AFFILIATE_TOKEN: ${{ secrets.FLIPKART_AFFILIATE_TOKEN }}
         working-directory: hardware-advisor
         run: |
-          if [ -z "$BESTBUY_API_KEY" ]; then echo "No BESTBUY_API_KEY secret yet; skipping."; exit 0; fi
+          if [ -z "$BESTBUY_API_KEY" ] && [ -z "$FLIPKART_AFFILIATE_TOKEN" ]; then echo "No shop secrets yet; skipping."; exit 0; fi
           node research/update-live-prices.mjs
       - name: Save the new prices
         run: |

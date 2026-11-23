@@ -251,7 +251,7 @@
       return `<p>General AI chatbots are handy, but for buying gear they have some blind spots that GearGuide is built to avoid:</p>
         <ul><li><b>Where answers come from:</b> a chatbot repeats what it read online, and much of that is sponsored reviews, affiliate "best of" lists and popularity leaderboards. GearGuide's picks come from a fixed catalogue rated by a gamer from hands-on experience.</li>
         <li><b>No sponsors:</b> popularity and brand never change a score here.</li>
-        <li><b>Real prices:</b> every price comes from a named shop's page with a link and the date it was checked, and Best Buy prices update live. Chatbots often give old or made-up prices.</li>
+        <li><b>Real prices:</b> every price comes from a named shop's page with a link and the date it was checked, and Best Buy (US) and Flipkart (India) prices update live. Chatbots often give old or made-up prices.</li>
         <li><b>Fits you:</b> it always uses your games, hand size, grip and budget, and explains every match.</li>
         <li><b>Consistent:</b> the same answers give the same picks every time.</li></ul>
         <p>A chatbot knows about more products than our ${G.PROD ? Object.keys(G.PROD).length : 72}, so use both: GearGuide to find what fits you, and always check the shop before you buy.</p>`;
@@ -378,7 +378,7 @@ How to answer:
 - Keep answers short: usually 2 to 6 sentences, or a short bulleted list. Use **bold** for product names and simple "- " bullet lists. No headings, no tables unless comparing products.
 - Recommend only products from the catalogue below. When you mention one, write its id in double square brackets right after its name, like **Razer Viper V3 Pro** [[viperv3]], so the site can link it.
 - Never say one product is the best for everyone. Explain trade-offs and why something suits this person.
-- lowest_price_usd is the lowest new price found across real shops (each shop's price is in shop_prices; they were read from the shops' own pages in late November 2026, and Best Buy ones marked live are refreshed daily). Name the shop when you give a price. Convert to the person's currency using the rate in their message, round sensibly, and say prices change and to check a shop before buying.
+- lowest_price_usd is the lowest new price found across real shops (each shop's price is in shop_prices; they were read from the shops' own pages in late November 2026, and ones marked live, from Best Buy or Flipkart, are refreshed daily). Prices in INR are from Indian shops; when the person uses INR, quote Indian shop prices first. Name the shop when you give a price. Convert to the person's currency using the rate in their message, round sensibly, and say prices change and to check a shop before buying.
 - Ratings (0 to 100) are GearGuide's own judgement from spec sheets and reviews, not lab tests.
 - If something isn't in the catalogue, you can talk about it in general terms but say GearGuide hasn't reviewed it.
 - If asked about something unrelated to gaming gear, games or setting up to play, answer briefly if it is harmless and steer back to gear.

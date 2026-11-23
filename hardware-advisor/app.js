@@ -173,16 +173,22 @@
   let LIVE = null; // { updated, source, prices }
   const NOT_NEW = /refurb|renewed|open-box|out of stock|sold out|unavailable/i;
   const offerUSD = o => o.price / (fx.rates[o.cur] || SAVED.refRates[o.cur] || 1);
+  // Where the visitor shops: picking rupees means shopping in India, so Indian shops come first.
+  const REGION_NAME = { IN: 'India', US: 'the US' };
+  const shopRegion = () => state.currency === 'INR' ? 'IN' : 'US';
+  const offerRegion = o => o.region || (o.cur === 'INR' ? 'IN' : 'US');
   function applyOffers() {
     for (const p of PRODUCTS) {
       p.catalogPrice ??= p.price;
       let list = (SAVED.offers[p.id] || []).map(o => ({ ...o, live: false }));
       const live = LIVE && LIVE.prices[p.id];
       if (live) list = [...list.filter(o => !live.some(l => l.store === o.store)), ...live.map(o => ({ ...o, live: true }))];
-      list.sort((a, b) => offerUSD(a) - offerUSD(b));
+      const here = shopRegion();
+      list.sort((a, b) => (offerRegion(a) !== here) - (offerRegion(b) !== here) || offerUSD(a) - offerUSD(b));
       p.offers = list;
       const usable = list.filter(o => !NOT_NEW.test(o.note || ''));
-      const best = usable[0] || list[0];
+      const local = usable.filter(o => offerRegion(o) === here);
+      const best = local[0] || usable.slice().sort((a, b) => offerUSD(a) - offerUSD(b))[0] || list[0];
       p.price = best ? Math.round(offerUSD(best) * 100) / 100 : p.catalogPrice;
       p.bestOffer = best || null;
     }
@@ -529,7 +535,7 @@
     const alt = (lbl, a) => a ? `<button type="button" class="alt" data-goto="${a.p.id}"><span class="lbl">${lbl}</span><span class="nm">${esc(a.p.brand)} ${esc(a.p.name)}</span><span class="pc">${money(a.p.price)}</span><span class="pill ${tone(a.match)}">${a.match}%</span></button>` : '';
     const altHtml = alt('Spend less', alts.cheaper) + alt('Spend more', alts.pricier);
 
-    const listTag = p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s title="Manufacturer list price">List ${moneyExact(p.msrp)}</s>` : '';
+    const listTag = shopRegion() === 'US' && p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s title="Manufacturer list price">List ${moneyExact(p.msrp)}</s>` : '';
     const shop = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(p.brand + ' ' + p.name)}`;
     const ringTip = 'How well it fits you, out of 100. It is not a review score.';
     if (!state.detail) {
@@ -690,7 +696,7 @@
       .map(c => `<option value="${c}" title="${CURRENCY_NAMES[c]}">${symbol(c)} ${c}</option>`).join('');
     sel.value = state.currency;
     const d = new Date(((!fx.live && fx.dates[state.currency]) || fx.date) + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const shops = `Each price is the lowest we found across real shops (checked ${SAVED.checkedLabel}${LIVE ? `; Best Buy prices live, updated ${ago(LIVE.updated)}` : ''}).`;
+    const shops = `Each price is the lowest we found at real shops in ${REGION_NAME[shopRegion()]}${shopRegion() === 'IN' ? ' (US shops when we found none in India)' : ''}, checked ${SAVED.checkedLabel}${LIVE ? `; prices marked Live update daily (last ${ago(LIVE.updated)})` : ''}. ${shopRegion() === 'IN' ? 'Pick another currency to see US shops first.' : 'Shopping in India? Pick ₹ INR to see Indian shops first.'}`;
     $('#fxnote').textContent = state.currency === 'USD'
       ? shops
       : `${shops} Converted at ${fx.live ? 'live ECB exchange rates' : 'saved exchange rates'} of ${d}; local shops often differ because of taxes and import duties.`;
@@ -855,6 +861,7 @@
 
   function openDashboard() {
     hideReset();
+    applyOffers(); // the currency may have changed (setup, reset), which changes which shops come first
     renderSide();
     renderCurrency();
     renderResults();
@@ -1002,7 +1009,7 @@
     $('#out').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   $('#sort').addEventListener('change', e => { state.sort = e.target.value; changed(); });
-  $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); renderCurrency(); renderBudget(); renderResults(); });
+  $('#currency').addEventListener('change', e => { state.currency = e.target.value; save(); applyOffers(); renderCurrency(); renderBudget(); renderResults(); });
 
   $('#addLine').addEventListener('click', () => addGameLine().focus());
   $('#start').addEventListener('click', () => goSetup());
@@ -1177,7 +1184,7 @@
     const relevant = g => ['mouse', 'keyboard', 'mousepad'].includes(p.cat) ? (g.needs.pad || 0) < .8
       : p.cat === 'controller' ? (g.needs.pad || 0) >= .3 || (g.needs.racing || 0) >= .5 : true;
     const games = GAMES.filter(relevant).map(g => ({ g, fit: fitForGame(p, g) })).filter(x => x.fit != null).sort((x, y) => y.fit - x.fit).slice(0, 8);
-    const listTag = p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s>List ${moneyExact(p.msrp)}</s>` : '';
+    const listTag = shopRegion() === 'US' && p.msrp && Math.abs(p.msrp - p.price) >= 1 ? `<s>List ${moneyExact(p.msrp)}</s>` : '';
     const shop = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(p.brand + ' ' + p.name)}`;
     const bar = (name, v) => `<div class="bar">${name}<i style="--w:${Math.round(v * 100)}%"></i><span>${Math.round(v * 100)}</span></div>`;
     const mini = x => `<a class="altcard glass" href="#/p/${x.p.id}" data-product="${x.p.id}"><span class="altart cat-${x.p.cat}">${art(x.p)}</span><span class="alttxt"><small>${esc(x.p.brand)}</small><b>${esc(x.p.name)}</b><em>${money(x.p.price)} · ${x.match}% match</em></span></a>`;
@@ -1237,14 +1244,17 @@
   function shopTable(p, search) {
     if (!p.offers.length) return '';
     const when = o => o.live ? `<span class="livetag">Live</span> ${esc(ago(LIVE.updated))}` : `Checked ${esc(SAVED.checkedLabel)}`;
-    const rows = p.offers.map((o, i) => `<tr${i === 0 && o === p.bestOffer ? ' class="best"' : ''}>
+    const here = shopRegion();
+    const head = (o, i) => (i === 0 || offerRegion(p.offers[i - 1]) !== offerRegion(o))
+      ? `<tr class="regionrow"><th colspan="5">${offerRegion(o) === 'IN' ? 'Shops in India' : 'Shops in the US'}${offerRegion(o) === here ? '' : ' (for comparison)'}</th></tr>` : '';
+    const rows = p.offers.map((o, i) => `${head(o, i)}<tr${o === p.bestOffer ? ' class="best"' : ''}>
       <th scope="row">${esc(o.store)}${o === p.bestOffer ? ' <span class="badge ok">Lowest</span>' : ''}</th>
       <td class="num">${offerMoney(o)}</td>
       <td class="note">${esc(niceNote(o))}</td>
       <td class="when">${when(o)}</td>
       <td><a class="shoplink" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a></td></tr>`).join('');
     return `<section class="glass psec shops" id="shops"><h2>Prices at different shops</h2>
-      <p class="psub">${LIVE && p.offers.some(o => o.live) ? `Best Buy prices are live from Best Buy, updated ${esc(ago(LIVE.updated))}. ` : ''}Other prices were read from each shop's own page on ${esc(SAVED.checkedLabel)}. Shops change prices often, so the price on the shop's page is the one that counts.</p>
+      <p class="psub">${p.offers.some(o => offerRegion(o) === here) ? '' : `We haven't found this at a shop in ${REGION_NAME[here]} yet, so these are prices elsewhere. `}${LIVE && p.offers.some(o => o.live) ? `Prices marked Live come straight from the shop (${esc(LIVE.source || 'shop price service')}), updated ${esc(ago(LIVE.updated))}. ` : ''}Other prices were read from each shop's own page on ${esc(SAVED.checkedLabel)}. Shops change prices often, so the price on the shop's page is the one that counts.</p>
       <div class="tablewrap"><table><thead><tr><th>Shop</th><th>Price</th><th>Details</th><th>When</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="psub"><a href="${search}" target="_blank" rel="noopener noreferrer">Search more shops on Google Shopping ↗</a></p></section>`;
   }

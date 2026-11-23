@@ -712,3 +712,4 @@ article.card.first .rank { background: var(--purple); color: #fff; border-color:
   .shops td.when, .shops thead th:nth-child(4) { display: none; }
 }
 .shops .tablewrap + .psub { margin-top: 14px; }
+.shops tr.regionrow th { padding-top: 18px; color: var(--purple-hi); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; border-top: 0; }

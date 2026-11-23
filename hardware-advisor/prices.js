@@ -11,6 +11,13 @@ window.GG_PRICES = {
  "offers": {
   "gpx2": [
    {
+    "store": "PrimeABGB",
+    "price": 12182,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g-pro-x-superlight-2-wireless-white-gaming-mouse-910-006640/",
+    "note": "listing (white)"
+   },
+   {
     "store": "Walmart",
     "price": 146.9,
     "cur": "USD",
@@ -23,6 +30,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/site/6556754.p",
     "note": "listing, was 179.99"
+   },
+   {
+    "store": "Amazon India",
+    "price": 14995,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Superlight-Lightspeed-Lightweight-Programmable/dp/B0CGDZC2FK",
+    "note": "listing, MRP 16995"
    },
    {
     "store": "Newegg",
@@ -40,6 +54,20 @@ window.GG_PRICES = {
    }
   ],
   "dav3p": [
+   {
+    "store": "Amazon India",
+    "price": 9402,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-DeathAdder-Wireless-Gaming-Mouse/dp/B0B91YPP6R",
+    "note": "listing (white)"
+   },
+   {
+    "store": "Elitehubs",
+    "price": 9485,
+    "cur": "INR",
+    "url": "https://elitehubs.com/products/razer-deathadder-v3-pro-wireless-gaming-mouse-black",
+    "note": "listing (black, was out of stock)"
+   },
    {
     "store": "Best Buy",
     "price": 99.99,
@@ -83,6 +111,27 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.razer.com/gaming-mice/Razer-Viper-V3-Pro/RZ01-05120100-R3U1",
     "note": "official store, was 159.99"
+   },
+   {
+    "store": "Amazon India",
+    "price": 12999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Viper-Wireless-Esports-Gaming/dp/B0CVRGCGWJ",
+    "note": "listing, MRP 25999"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 13199,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/razer-viper-v3-pro-wireless-symmetrical-esports-gaming-mouse-black-rz01-05120100-r3a1/",
+    "note": "listing, MRP 16999"
+   },
+   {
+    "store": "MD Computers",
+    "price": 13471,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-viper-v3-pro-white-wireless-mouse-rz01-05120200-r3a1",
+    "note": "listing (white)"
    }
   ],
   "x2mini": [
@@ -99,9 +148,30 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.amazon.com/Pulsar-Gaming-Gears-Lightweight-Symmetrical/dp/B0D66D4GLM",
     "note": "listing (Founder's Edition)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 25023,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Pulsar-Gaming-Gears-Lightweight-Symmetrical/dp/B0D66D4GLM",
+    "note": "Founder's Edition, imported by a third-party seller"
    }
   ],
   "ec2c": [
+   {
+    "store": "Amazon India",
+    "price": 3999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/EC2-C-Ergonomic-Professional-Performance-Driverless/dp/B09JRZZ4RV",
+    "note": "listing (lowest of 3 sellers)"
+   },
+   {
+    "store": "Amazon India (other seller)",
+    "price": 6490,
+    "cur": "INR",
+    "url": "https://www.amazon.in/BenQ-EC2-C-Weight-Reduced-Preference-Driverless/dp/B0989ZHF4P",
+    "note": "listing, MRP 8500"
+   },
    {
     "store": "Newegg",
     "price": 225.59,
@@ -131,6 +201,27 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/p/32K-0002-00778",
     "note": "third-party seller"
+   },
+   {
+    "store": "Elitehubs",
+    "price": 11699,
+    "cur": "INR",
+    "url": "https://elitehubs.com/products/logitech-g502-x-lightspeed-wireless-gaming-mouse-black",
+    "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 11995,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Lightspeed-Wireless-Gaming-Mouse/dp/B0BCQ83WL9",
+    "note": "listing, MRP 15295"
+   },
+   {
+    "store": "MD Computers",
+    "price": 12000,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/logitech-g502-x-lightspeed-wireless-mouse-910-006182",
+    "note": "listing"
    }
   ],
   "naga": [
@@ -154,6 +245,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/site/searchpage.jsp?id=pcat17071&st=naga+v2+pro",
     "note": "search results"
+   },
+   {
+    "store": "Amazon India",
+    "price": 17864,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Wireless-Gaming-Mouse-Lighting-RZ01-04400100-R3A1/dp/B0BW414LJL",
+    "note": "listing, MRP 31990"
+   },
+   {
+    "store": "MD Computers",
+    "price": 18150,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-wireless-mouse-naga-v2-pro-rz01-04400100-r3a1",
+    "note": "listing (was out of stock)"
    }
   ],
   "g305": [
@@ -165,11 +270,46 @@ window.GG_PRICES = {
     "note": "listing (white)"
    },
    {
+    "store": "Elitehubs",
+    "price": 2593,
+    "cur": "INR",
+    "url": "https://elitehubs.com/products/logitech-g305-lightspeed-wireless-ambidextrous-gaming-mouse",
+    "note": "listing"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 2650,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g305-lightspeed-wireless-gaming-mouse-black-910-006041/",
+    "note": "listing, MRP 3795"
+   },
+   {
+    "store": "Vedant Computers",
+    "price": 2715,
+    "cur": "INR",
+    "url": "https://www.vedantcomputers.com/logitech-g305-black-910-006041",
+    "note": "listing, MRP 3795"
+   },
+   {
+    "store": "MD Computers",
+    "price": 2750,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/logitech-g305-lightspeed-wireless-mouse-910-006041",
+    "note": "listing"
+   },
+   {
     "store": "Walmart",
     "price": 29.99,
     "cur": "USD",
     "url": "https://www.walmart.com/ip/Logitech-G305-LIGHTSPEED-Wireless-Gaming-Mouse-HERO-Sensor-12-000-DPI-Lightweight-6-Programmable-Buttons-250h-Battery-White/774459101",
     "note": "listing (white)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 3199,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-G305-Lightspeed-Wireless-Gaming/dp/B08KQ5JJHK",
+    "note": "listing"
    },
    {
     "store": "Newegg",
@@ -187,6 +327,20 @@ window.GG_PRICES = {
    }
   ],
   "cobra": [
+   {
+    "store": "MD Computers",
+    "price": 2600,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-cobra-mouse-rz01-04650100-r3m1?language=en-gb",
+    "note": "listing, MRP 4999"
+   },
+   {
+    "store": "Amazon India",
+    "price": 2749,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Smartchoice-Lightweight-Underglow-Speedflex/dp/B0C5XNRVWM",
+    "note": "listing, MRP 5399"
+   },
    {
     "store": "Best Buy",
     "price": 29.99,
@@ -218,6 +372,20 @@ window.GG_PRICES = {
   ],
   "viper8k": [
    {
+    "store": "MD Computers",
+    "price": 3475,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/razer-viper-8hkz-rz01-03580100-r3m1.html",
+    "note": "listing, MRP 8999"
+   },
+   {
+    "store": "Vedant Computers",
+    "price": 3515,
+    "cur": "INR",
+    "url": "https://www.vedantcomputers.com/razer-viper-8khz-wired-gaming-mouse-rz01-03580100-r3m1",
+    "note": "listing (was out of stock)"
+   },
+   {
     "store": "Newegg",
     "price": 73,
     "cur": "USD",
@@ -246,6 +414,27 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/razer-basilisk-v3-rz01-04000100-r3u1-usb-wired/p/0GA-002P-002U7",
     "note": "listing, list 69.99"
+   },
+   {
+    "store": "Flipkart",
+    "price": 3699,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/razer-basilisk-v3-ergonomic-rz01-04000100-r3m1-wired-optical-gaming-mouse/p/itm38813d90507f6",
+    "note": "listing, MRP 7499"
+   },
+   {
+    "store": "Amazon India",
+    "price": 3959,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Smartchoice-Ergonomic-Programmable-HyperScroll/dp/B097F8H1MC",
+    "note": "listing, MRP 7499"
+   },
+   {
+    "store": "MD Computers",
+    "price": 4545,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-basilisk-v3-mouse-rz01-04000100-r3m1",
+    "note": "listing"
    }
   ],
   "gm340": [
@@ -292,6 +481,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/glorious-model-o-lightweight-wired-optical-gaming-mouse-with-customizable-rgb-wired-black/J3GWJX2HXR/sku/6675746",
     "note": "listing"
+   },
+   {
+    "store": "MD Computers",
+    "price": 4999,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/glorious-model-o-rgb-wired-gaming-mouse-gog-black.html",
+    "note": "listing (was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 5656,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Glorious-Model-Eternal-Ultra-Gaming/dp/B0F9B8L5X6",
+    "note": "listing (Model O Eternal, white)"
    }
   ],
   "a15": [
@@ -312,6 +515,13 @@ window.GG_PRICES = {
   ],
   "m711": [
    {
+    "store": "Flipkart",
+    "price": 1290,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/redragon-cobra-m711-wired-optical-gaming-mouse/p/itmfakyxk2hscycx",
+    "note": "listing"
+   },
+   {
     "store": "Best Buy",
     "price": 19.99,
     "cur": "USD",
@@ -331,9 +541,37 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://redragonshop.com/products/cobra-m711-white",
     "note": "official store (white), was 27.99"
+   },
+   {
+    "store": "Amazon India",
+    "price": 3062,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Redragon-Gaming-Million-Chroma-Backlit/dp/B0751D11BL",
+    "note": "listing (imported)"
    }
   ],
   "g102": [
+   {
+    "store": "Flipkart",
+    "price": 1195,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/logitech-g102-wired-ambidextrous-optical-gaming-mouse-light-sync-adj-dpi-upto-8000-6-programmable-buttons-rgb/p/itmc44c10000ad95",
+    "note": "listing, MRP 2295"
+   },
+   {
+    "store": "Amazon India",
+    "price": 1480,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Customizable-Lighting-Programmable-Tracking/dp/B0895BG8QP",
+    "note": "listing (black), MRP 1995"
+   },
+   {
+    "store": "Vedant Computers",
+    "price": 1600,
+    "cur": "INR",
+    "url": "https://www.vedantcomputers.com/logitech-g102-lightsync-gaming-mouse-white-910-005803",
+    "note": "listing (white)"
+   },
    {
     "store": "Newegg",
     "price": 24.5,
@@ -343,6 +581,20 @@ window.GG_PRICES = {
    }
   ],
   "daess": [
+   {
+    "store": "Vedant Computers",
+    "price": 1189,
+    "cur": "INR",
+    "url": "https://www.vedantcomputers.com/razer-deathadder-essential-gaming-mouse-white-rz01-03850200-r3m1",
+    "note": "listing (white, was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 1499,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-DeathAdder-RZ01-02540100-R3M1-Essential-Optical/dp/B07F2GC4S9",
+    "note": "listing (black), MRP 4499"
+   },
    {
     "store": "Walmart",
     "price": 20.98,
@@ -381,6 +633,20 @@ window.GG_PRICES = {
     "note": "official store (Revival Series), was 14.99"
    },
    {
+    "store": "MD Computers",
+    "price": 1450,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/corsair-katar-pro-ultra-light-mouse-ch-930c011-ap",
+    "note": "listing (was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 1653,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Corsair-Ultra-Light-Optical-Gaming-Backlit/dp/B08KSZV3SR",
+    "note": "listing, MRP 2400"
+   },
+   {
     "store": "Best Buy",
     "price": 24.99,
     "cur": "USD",
@@ -389,6 +655,13 @@ window.GG_PRICES = {
    }
   ],
   "rival3": [
+   {
+    "store": "Amazon India",
+    "price": 2999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/SteelSeries-Rival-TrueMove-Optical-Programmable/dp/B082XQHPCL",
+    "note": "listing (original wired Rival 3), MRP 5499"
+   },
    {
     "store": "Walmart",
     "price": 34.97,
@@ -413,11 +686,25 @@ window.GG_PRICES = {
     "note": "listing, sale"
    },
    {
+    "store": "Amazon India",
+    "price": 1751,
+    "cur": "INR",
+    "url": "https://www.amazon.in/HyperX-Pulsefire-Core-Lighting-Programmable/dp/B07MTYWGST",
+    "note": "listing, MRP 4290"
+   },
+   {
     "store": "Newegg",
     "price": 24.99,
     "cur": "USD",
     "url": "https://www.newegg.com/p/32K-009Z-000M2",
     "note": "listing (white/pink)"
+   },
+   {
+    "store": "MD Computers",
+    "price": 2800,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/hyperx-pulsefire-core-hx-mc004b.html",
+    "note": "listing"
    },
    {
     "store": "HyperX",
@@ -443,11 +730,25 @@ window.GG_PRICES = {
     "note": "listing, comp. value 69.99"
    },
    {
+    "store": "PrimeABGB",
+    "price": 3250,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g502-hero-high-performance-gaming-mouse-910-005472/",
+    "note": "listing, MRP 5495"
+   },
+   {
     "store": "Newegg",
     "price": 35.99,
     "cur": "USD",
     "url": "https://www.newegg.com/logitech-910-005469-g502-hero-usb-wired/p/3C6-0064-00002",
     "note": "lowest seller"
+   },
+   {
+    "store": "Amazon India",
+    "price": 3595,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Performance-Gaming-Sensor-Adjustable/dp/B07XPJ9PW8",
+    "note": "listing, MRP 5495"
    },
    {
     "store": "Walmart",
@@ -478,6 +779,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/ATTACK-SHARK-X3-49g-SUPERLIGHT-Mouse-PixArt-PAW3395-Gaming-Sensor-BT-2-4G-Wireless-Wired-Gaming-Mouse-6-Adjustable-DPI-26000-200-Hrs-Battery-G502-Off/5479284741",
     "note": "listing (white)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 4999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/ATTACK-SHARK-Lightweight-Wireless-Resistant/dp/B0CF232R97",
+    "note": "listing (white), imported"
    }
   ],
   "modelominus": [
@@ -509,6 +817,27 @@ window.GG_PRICES = {
     "price": 49.98,
     "cur": "USD",
     "url": "https://www.bestbuy.com/site/razer-basilisk-v3-x-hyperspeed-optical-gaming-mouse-with-9-customizable-controls-wireless-black/6538211.p?skuId=6538211",
+    "note": "listing"
+   },
+   {
+    "store": "MD Computers",
+    "price": 6059,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-basilisk-v3-x-hyperspeed-wireless-mouse-rz01-04870100-r3a1",
+    "note": "listing"
+   },
+   {
+    "store": "Flipkart",
+    "price": 7899,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/razer-basilisk-v3-x-hyperspeed-bluetooth-7-programmable-buttons-rz01-04870100-r3a1-wireless-optical-gaming-mouse/p/itm796d85981f9c1",
+    "note": "listing, MRP 11599"
+   },
+   {
+    "store": "Amazon India",
+    "price": 8005,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Basilisk-HyperSpeed-Wireless-Gaming/dp/B0BXBC26X8",
     "note": "listing"
    }
   ],
@@ -549,6 +878,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/site/razer-huntsman-v3-pro-tkl-wired-analog-optical-gaming-keyboard-with-snap-tap-black/6558753.p?skuId=6558753",
     "note": "listing, comp. value 219.99"
+   },
+   {
+    "store": "Elitehubs",
+    "price": 18499,
+    "cur": "INR",
+    "url": "https://elitehubs.com/products/razer-huntsman-v3-pro-tenkeyless-analog-optical-gaming-keyboard",
+    "note": "listing (was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 19999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Huntsman-Pro-Tenkeyless-RZ03-04980100-R3M1/dp/B0CDBYCF7D",
+    "note": "listing, MRP 38999"
    }
   ],
   "q1max": [
@@ -565,6 +908,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/p/32N-0139-000M1",
     "note": "third-party seller"
+   },
+   {
+    "store": "Amazon India",
+    "price": 46348,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Keychron-Mechanical-Programmable-Bluetooth-Hot-Swappable/dp/B0CR1JHZ6R",
+    "note": "imported by a third-party seller"
    }
   ],
   "apextkl": [
@@ -597,9 +947,37 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.keychron.com/products/keychron-k2-wireless-mechanical-keyboard",
     "note": "official store, was 74.99"
+   },
+   {
+    "store": "Keychron India",
+    "price": 7504,
+    "cur": "INR",
+    "url": "https://keychron.in/product/keychron-k2-v-2/",
+    "note": "official India store"
+   },
+   {
+    "store": "Amazon India",
+    "price": 9499,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Keychron-K2-Wireless-Bluetooth-Mechanical/dp/B09GXMHHJP",
+    "note": "listing (blue switch), MRP 10499"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 9985,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/keychron-k2-wireless-mechanical-keyboard-version-2-k2-a1/",
+    "note": "listing"
    }
   ],
   "g915x": [
+   {
+    "store": "PrimeABGB",
+    "price": 17196,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g915-x-lightspeed-tkl-wireless-gaming-keyboard-920-012726/",
+    "note": "listing, MRP 23995"
+   },
    {
     "store": "Newegg",
     "price": 189.99,
@@ -613,6 +991,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/Logitech-G915-X-LIGHTSPEED-TKL-Wireless-Gaming-Keyboard-Black-English-Clicky/12896958783",
     "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 20995,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Low-Profile-Double-Shot-Programmable-Backlighting/dp/B0DDY15G7X",
+    "note": "listing, MRP 25495"
    },
    {
     "store": "Best Buy",
@@ -631,6 +1016,20 @@ window.GG_PRICES = {
     "note": "official refurbished-style Revival Series, OPX"
    },
    {
+    "store": "MD Computers",
+    "price": 19200,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/corsair-k100-rgb-optical-mechanical-keyboard",
+    "note": "listing (Midnight Gold, was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 21999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Corsair-K100-Mechanical-Gaming-Keyboard/dp/B08HR68MQZ",
+    "note": "listing (OPX, black), MRP 30000"
+   },
+   {
     "store": "Corsair",
     "price": 289.99,
     "cur": "USD",
@@ -646,6 +1045,27 @@ window.GG_PRICES = {
    }
   ],
   "k552": [
+   {
+    "store": "Amazon India",
+    "price": 2290,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Redragon-KUMARA-Backlit-Mechanical-Keyboard/dp/B016MAK38U",
+    "note": "listing, MRP 3490"
+   },
+   {
+    "store": "Flipkart",
+    "price": 2290,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/redragon-kumara-k552-rainbow-led-red-switch-mechanical-keyboard-wired-usb-standard-gaming-compatible-desktop-laptop-mac/p/itmb8693d7ebdf64",
+    "note": "listing (red switch), MRP 3490"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 2411,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/redragon-kumara-k552-tkl-wired-mechnical-keybaord-rainbow-red-switch/",
+    "note": "listing"
+   },
    {
     "store": "Amazon",
     "price": 33.99,
@@ -682,6 +1102,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://rkgamingstore.com/products/rk61-60-percent-keyboard",
     "note": "official store"
+   },
+   {
+    "store": "Amazon India",
+    "price": 4979,
+    "cur": "INR",
+    "url": "https://www.amazon.in/RK-ROYAL-KLUDGE-Programmable-Hot-Swappable/dp/B08613PF77",
+    "note": "listing (wireless, brown switch), MRP 6499"
+   },
+   {
+    "store": "Amazon India (wired)",
+    "price": 5789,
+    "cur": "INR",
+    "url": "https://www.amazon.in/RK-ROYAL-KLUDGE-Mechanical-Ultra-Compact/dp/B089GN2KBT",
+    "note": "listing (wired, red switch), MRP 6499"
    }
   ],
   "a75pro": [
@@ -691,6 +1125,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://drunkdeer.com/products/drunkdeer-a75-pro-wired-actuation-distance-adjustable-magnetic-switch-keyboard",
     "note": "official store, was 129.99"
+   },
+   {
+    "store": "Amazon India",
+    "price": 30357,
+    "cur": "INR",
+    "url": "https://www.amazon.in/DrunkDeer-Trigger-Keyboard-Esports-Magnetic/dp/B0DF2TY33X",
+    "note": "imported by a third-party seller, MRP 39465"
    }
   ],
   "g213": [
@@ -700,6 +1141,27 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/logitech-g213-prodigy-920-008083-tactile-mechanical-keyboard/p/N82E16823126473",
     "note": "listing, was 49.99"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 3873,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g213-prodigy-gaming-keyboard-rgb-backlight-920-008096/",
+    "note": "listing, MRP 5295"
+   },
+   {
+    "store": "MD Computers",
+    "price": 4200,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/logitech-g213-prodigy-keyboard-920-008096",
+    "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 4295,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-LIGHTSYNC-Spill-Resistant-Customizable-Multi-Media/dp/B01K48R5V4",
+    "note": "listing, MRP 5295"
    },
    {
     "store": "Walmart",
@@ -732,11 +1194,25 @@ window.GG_PRICES = {
     "note": "official store, was 349.99"
    },
    {
+    "store": "Amazon India",
+    "price": 29999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/SteelSeries-Arctis-Wireless-Multi-System-Headset/dp/B0CYLSLBW4",
+    "note": "listing (lowest of 2 sellers)"
+   },
+   {
     "store": "Best Buy",
     "price": 379.99,
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/steelseries-arctis-nova-pro-wireless-multi-gaming-headset-for-pc-ps5-ps4-switch-black/J3LG47VK2V/sku/6506219",
     "note": "listing"
+   },
+   {
+    "store": "Amazon India (PlayStation)",
+    "price": 49990,
+    "cur": "INR",
+    "url": "https://www.amazon.in/SteelSeries-Wireless-Playstation-Multi-System-Headset/dp/B0BT4XCX4G",
+    "note": "listing, MRP 59990"
    }
   ],
   "alphaw": [
@@ -764,6 +1240,13 @@ window.GG_PRICES = {
   ],
   "cloud3": [
    {
+    "store": "Amazon India",
+    "price": 6700,
+    "cur": "INR",
+    "url": "https://www.amazon.in/HyperX-Cloud-III-Ultra-Clear-USB/dp/B0C3BSZ56D",
+    "note": "listing (black)"
+   },
+   {
     "store": "HyperX",
     "price": 69.99,
     "cur": "USD",
@@ -776,6 +1259,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/HyperX-Cloud-III-Gaming-Headset-Black/2894015515",
     "note": "listing (black)"
+   },
+   {
+    "store": "Flipkart",
+    "price": 7259,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/hyperx-cloud-iii-wired-gaming-headset/p/itm31c0091c582ec",
+    "note": "listing, MRP 11037"
    }
   ],
   "maxwell2": [
@@ -817,6 +1307,13 @@ window.GG_PRICES = {
     "note": "listing"
    },
    {
+    "store": "PrimeABGB",
+    "price": 20915,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-pro-x-2-lightspeed-lightspeed-wireless-black-gaming-headset-981-001264/",
+    "note": "listing (was out of stock), MRP 30495"
+   },
+   {
     "store": "Newegg",
     "price": 249.99,
     "cur": "USD",
@@ -825,6 +1322,27 @@ window.GG_PRICES = {
    }
   ],
   "bsv2x": [
+   {
+    "store": "Amazon India",
+    "price": 3999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-BlackShark-V2-Headset-RZ04-03240100-R3M1/dp/B08WBJHVYV",
+    "note": "listing, MRP 7999"
+   },
+   {
+    "store": "MD Computers",
+    "price": 4460,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-headset-blackshark-v2-x-rz04-03240100-r3m1",
+    "note": "listing"
+   },
+   {
+    "store": "Flipkart",
+    "price": 4495,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/razer-blackshark-v2-x-multi-platform-wired-headset/p/itmb225141ad07f0",
+    "note": "listing, MRP 7999"
+   },
    {
     "store": "Walmart",
     "price": 49.99,
@@ -870,9 +1388,23 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.turtlebeach.com/products/stealth-600-headset",
     "note": "official store, MSRP 109.99"
+   },
+   {
+    "store": "Amazon India",
+    "price": 15141,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Turtle-Beach-Multiplatform-Amplified-Noise-Cancelling/dp/B0CZX7MB48",
+    "note": "imported by a third-party seller"
    }
   ],
   "nova7g2": [
+   {
+    "store": "Amazon India",
+    "price": 10927,
+    "cur": "INR",
+    "url": "https://www.amazon.in/SteelSeries-Arctis-Nova-Wireless-Gen/dp/B0FS7LH1KR",
+    "note": "listing (7P PlayStation version)"
+   },
    {
     "store": "SteelSeries",
     "price": 159.99,
@@ -909,6 +1441,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/site/razer-blackshark-v2-pro-2023-wireless-esports-gaming-headset-for-pc-ps5-ps4-switch-black/6538210.p",
     "note": "listing (black)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 17999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-BlackShark-Wireless-Gaming-Headset/dp/B0BXLWCLZN",
+    "note": "listing (black), MRP 24999"
+   },
+   {
+    "store": "MD Computers",
+    "price": 22500,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-headphone-blackshark-v2-pro-rz04-04530100-r3m1",
+    "note": "listing, MRP 24999"
    }
   ],
   "aw2725df": [
@@ -932,15 +1478,50 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/Alienware-27-WQHD-OLED-Gaming-Monitor-Black-AW2725DF/5321628010",
     "note": "listing"
+   },
+   {
+    "store": "Dell India",
+    "price": 73999,
+    "cur": "INR",
+    "url": "https://www.dell.com/en-in/shop/monitors/ar/6481/alienware-monitors?appliedRefinements=40666",
+    "note": "official store, incl. GST"
+   },
+   {
+    "store": "Flipkart",
+    "price": 75499,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/dell-aw-series-27-inch-quad-hd-oled-panel-gaming-monitor-aw2725df/p/itme757daad64154",
+    "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 95500,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Alienware-AW2725DF-Quantom-Dot-FreeSync-Adjustment/dp/B0CZSGWLD5",
+    "note": "listing, MRP 109500"
    }
   ],
   "xl2566k": [
+   {
+    "store": "PrimeABGB",
+    "price": 55862,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/benq-zowie-xl2566k-25-inch-e-sports-gaming-monitor/",
+    "note": "listing, MRP 77227"
+   },
    {
     "store": "Newegg",
     "price": 649,
     "cur": "USD",
     "url": "https://www.newegg.com/benq-xl2566k-25/p/0JC-002S-00245",
     "note": "marketplace seller; Best Buy no longer sells it new"
+   },
+   {
+    "store": "Amazon India",
+    "price": 65511,
+    "cur": "INR",
+    "url": "https://www.amazon.in/BenQ-Zowie-Gaming-Monitor-Ergonomic/dp/B0C45JDTYD",
+    "note": "listing, MRP 105000"
    }
   ],
   "27gp850": [
@@ -957,9 +1538,30 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/lg-electronics-ultragear-27gp850-b-27/p/0JC-000D-00D67?Item=9SIB5FSGZU3734",
     "note": "refurbished, third-party seller"
+   },
+   {
+    "store": "Amazon India",
+    "price": 24000,
+    "cur": "INR",
+    "url": "https://www.amazon.in/LG-Ultragear-Compatible-FreeSync-Premium/dp/B09YDHBSKJ",
+    "note": "listing (only 1 left), MRP 47500"
+   },
+   {
+    "store": "Flipkart",
+    "price": 29999,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/lg-ultragear-68-58-cm-27-inch-quad-hd-ips-panel-vesa-display-hdr400-hdmi-nvidia-g-sync-compatible-nano-gaming-monitor-27gp850-b-atromkn/p/itm375c40bdd91b1",
+    "note": "listing, MRP 47500"
    }
   ],
   "q27g3xmn": [
+   {
+    "store": "Amazon India",
+    "price": 22999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/2560x1440-AOC-Gaming-Q27G3XMN-BK/dp/B0CNRPGQBG",
+    "note": "listing (was unavailable)"
+   },
    {
     "store": "AOC",
     "price": 299.99,
@@ -989,6 +1591,27 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/p/3D4-001B-00088",
     "note": "refurbished"
+   },
+   {
+    "store": "MD Computers",
+    "price": 9385,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/aoc-24-inch-gaming-monitor-24g4",
+    "note": "listing (was out of stock)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 9499,
+    "cur": "INR",
+    "url": "https://www.amazon.in/AOC-Monitor-Refresh-Response-Compatible/dp/B0D9LSSBQ2",
+    "note": "listing"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 9568,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/aoc-24g4-23-8-inch-ips-180hz-fulll-hd-gaming-monitor/",
+    "note": "listing"
    },
    {
     "store": "Walmart",
@@ -1023,6 +1646,13 @@ window.GG_PRICES = {
   ],
   "32gs95ue": [
    {
+    "store": "MD Computers",
+    "price": 112760,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/lg-ultragear-32-inch-gaming-monitor-32gs95ue-b",
+    "note": "listing (was out of stock)"
+   },
+   {
     "store": "Newegg",
     "price": 1399,
     "cur": "USD",
@@ -1046,6 +1676,27 @@ window.GG_PRICES = {
     "note": "listing (was out of stock)"
    },
    {
+    "store": "Amazon India",
+    "price": 23998,
+    "cur": "INR",
+    "url": "https://www.amazon.in/MSI-MAG-274QRF-QD-E2/dp/B0CPQ59G1H",
+    "note": "listing, MRP 39999"
+   },
+   {
+    "store": "Vedant Computers",
+    "price": 24950,
+    "cur": "INR",
+    "url": "https://www.vedantcomputers.com/msi-27inch-mag-274qrf-qd-e2",
+    "note": "listing (was out of stock)"
+   },
+   {
+    "store": "MD Computers",
+    "price": 25500,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/msi-27-inch-monitor-mag-274qrf-qd-e2",
+    "note": "listing (was out of stock)"
+   },
+   {
     "store": "MSI",
     "price": 349.99,
     "cur": "USD",
@@ -1060,6 +1711,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/samsung-34-odyssey-g5-1000r-curved-1ms-165hz-qhd-freesync-prem-gaming-monitor-black/J3ZYGCT485",
     "note": "listing, sale, was 399.99"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 27976,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/samsung-odyssey-g5-wqhd-1000r-1ms-165hz-hdr-34-inch-gaming-monitor-lc34g55twwwxxl/",
+    "note": "listing, MRP 55300"
+   },
+   {
+    "store": "Flipkart",
+    "price": 27999,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/samsung-odyssey-g5-curved-86-4-cm-34-inch-wqhd-led-backlit-va-panel-hdr-10-game-style-ui-borderless-ultrawide-gaming-monitor-lc34g55twwwxxl/p/itm02a552d6b1fc9",
+    "note": "listing, MRP 55300"
    },
    {
     "store": "Samsung",
@@ -1078,6 +1743,13 @@ window.GG_PRICES = {
   ],
   "dualsense": [
    {
+    "store": "Reliance Digital",
+    "price": 4390,
+    "cur": "INR",
+    "url": "https://www.reliancedigital.in/product/sony-ps5-dualsense-wireless-controller",
+    "note": "listing, MRP 6390"
+   },
+   {
     "store": "Walmart",
     "price": 54,
     "cur": "USD",
@@ -1090,6 +1762,20 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/sony-interactive-entertainment-dualsense-wireless-controller-for-ps5-pc-mac-mobile-midnight-black/JXHQ37T9XC",
     "note": "listing (black), Black Friday, was 74.99"
+   },
+   {
+    "store": "Flipkart",
+    "price": 5999,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/gaming-accesories/controllers/gamepads/sony~brand/pr?sid=4rr%2Ckm5%2Cr39%2Ca7g",
+    "note": "listing (white), MRP 6390"
+   },
+   {
+    "store": "Amazon India",
+    "price": 6299,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Sony-Playstation-Dualsense-Controller-White/dp/B08KJPLGLF",
+    "note": "listing (white), MRP 6390"
    },
    {
     "store": "Walmart (white)",
@@ -1113,6 +1799,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/Microsoft-Xbox-Wireless-Controller-Carbon-Black/15060559533",
     "note": "listing, was 64.00"
+   },
+   {
+    "store": "Amazon India",
+    "price": 6790,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Microsoft-Xbox-Wireless-Controller-Carbon/dp/B0FFGQ5KW8",
+    "note": "listing (Carbon Black), MRP 6990"
    }
   ],
   "elite2": [
@@ -1136,9 +1829,30 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/XBOX-Elite-Wireless-Controller-Series-2-Black-for-PC-Microsoft-Xbox-One/784834522",
     "note": "listing"
+   },
+   {
+    "store": "Flipkart",
+    "price": 17990,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/microsoft-xbox-s-x-wireless-controller-elite-series-2-bluetooth-gamepad/p/itmef3ff82cfbe56",
+    "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 22499,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Xbox-Elite-Wireless-Controller-2/dp/B0836S5CZ8",
+    "note": "listing, MRP 29999"
    }
   ],
   "edge": [
+   {
+    "store": "Reliance Digital",
+    "price": 15990,
+    "cur": "INR",
+    "url": "https://www.reliancedigital.in/collection/sony-controllers",
+    "note": "listing, MRP 18990"
+   },
    {
     "store": "Walmart",
     "price": 169,
@@ -1175,6 +1889,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.walmart.com/ip/8BitDo-Ultimate-2-Wireless-Controller-Windows-Android-Gaming-Controller-TMR-Joysticks-Switchable-Hall-Effect-Tactile-Triggers-RGB-Fire-Ring-8Speed-Wi/16502050519",
     "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 7599,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Ultimate-Wireless-Controller-Switchable-Technology/dp/B0DR8V899R",
+    "note": "listing, MRP 7999"
    }
   ],
   "g7se": [
@@ -1193,6 +1914,13 @@ window.GG_PRICES = {
     "note": "official store"
    },
    {
+    "store": "Amazon India",
+    "price": 5099,
+    "cur": "INR",
+    "url": "https://www.amazon.in/GameSir-G7-SE-Controller-Joysticks/dp/B0C7GW9F88",
+    "note": "listing, MRP 5999"
+   },
+   {
     "store": "Newegg",
     "price": 59.99,
     "cur": "USD",
@@ -1208,6 +1936,13 @@ window.GG_PRICES = {
    }
   ],
   "sw2pro": [
+   {
+    "store": "Amazon India",
+    "price": 7990,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Nintendo-Switch-2-Pro-Controller/dp/B0DX1HQX9J",
+    "note": "listing, MRP 12999"
+   },
    {
     "store": "Walmart",
     "price": 89,
@@ -1228,6 +1963,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/nintendo-switch-2-pro-controller-black/J7GSL57TYS/sku/6625904/reviews",
     "note": "listing"
+   },
+   {
+    "store": "Flipkart",
+    "price": 9364,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/nintendo-switch-2-pro-controller-gaming-console-analogue-sticks-wireless-gamepad-motion/p/itm6b3dab59c2099",
+    "note": "listing, MRP 12999"
    }
   ],
   "wolv3": [
@@ -1251,6 +1993,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.razer.com/console-controllers/Razer-Wolverine-V3-Pro/RZ06-05200100-R3U1",
     "note": "official store"
+   },
+   {
+    "store": "Amazon India",
+    "price": 33999,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Wolverine-V3-Pro-8K/dp/B0FC9DTDJ3",
+    "note": "listing (8K PC version), MRP 44199"
    }
   ],
   "g923": [
@@ -1274,6 +2023,34 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/logitech-g923-wheel-black/p/N82E16879212027?item=9SIA6ZPK9Y6181",
     "note": "third-party seller"
+   },
+   {
+    "store": "Amazon India",
+    "price": 40995,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-TRUEFORCE-Feedback-Responsive-Driving/dp/B08X76DKVR",
+    "note": "listing, MRP 69995"
+   },
+   {
+    "store": "Flipkart",
+    "price": 40995,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/logitech-g923-racing-wheel-pedals-dual-clutch-motion-controller/p/itm9d56e05b8586f",
+    "note": "listing"
+   },
+   {
+    "store": "PrimeABGB",
+    "price": 45899,
+    "cur": "INR",
+    "url": "https://www.primeabgb.com/online-price-reviews-india/logitech-g923-trueforce-sim-racing-wheel-pedals-playstation-pc-941-000163/",
+    "note": "listing"
+   },
+   {
+    "store": "MD Computers",
+    "price": 46100,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/logitech-racing-wheel-g923-trueforce-941-000163",
+    "note": "listing"
    }
   ],
   "xlheavy": [
@@ -1308,6 +2085,20 @@ window.GG_PRICES = {
     "note": "listing"
    },
    {
+    "store": "Flipkart",
+    "price": 1338,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/logitech-g240-mousepad/p/itme2v533q8z79qa",
+    "note": "listing, MRP 1995"
+   },
+   {
+    "store": "Amazon India",
+    "price": 1339,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Optimized-Moderate-Friction-Non-Slip/dp/B0BHMLWH3Z",
+    "note": "listing"
+   },
+   {
     "store": "Walmart",
     "price": 19.99,
     "cur": "USD",
@@ -1317,11 +2108,25 @@ window.GG_PRICES = {
   ],
   "gigantus": [
    {
+    "store": "MD Computers",
+    "price": 1200,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/razer-gigantus-v2-mouse-pad-rz02-03330200-r3m1?language=en-gb",
+    "note": "listing (Medium size)"
+   },
+   {
     "store": "Razer",
     "price": 14.99,
     "cur": "USD",
     "url": "https://www.razer.com/gaming-mouse-mats/razer-gigantus-v2/RZ02-03330400-R3U1",
     "note": "official store (older page)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 1979,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Razer-Gigantus-Cloth-Gaming-Medium/dp/B088539GLT",
+    "note": "listing (Medium size), MRP 3562"
    }
   ],
   "g640": [
@@ -1337,6 +2142,27 @@ window.GG_PRICES = {
     "price": 29.99,
     "cur": "USD",
     "url": "https://www.bestbuy.com/product/logitech-g640-cloth-gaming-mouse-pad-with-rubber-base-black/J7H7ZY8YX3",
+    "note": "listing"
+   },
+   {
+    "store": "MD Computers",
+    "price": 3010,
+    "cur": "INR",
+    "url": "https://mdcomputers.in/product/logitech-g640-mouse-pad-943-000801",
+    "note": "listing"
+   },
+   {
+    "store": "Amazon India",
+    "price": 3295,
+    "cur": "INR",
+    "url": "https://www.amazon.in/Logitech-Optimised-Moderate-Friction-Accessories/dp/B0BGSZYXRZ",
+    "note": "listing"
+   },
+   {
+    "store": "Flipkart",
+    "price": 3295,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/logitech-g640-mousepad/p/itmddb6227d8e0a2",
     "note": "listing"
    },
    {
@@ -1381,6 +2207,13 @@ window.GG_PRICES = {
   ],
   "qckheavy": [
    {
+    "store": "Flipkart",
+    "price": 2699,
+    "cur": "INR",
+    "url": "https://www.flipkart.com/steelseries-qck-heavy-non-slip-base-mousepad/p/itmetccn3zfzawhg",
+    "note": "listing"
+   },
+   {
     "store": "SteelSeries",
     "price": 34.99,
     "cur": "USD",
@@ -1407,6 +2240,13 @@ window.GG_PRICES = {
     "cur": "USD",
     "url": "https://www.newegg.com/steelseries-63008/p/N82E16826995024",
     "note": "listing (black)"
+   },
+   {
+    "store": "Amazon India",
+    "price": 5281,
+    "cur": "INR",
+    "url": "https://www.amazon.in/SteelSeries-Gaming-Rubber-Optical-Compatible/dp/B000V7ARAU",
+    "note": "listing (63008)"
    }
   ],
   "es2": [
